@@ -1,0 +1,217 @@
+/* ==============================
+   PERLIS AIRSPACE SANDBOX FOOTER
+   ============================== */
+
+.pas-footer {
+    color: #cbd5e1;
+
+    background:
+        radial-gradient(
+            ellipse at 12% 0%,
+            rgba(14, 116, 144, 0.10),
+            transparent 42%
+        ),
+        #070f1d;
+
+    border-top: 1px solid rgba(148, 163, 184, 0.17);
+}
+
+/* Main footer layout */
+
+.pas-footer__main {
+    display: grid;
+
+    grid-template-columns:
+        minmax(0, 2fr)
+        minmax(140px, 0.8fr)
+        minmax(220px, 1fr);
+
+    gap: 56px;
+
+    width: min(100% - 48px, 1280px);
+    margin: 0 auto;
+    padding: 66px 0 58px;
+}
+
+/* Company section */
+
+.pas-footer__intro {
+    max-width: 470px;
+}
+
+.pas-footer__brand {
+    width: fit-content;
+}
+
+.pas-footer__description {
+    max-width: 410px;
+    margin: 23px 0 22px;
+
+    color: #94a3b8;
+    font-size: 14px;
+    line-height: 1.9;
+}
+
+/* Status indicator */
+
+.pas-footer__status {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+
+    color: #7dddf7;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+}
+
+.pas-footer__status-dot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+    background: #53d7ff;
+    box-shadow: 0 0 12px rgba(83, 215, 255, 0.8);
+}
+
+/* Footer columns */
+
+.pas-footer__column h2 {
+    margin: 4px 0 22px;
+
+    color: #f8fafc;
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+}
+
+.pas-footer__column ul {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pas-footer__column a {
+    width: fit-content;
+
+    color: #94a3b8;
+    font-size: 13px;
+    text-decoration: none;
+
+    transition: color 180ms ease;
+}
+
+.pas-footer__column a:hover {
+    color: #70e0ff;
+}
+
+.pas-footer__column > p {
+    max-width: 290px;
+    margin: 0;
+
+    color: #94a3b8;
+    font-size: 13px;
+    line-height: 1.85;
+}
+
+/* Contact link */
+
+.pas-footer__column .pas-footer__contact-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-top: 20px;
+
+    color: #70e0ff;
+    font-weight: 700;
+}
+
+.pas-footer__contact-link span {
+    transition: transform 180ms ease;
+}
+
+.pas-footer__contact-link:hover span {
+    transform: translate(2px, -2px);
+}
+
+/* Bottom copyright bar */
+
+.pas-footer__bottom {
+    border-top: 1px solid rgba(148, 163, 184, 0.13);
+}
+
+.pas-footer__bottom-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+
+    width: min(100% - 48px, 1280px);
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+.pas-footer__bottom p {
+    margin: 0;
+
+    color: #64748b;
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+.pas-footer__bottom p:last-child {
+    font-size: 9px;
+    font-weight: 650;
+    letter-spacing: 0.13em;
+    text-align: right;
+}
+
+/* Tablet */
+
+@media (max-width: 800px) {
+    .pas-footer__main {
+        grid-template-columns: 1fr 1fr;
+        gap: 42px 32px;
+        padding: 50px 0 44px;
+    }
+
+    .pas-footer__intro {
+        grid-column: 1 / -1;
+        max-width: 600px;
+    }
+}
+
+/* Mobile */
+
+@media (max-width: 520px) {
+    .pas-footer__main {
+        grid-template-columns: 1fr;
+        gap: 34px;
+
+        width: calc(100% - 36px);
+        padding: 42px 0;
+    }
+
+    .pas-footer__intro {
+        grid-column: auto;
+    }
+
+    .pas-footer__bottom-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 9px;
+
+        width: calc(100% - 36px);
+        padding: 18px 0;
+    }
+
+    .pas-footer__bottom p:last-child {
+        text-align: left;
+    }
+}

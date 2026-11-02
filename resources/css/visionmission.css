@@ -1,0 +1,392 @@
+/* =========================================
+   VISION + MISSION
+   Navy headline panel + white rounded cards.
+   Flat colours, no gradients, almost no borders.
+========================================= */
+
+.vm {
+    --vm-navy: #101820;
+    --vm-sky: #2dbafc;
+    --vm-sky-deep: #0083c2; /* readable blue for small text on light */
+    --vm-bg: #eef1f5;
+    --vm-card: #ffffff;
+    --vm-ink: #101820;
+    --vm-muted: #5f6b76;
+    --vm-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 36fr) minmax(0, 64fr);
+    width: 100%;
+    height: 100vh;
+    height: 100svh;
+    min-height: 640px;
+    overflow: hidden;
+    background: var(--vm-bg);
+    color: var(--vm-ink);
+}
+
+/* ---------- Word-by-word reveal ----------
+   Each word sits in a mask (overflow hidden) and rises up.
+   The delay = block delay + word index * step. */
+
+.vm-w {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    /* room for descenders (g, y, p) so the mask doesn't cut them */
+    padding-bottom: 0.14em;
+    margin-bottom: -0.14em;
+}
+
+.vm-w > span {
+    display: inline-block;
+    transform: translateY(115%) rotate(4deg);
+    transform-origin: left bottom;
+}
+
+.vm.is-in .vm-w > span {
+    transform: none;
+    transition: transform 850ms var(--vm-ease)
+        calc(var(--d, 0ms) + var(--i) * var(--step, 45ms));
+}
+
+.vm-w.is-accent > span {
+    color: var(--vm-sky);
+}
+
+.vm-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ---------- Left: navy panel ---------- */
+
+.vm-intro {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(28px, 4vw, 60px);
+    overflow: hidden;
+    isolation: isolate;
+    background: var(--vm-navy);
+    color: #ffffff;
+}
+
+.vm-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 clamp(14px, 3dvh, 28px);
+    color: var(--vm-sky);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+.vm-eyebrow::before {
+    content: "";
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    background: var(--vm-sky);
+}
+
+.vm-intro h2 {
+    margin: 0;
+    font-size: clamp(36px, min(3.9vw, 8dvh), 72px);
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -0.045em;
+}
+
+.vm-intro-text {
+    max-width: 34ch;
+    margin: clamp(14px, 3dvh, 28px) 0 0;
+    color: rgb(255 255 255 / 0.62);
+    font-size: clamp(14px, min(1.1vw, 2.2dvh), 17px);
+    line-height: 1.7;
+}
+
+/* one slow ring with a dot flying around it (transform only, so it's cheap) */
+.vm-orbit {
+    position: absolute;
+    z-index: -1;
+    right: -20%;
+    bottom: -16%;
+    width: min(82%, 62dvh);
+    aspect-ratio: 1;
+    border: 1px solid rgb(255 255 255 / 0.09);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: vm-spin 36s linear infinite;
+}
+
+.vm-orbit::before {
+    content: "";
+    position: absolute;
+    inset: 16%;
+    border: 1px solid rgb(255 255 255 / 0.06);
+    border-radius: 50%;
+}
+
+.vm-orbit::after {
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    margin-left: -5px;
+    border-radius: 50%;
+    background: var(--vm-sky);
+}
+
+@keyframes vm-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* only spin while the section is on screen */
+.vm:not(.is-inview) .vm-orbit {
+    animation-play-state: paused;
+}
+
+/* ---------- Right: groups ---------- */
+
+.vm-content {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: clamp(14px, 2.4dvh, 28px);
+    min-height: 0;
+    padding: clamp(18px, 3.2dvh, 44px) clamp(18px, 3vw, 48px);
+}
+
+.vm-group {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.vm-group--vision {
+    --vm-title: clamp(16px, min(1.55vw, 2.8dvh), 24px);
+    --vm-desc: clamp(12px, min(0.95vw, 1.9dvh), 14px);
+}
+
+.vm-group--mission {
+    --vm-title: clamp(14px, min(1.15vw, 2.4dvh), 19px);
+    --vm-desc: clamp(11.5px, min(0.9vw, 1.8dvh), 13.5px);
+}
+
+.vm-group-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 16px;
+    margin-bottom: clamp(8px, 1.5dvh, 14px);
+}
+
+.vm-label {
+    color: var(--vm-sky-deep);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.vm-group-head h3 {
+    margin: 0;
+    font-size: clamp(20px, min(2.1vw, 3.8dvh), 32px);
+    font-weight: 650;
+    letter-spacing: -0.035em;
+}
+
+/* ---------- Cards ---------- */
+
+.vm-cards {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    gap: clamp(8px, 1vw, 14px);
+    flex: 1;
+    min-height: 0;
+}
+
+.vm-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 0;
+    padding: clamp(14px, 1.5vw, 24px);
+    border-radius: 20px;
+    background: var(--vm-card);
+    color: var(--vm-ink);
+
+    /* entrance uses opacity + the "translate" property, so the hover
+       lift (which uses "transform") never waits for the entrance delay */
+    opacity: 0;
+    translate: 0 28px;
+    transition:
+        opacity 700ms ease var(--cd, 0ms),
+        translate 900ms var(--vm-ease) var(--cd, 0ms),
+        transform 450ms var(--vm-ease),
+        background-color 350ms ease,
+        color 350ms ease;
+}
+
+.vm.is-in .vm-card {
+    opacity: 1;
+    translate: 0 0;
+}
+
+.vm-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.vm-num {
+    display: grid;
+    place-items: center;
+    width: clamp(30px, 2.4vw, 38px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--vm-bg);
+    font-size: 12px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    transition: background-color 350ms ease, color 350ms ease;
+}
+
+.vm-arrow {
+    font-size: clamp(16px, 1.4vw, 22px);
+    opacity: 0.35;
+    transition: opacity 350ms ease, transform 450ms var(--vm-ease), color 350ms ease;
+}
+
+.vm-card-text {
+    margin-top: auto;
+}
+
+.vm-card h4 {
+    margin: 0 0 0.5em;
+    font-size: var(--vm-title);
+    font-weight: 650;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    overflow-wrap: break-word;
+}
+
+.vm-card p {
+    margin: 0;
+    color: var(--vm-muted);
+    font-size: var(--vm-desc);
+    line-height: 1.6;
+    transition: color 350ms ease;
+}
+
+/* hover: card turns navy and lifts, like a Malaysia Airlines tile */
+@media (hover: hover) {
+    .vm-card:hover {
+        transform: translateY(-5px);
+        background: var(--vm-navy);
+        color: #ffffff;
+    }
+
+    .vm-card:hover p { color: rgb(255 255 255 / 0.72); }
+
+    .vm-card:hover .vm-num {
+        background: var(--vm-sky);
+        color: var(--vm-navy);
+    }
+
+    .vm-card:hover .vm-arrow {
+        opacity: 1;
+        color: var(--vm-sky);
+        transform: translate(3px, -3px);
+    }
+}
+
+/* ---------- Short laptop screens ---------- */
+
+@media (min-width: 901px) and (max-height: 720px) {
+    .vm-intro-text { display: none; }
+    .vm-card { padding: 12px; gap: 6px; border-radius: 16px; }
+    .vm-num { width: 28px; font-size: 11px; }
+}
+
+/* ---------- Tablet and mobile: stacked, scrolls ---------- */
+
+@media (max-width: 900px) {
+    .vm {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: 100svh;
+    }
+
+    .vm-intro {
+        padding: 72px 6% 48px;
+    }
+
+    .vm-intro h2 {
+        font-size: clamp(38px, 9vw, 64px);
+    }
+
+    .vm-orbit { display: none; }
+
+    .vm-content {
+        grid-template-rows: none;
+        gap: 40px;
+        padding: 40px 6% 56px;
+    }
+
+    .vm-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        flex: none;
+    }
+
+    .vm-card {
+        min-height: 190px;
+    }
+
+    /* an odd last card fills the row */
+    .vm-card:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+
+    .vm-group--vision,
+    .vm-group--mission {
+        --vm-title: 18px;
+        --vm-desc: 13.5px;
+    }
+}
+
+@media (max-width: 520px) {
+    .vm-cards {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------- Reduced motion: show everything, no movement ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .vm-w > span {
+        transform: none;
+        transition: none !important;
+    }
+
+    .vm-card {
+        opacity: 1;
+        translate: none;
+        transition: background-color 200ms ease, color 200ms ease;
+    }
+
+    .vm-orbit { animation: none; }
+}

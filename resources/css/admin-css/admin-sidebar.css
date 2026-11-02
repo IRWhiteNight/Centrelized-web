@@ -1,0 +1,352 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
+/* THEME TOKENS (shared with topbar) */
+:root {
+    --admin-black: #0a0a0a;
+    --admin-ink: #171717;
+    --admin-yellow: #facc15;
+    --admin-yellow-deep: #eab308;
+    --admin-white: #ffffff;
+    --admin-page: #f2f2ef;
+    --admin-muted: #8a8a85;
+    --admin-line: #ecece8;
+    --admin-font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+    /* workspace identity colours from the site map legend */
+    --tone-super: #dc2626;
+    --tone-psb: #f59e0b;
+    --tone-coeuas: #7c3aed;
+    --tone-vertiport: #9ca3af;
+}
+
+/* SIDEBAR: floating white card */
+.admin-sidebar {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    bottom: 14px;
+    width: 250px;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 18px 16px;
+    background: var(--admin-white);
+    color: var(--admin-ink);
+    border-radius: 22px;
+    font-family: var(--admin-font);
+    z-index: 1000;
+    box-sizing: border-box;
+    transition: transform 0.3s ease;
+}
+
+/* BRAND */
+.admin-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 0 6px;
+    margin-bottom: 26px;
+}
+
+.admin-brand-logo {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--admin-black);
+    color: var(--admin-yellow);
+    border-radius: 12px;
+}
+
+.admin-brand-text h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    color: var(--admin-black);
+    line-height: 1.15;
+}
+
+.admin-brand-text span {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--admin-muted);
+}
+
+/* NAVIGATION
+   The nav spans the full card width so the active bar can touch the card edge
+   even though the list scrolls. */
+.admin-navigation {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin: 0 -18px;
+    padding: 0 18px;
+}
+
+.admin-navigation::-webkit-scrollbar {
+    width: 3px;
+}
+
+.admin-navigation::-webkit-scrollbar-thumb {
+    background: #dcdcd6;
+    border-radius: 10px;
+}
+
+.admin-nav-section {
+    margin-bottom: 20px;
+}
+
+.admin-nav-heading {
+    margin: 0 0 8px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    color: var(--admin-muted);
+}
+
+.admin-nav-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    width: 100%;
+    height: 40px;
+    padding: 0 8px;
+    margin-bottom: 2px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--admin-muted);
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 500;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.admin-nav-link:hover {
+    color: var(--admin-black);
+    background: #f7f7f4;
+}
+
+.admin-nav-link:focus-visible,
+.admin-sidebar-card-button:focus-visible,
+.admin-mobile-toggle:focus-visible {
+    outline: 2px solid var(--admin-yellow-deep);
+    outline-offset: 2px;
+}
+
+.admin-nav-link.active {
+    color: var(--admin-black);
+    font-weight: 700;
+    background: transparent;
+}
+
+.admin-nav-link.active svg {
+    color: var(--admin-black);
+}
+
+/* yellow bar on the card's left edge */
+.admin-active-indicator {
+    position: absolute;
+    left: -18px;
+    top: 50%;
+    width: 5px;
+    height: 28px;
+    transform: translateY(-50%);
+    background: var(--admin-yellow);
+    border-radius: 0 6px 6px 0;
+}
+
+/* SITE SHORTCUTS (PSB / COE-UAS / Vertiport) */
+.admin-nav-link.child {
+    height: 36px;
+    margin-left: 12px;
+    width: calc(100% - 12px);
+    padding-left: 10px;
+    gap: 12px;
+    font-size: 13px;
+}
+
+.admin-nav-dot {
+    width: 9px;
+    height: 9px;
+    flex-shrink: 0;
+    margin: 0 5px;
+    border-radius: 50%;
+    background: var(--admin-muted);
+}
+
+.admin-nav-dot.tone-psb {
+    background: var(--tone-psb);
+}
+
+.admin-nav-dot.tone-coeuas {
+    background: var(--tone-coeuas);
+}
+
+.admin-nav-dot.tone-vertiport {
+    background: transparent;
+    border: 1.5px dashed var(--tone-vertiport);
+}
+
+.admin-nav-badge {
+    margin-left: auto;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #f2f2ef;
+    color: #6f6f6a;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+/* reserved (Phase 2): visible but not clickable */
+.admin-nav-link.is-reserved {
+    cursor: not-allowed;
+    border: 1px dashed #dcdcd6;
+    color: #a3a39e;
+}
+
+.admin-nav-link.is-reserved:hover {
+    background: transparent;
+    color: #a3a39e;
+}
+
+.admin-logout:hover {
+    color: #d64545;
+    background: #fff4f2;
+}
+
+/* BOTTOM CARD: black with yellow action */
+.admin-sidebar-card {
+    position: relative;
+    overflow: hidden;
+    margin-top: 10px;
+    padding: 16px 16px 14px;
+    border-radius: 18px;
+    background: radial-gradient(
+            circle at 105% -10%,
+            rgba(250, 204, 21, 0.34),
+            transparent 55%
+        ),
+        var(--admin-black);
+    color: var(--admin-white);
+}
+
+.admin-sidebar-card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.admin-status-indicator {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+}
+
+.admin-sidebar-card h3 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.admin-sidebar-card p {
+    margin: 5px 0 12px;
+    font-size: 10px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.admin-sidebar-card-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    border-radius: 999px;
+    background: var(--admin-yellow);
+    color: var(--admin-black);
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: background 0.2s ease;
+}
+
+.admin-sidebar-card-button:hover {
+    background: #fde047;
+}
+
+/* short screens: give the menu the room instead of the card */
+@media (max-height: 820px) {
+    .admin-sidebar-card {
+        display: none;
+    }
+}
+
+/* MOBILE TOGGLE */
+.admin-mobile-toggle {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 1100;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    background: var(--admin-black);
+    color: var(--admin-yellow);
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+}
+
+.admin-sidebar-overlay {
+    display: none;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        transform: translateX(calc(-100% - 20px));
+    }
+
+    .admin-sidebar.sidebar-open {
+        transform: translateX(0);
+    }
+
+    .admin-mobile-toggle {
+        display: flex;
+    }
+
+    .admin-sidebar-overlay {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 999;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-sidebar,
+    .admin-nav-link {
+        transition: none;
+    }
+}

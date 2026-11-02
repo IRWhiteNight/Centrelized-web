@@ -1,0 +1,45 @@
+
+/* =========================================
+   CUSTOM BLACK SCROLLBAR
+========================================= */
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #ffd60a #000000;
+}
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+/* Scrollbar track */
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 999px;
+}
+
+/* Scrollbar thumb */
+::-webkit-scrollbar-thumb {
+    background: #111111;
+    border: 2px solid #f1f1f1;
+    border-radius: 999px;
+    transition: background 0.3s ease;
+}
+
+/* Hover effect */
+::-webkit-scrollbar-thumb:hover {
+    background: #444444;
+}
+
+/* Scrollbar corner */
+::-webkit-scrollbar-corner {
+    background: #f1f1f1;
+}
+
+/* Optional: dark black scrollbar for horizontal scrolling */
+::-webkit-scrollbar:horizontal {
+    height: 8px;
+}

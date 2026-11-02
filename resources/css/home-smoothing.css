@@ -1,0 +1,136 @@
+/* Homepage flow polish — import AFTER home.css.
+   Reduces the feeling of separate stacked blocks while preserving section hierarchy. */
+
+:root {
+    --section-space: clamp(56px, 7vw, 100px);
+    --flow-ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+/* Smooth the transitions between panels instead of using hard visual cuts. */
+.story {
+    background: #07090b;
+    overflow: clip;
+}
+.panel {
+    position: relative;
+    padding-top: var(--section-space);
+    padding-bottom: var(--section-space);
+    scroll-margin-top: 30px;
+}
+.panel--light {
+    background:
+        radial-gradient(ellipse at 8% 10%, rgba(45,186,252,.045), transparent 38%),
+        linear-gradient(180deg, #fff 0%, #fbfcfd 100%);
+}
+.panel--dark {
+    background:
+        radial-gradient(ellipse at 90% 15%, rgba(45,186,252,.055), transparent 38%),
+        linear-gradient(180deg, #090c0f 0%, #07090b 100%);
+}
+
+/* Blend adjacent chapters with subtle fades rather than obvious separators. */
+.panel--light::before,
+.panel--dark::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    pointer-events: none;
+    opacity: .7;
+}
+.panel--light::before {
+    background: linear-gradient(180deg, rgba(7,9,11,.035), transparent);
+}
+.panel--dark::before {
+    background: linear-gradient(180deg, rgba(255,255,255,.025), transparent);
+}
+.panel > * {
+    position: relative;
+}
+.panel > .airspace-explorer {
+    position: relative;
+}
+
+/* Less empty space between the about content and map. */
+#about .split { margin-bottom: 0; }
+#about .airspace-explorer { margin-top: clamp(44px, 5vw, 72px); }
+
+/* Headings and reveal elements move with a softer, less mechanical cadence. */
+[data-reveal] {
+    transform: translate3d(0, 24px, 0);
+    transition:
+        opacity .85s var(--flow-ease),
+        transform .95s var(--flow-ease);
+    transition-delay: calc(var(--item-index, 0) * 85ms);
+    will-change: opacity, transform;
+}
+[data-reveal].is-in { transform: translate3d(0,0,0); }
+
+/* A more fluid purpose layout: cards/items don't feel like unrelated boxes. */
+.purpose-item {
+    transition: border-color .35s ease, transform .45s var(--flow-ease);
+}
+.purpose-item:hover { border-color: rgba(45,186,252,.55); }
+.cap, .fact, .step, .milestone, .feature-card, .why-card {
+    transition: transform .45s var(--flow-ease), border-color .35s ease, background-color .35s ease;
+}
+.cap:hover, .milestone:hover, .step:hover { transform: translateY(-4px); }
+.why-card:hover {
+    border-color: rgba(45,186,252,.5);
+    background: rgba(45,186,252,.035);
+}
+.feature-card:hover { border-color: rgba(45,186,252,.5); }
+
+/* Make the long pinned hero transition into the story less abrupt. */
+.intro { isolation: isolate; }
+#home-hero { will-change: transform; }
+.hero-overlay {
+    transition: opacity 1.1s var(--flow-ease);
+}
+.beat {
+    transition:
+        opacity .85s var(--flow-ease),
+        transform 1.05s var(--flow-ease),
+        filter .85s var(--flow-ease);
+    filter: blur(2px);
+}
+.beat.is-active { filter: blur(0); }
+
+/* The main content should feel like one continuous canvas, not a stack of cards. */
+.panel--light .info-row,
+.panel--light .purpose-item,
+.panel--light .feature-card {
+    border-color: rgba(16,24,32,.11);
+}
+.panel--dark .purpose-item { border-color: rgba(230,244,250,.11); }
+.panel h2, .panel h3, .panel h4 { text-wrap: balance; }
+.panel p { text-wrap: pretty; }
+
+/* Avoid accidental horizontal movement from the oversized wordmark. */
+.wordmark { max-width: 100%; }
+
+/* Responsive flow and reduced-motion accessibility. */
+@media (max-width: 900px) {
+    .panel { padding-top: clamp(54px, 9vw, 76px); padding-bottom: clamp(54px, 9vw, 76px); }
+    #about .airspace-explorer { margin-top: 42px; }
+}
+@media (max-width: 560px) {
+    .panel { padding-left: 5%; padding-right: 5%; }
+    .panel .big-title { margin-bottom: 38px; }
+    .coloum-css { gap: 48px; }
+    .cap-heading { margin-top: 58px; }
+    .join-block { margin-top: 48px; }
+    .closing-apply { margin-top: 58px; }
+    .wordmark { white-space: normal; overflow-wrap: anywhere; padding: 28px 5% 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    [data-reveal], .beat, .track, .cap, .milestone, .step, .why-card, .feature-card, .purpose-item {
+        transition: none !important;
+        transform: none !important;
+        filter: none !important;
+        will-change: auto;
+    }
+    [data-reveal] { opacity: 1; }
+}

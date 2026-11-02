@@ -1,0 +1,765 @@
+/* =========================================
+   LIQUID GLASS NAVBAR
+   Put this over a colourful / image / gradient
+   page background, otherwise glass has nothing
+   to blur and looks flat.
+========================================= */
+
+:root {
+    --glass-ink: #202431;
+    --glass-ink-soft: #555d6d;
+    --glass-dark: #2f3340;
+    --fx-contrast: 2; /* strength of the "liquid" edge on the CTA button */
+}
+
+.glass-header {
+    position: sticky;
+    z-index: 1000;
+    width: 100%;
+    padding: 0 24px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+}
+
+/* ---------- Navbar shell ---------- */
+
+.glass-navbar {
+    position: relative;
+    isolation: isolate;
+    top: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    width: 100%;
+    min-height: 76px;
+    margin: 0 auto;
+    padding: 10px 14px 10px 20px;
+    box-sizing: border-box;
+    border-radius: 28px;
+}
+
+/* ---------- Liquid glass layers (shared by navbar + mobile menu) ----------
+   Three stacked layers sit BEHIND the content:
+   1. .glass-layer-blur : backdrop blur of whatever is behind the bar
+   2. .glass-layer-fx   : the contrast() "liquid" effect from the button demo
+   Content (links, text) is never filtered, so it stays sharp.
+   They are separate because a filter on an element stops its own
+   backdrop-filter from working. */
+
+.glass-layer {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.glass-layer-blur {
+    background: rgba(255, 255, 255, 0.1);
+    -webkit-backdrop-filter: blur(14px) saturate(180%) brightness(1.05);
+    backdrop-filter: blur(14px) saturate(180%) brightness(1.05);
+}
+
+.glass-layer-fx {
+    filter: contrast(var(--fx-contrast));
+}
+
+.glass-layer-box {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 1px double rgba(51, 51, 51, 0.08);
+    background: rgba(0, 0, 0, 0.02);
+    filter: brightness(0.9);
+
+    box-shadow:
+        inset 2px -2px 1px -1px rgba(255, 255, 255, 0.9),
+        inset -2px 2px 1px -1px rgba(255, 255, 255, 0.9),
+        inset 6px -6px 1px -6px rgba(255, 255, 255, 0.55),
+        inset -6px 6px 1px -6px rgba(255, 255, 255, 0.55),
+        inset 0 0 2px rgba(0, 0, 0, 0.8),
+        0 4px 8px rgba(0, 0, 0, 0.2);
+
+    transition: transform 250ms ease, background 250ms ease;
+}
+
+/* soft dark underside */
+.glass-layer-box::before {
+    content: "";
+    position: absolute;
+    top: 35%;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    border-radius: inherit;
+    border: 1px solid rgba(0, 0, 0, 0.9);
+    filter: blur(8px);
+}
+
+/* diagonal highlights */
+.glass-layer-box::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    filter: blur(7px);
+    background: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.8) 0%,
+        transparent 15%,
+        transparent 85%,
+        rgba(255, 255, 255, 0.8) 100%
+    );
+}
+
+/* thin inner rim */
+.glass-layer-glow {
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: inherit;
+    filter: blur(1px);
+}
+
+.glass-navbar:hover .glass-layer-box {
+    background: rgba(0, 0, 0, 0);
+}
+
+/* ---------- Brand ---------- */
+
+/* ---------- Brand + partners dropdown ---------- */
+
+.glass-brand-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.glass-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 6px;
+    border: 0;
+    background: none;
+    color: var(--glass-ink);
+    cursor: pointer;
+}
+
+.logo-nav {
+    display: block;
+    height: 44px;
+    width: auto;
+}
+
+.brand-chevron {
+    width: 16px;
+    height: 16px;
+    opacity: 0.65;
+    transition: transform 250ms ease;
+}
+
+.brand-chevron.is-open {
+    transform: rotate(180deg);
+}
+
+/* padding-top (not margin) keeps the hover area continuous
+   between the logo and the panel, so it doesn't flicker shut */
+.brand-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 20;
+    padding-top: 14px;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+    transform-origin: top left;
+    pointer-events: none;
+    transition:
+        opacity 200ms ease,
+        transform 250ms cubic-bezier(0.34, 1.45, 0.64, 1),
+        visibility 200ms ease;
+}
+
+.brand-dropdown.is-open {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+}
+
+.brand-dropdown-panel {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 270px;
+    padding: 12px;
+    border-radius: 22px;
+}
+
+.brand-dropdown-title {
+    margin: 2px 8px 6px;
+    color: var(--glass-ink-soft);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.brand-partner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    color: var(--glass-ink);
+    text-decoration: none;
+    transition: background 200ms ease, transform 200ms ease;
+}
+
+.brand-partner:hover,
+.brand-partner:focus-visible {
+    background: rgba(255, 255, 255, 0.55);
+    transform: translateX(3px);
+}
+
+.brand-partner-logo {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    object-fit: contain;
+}
+
+.brand-partner-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    line-height: 1.25;
+}
+
+.brand-partner-text strong {
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.brand-partner-text small {
+    color: var(--glass-ink-soft);
+    font-size: 12px;
+}
+
+.brand-partner-arrow {
+    color: var(--glass-ink-soft);
+}
+
+.glass-brand:focus-visible {
+    outline: 3px solid rgba(70, 100, 180, 0.6);
+    outline-offset: 4px;
+    border-radius: 12px;
+}
+
+.brand-name {
+    display: flex;
+    flex-direction: column;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    line-height: 1.15;
+}
+
+.brand-name span {
+    margin-top: 3px;
+    color: #5f6778;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+/* ---------- Desktop links ---------- */
+
+.glass-nav-links {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+/* Sliding glass pill: glides from the previously hovered link to the new one */
+.glass-nav-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.65),
+        rgba(255, 255, 255, 0.25)
+    );
+    box-shadow:
+        inset 2px -2px 1px -1px rgba(255, 255, 255, 0.95),
+        inset -2px 2px 1px -1px rgba(255, 255, 255, 0.95),
+        inset 0 0 8px rgba(255, 255, 255, 0.35),
+        0 6px 14px rgba(20, 30, 50, 0.14);
+
+    width: var(--ind-w, 0px);
+    height: var(--ind-h, 0px);
+    transform: translate(var(--ind-x, 0px), var(--ind-y, 0px)) scale(0.85);
+    opacity: 0;
+
+    transition:
+        transform 450ms cubic-bezier(0.34, 1.45, 0.64, 1),
+        width 450ms cubic-bezier(0.34, 1.45, 0.64, 1),
+        height 450ms cubic-bezier(0.34, 1.45, 0.64, 1),
+        opacity 250ms ease;
+}
+
+.glass-nav-indicator.is-visible {
+    opacity: 1;
+    transform: translate(var(--ind-x, 0px), var(--ind-y, 0px)) scale(1);
+}
+
+/* first appearance: jump into place, then animate from there */
+.glass-nav-indicator.is-instant {
+    transition: opacity 250ms ease;
+}
+
+.glass-nav-link {
+    position: relative;
+    padding: 12px 16px;
+    border-radius: 16px;
+    color: var(--glass-ink-soft);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition:
+        color 200ms ease,
+        background 200ms ease,
+        box-shadow 200ms ease,
+        transform 200ms ease;
+}
+
+.glass-nav-link {
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* small arrow marking links that go to another website */
+.glass-nav-ext {
+    width: 13px;
+    height: 13px;
+    opacity: 0.7;
+    transition: transform 200ms ease, opacity 200ms ease;
+}
+
+.glass-nav-link:hover .glass-nav-ext,
+.glass-nav-link:focus-visible .glass-nav-ext {
+    opacity: 1;
+    transform: translate(1px, -1px);
+}
+
+/* visually hidden text for screen readers */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.glass-nav-link:hover,
+.glass-nav-link:focus-visible {
+    color: #171c29;
+}
+
+/* ---------- Liquid glass CTA ----------
+   The wrapper carries the contrast() filter that
+   makes the blurred layers inside look like liquid
+   glass. It is kept on the button only, so navbar
+   text and links stay crisp. */
+
+.glass-cta-fx {
+    display: inline-flex;
+    flex-shrink: 0;
+    filter: contrast(var(--fx-contrast));
+}
+
+.glass-cta {
+    position: relative;
+    z-index: 5;
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 176px;
+    min-height: 54px;
+    padding: 7px 8px 7px 20px;
+    box-sizing: border-box;
+
+    border: 1px double rgba(51, 51, 51, 0.08);
+    border-radius: 999px;
+
+    background: rgba(0, 0, 0, 0.02);
+    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px);
+    color: #3e3e3e;
+    text-decoration: none;
+    user-select: none;
+    filter: brightness(0.9);
+
+    box-shadow:
+        inset 2px -2px 1px -1px rgba(255, 255, 255, 0.9),
+        inset -2px 2px 1px -1px rgba(255, 255, 255, 0.9),
+        inset 6px -6px 1px -6px rgba(255, 255, 255, 0.55),
+        inset -6px 6px 1px -6px rgba(255, 255, 255, 0.55),
+        inset 0 0 2px rgba(0, 0, 0, 0.8),
+        0 4px 8px rgba(0, 0, 0, 0.2);
+
+    transition:
+        transform 250ms ease,
+        background 250ms ease;
+}
+
+/* soft dark underside (fluid: sized by inset, not fixed px) */
+.glass-cta::before {
+    content: "";
+    position: absolute;
+    z-index: 1;
+    top: 35%;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.9);
+    filter: blur(8px);
+    pointer-events: none;
+}
+
+/* diagonal highlights */
+.glass-cta::after {
+    content: "";
+    position: absolute;
+    z-index: 501;
+    inset: 0;
+    border-radius: 999px;
+    filter: blur(7px);
+    pointer-events: none;
+    background: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.8) 0%,
+        transparent 15%,
+        transparent 85%,
+        rgba(255, 255, 255, 0.8) 100%
+    );
+}
+
+.glass-cta-glow {
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    filter: blur(1px);
+    pointer-events: none;
+}
+
+.glass-cta-text {
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    filter: drop-shadow(0 25px 3px rgba(102, 102, 102, 0.15));
+}
+
+.glass-cta-icon {
+    display: grid;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    place-items: center;
+    border-radius: 50%;
+    background: #3e3e3e;
+    color: #f5f5f5;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.3);
+    transition: transform 250ms ease;
+}
+
+.glass-cta-icon svg {
+    width: 17px;
+    height: 17px;
+}
+
+.glass-cta:hover {
+    background: rgba(0, 0, 0, 0);
+    transform: translateY(-3px);
+}
+
+.glass-cta:hover .glass-cta-icon {
+    transform: scale(1.1);
+}
+
+.glass-cta:active {
+    transform: scale(0.94);
+    color: #000;
+}
+
+.glass-cta:active .glass-cta-icon {
+    transform: scale(0.94);
+}
+
+/* ---------- Mobile menu button ---------- */
+
+.glass-menu-toggle {
+    display: none;
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.35);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    box-shadow:
+        inset 2px -2px 1px -1px rgba(255, 255, 255, 0.9),
+        inset -2px 2px 1px -1px rgba(255, 255, 255, 0.9),
+        0 3px 8px rgba(20, 30, 50, 0.12);
+    cursor: pointer;
+}
+
+.glass-menu-toggle span {
+    display: block;
+    width: 19px;
+    height: 2px;
+    border-radius: 2px;
+    background: #292e3a;
+    transition:
+        transform 200ms ease,
+        opacity 200ms ease;
+}
+
+.glass-menu-toggle.is-open span:first-child {
+    transform: translateY(4px) rotate(45deg);
+}
+
+.glass-menu-toggle.is-open span:last-child {
+    transform: translateY(-4px) rotate(-45deg);
+}
+
+/* ---------- Mobile dropdown ---------- */
+
+.glass-mobile-menu {
+    display: none;
+}
+
+/* ---------- Accessibility ---------- */
+
+.glass-navbar a:focus-visible,
+.glass-mobile-menu a:focus-visible,
+.glass-menu-toggle:focus-visible {
+    outline: 3px solid rgba(70, 100, 180, 0.6);
+    outline-offset: 4px;
+}
+
+/* ---------- Tablet ---------- */
+
+@media (max-width: 850px) {
+    .glass-header {
+        top: 10px;
+        padding: 0 16px;
+    }
+
+    .glass-navbar {
+        min-height: 68px;
+        padding: 9px 10px 9px 16px;
+        gap: 12px;
+        border-radius: 24px;
+    }
+
+    .glass-nav-links {
+        gap: 0;
+    }
+
+    .glass-nav-link {
+        padding: 11px 10px;
+        font-size: 13px;
+    }
+
+    .glass-cta {
+        min-width: auto;
+        min-height: 48px;
+        gap: 10px;
+        padding-left: 16px;
+    }
+
+    .glass-cta-text {
+        font-size: 14px;
+    }
+
+    .glass-cta-icon {
+        width: 34px;
+        height: 34px;
+    }
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 640px) {
+    .glass-header {
+        top: 8px;
+        padding: 0 12px;
+    }
+
+    .glass-navbar {
+        min-height: 64px;
+        gap: 10px;
+        padding: 8px 10px 8px 13px;
+        border-radius: 24px;
+    }
+
+    .brand-mark {
+        width: 39px;
+        height: 39px;
+        border-radius: 13px;
+        font-size: 20px;
+    }
+
+    .brand-name {
+        font-size: 14px;
+    }
+
+    .brand-name span {
+        font-size: 10px;
+    }
+
+    .glass-nav-links,
+    .glass-navbar > .glass-cta-fx {
+        display: none;
+    }
+
+    .glass-menu-toggle {
+        display: flex;
+    }
+
+    .glass-mobile-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        width: min(100%, 480px);
+        max-height: 0;
+        margin: 8px auto 0;
+        padding: 0 14px;
+        box-sizing: border-box;
+        overflow: hidden;
+        visibility: hidden;
+        opacity: 0;
+        transform: translateY(-8px);
+        pointer-events: none;
+
+        position: relative;
+        isolation: isolate;
+        border: 1px solid transparent;
+        border-radius: 26px;
+
+        transition:
+            max-height 280ms ease,
+            padding 280ms ease,
+            opacity 200ms ease,
+            transform 200ms ease,
+            visibility 200ms ease,
+            border-color 200ms ease;
+    }
+
+    .glass-mobile-menu.is-open {
+        max-height: 380px;
+        padding: 14px;
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+        border-color: rgba(255, 255, 255, 0.7);
+    }
+
+    .glass-mobile-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 12px;
+        border-radius: 16px;
+        color: #2c3240;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background 200ms ease;
+    }
+
+    .glass-mobile-link:hover {
+        background: rgba(255, 255, 255, 0.55);
+    }
+
+    .glass-mobile-link span {
+        color: #6d7585;
+    }
+
+    .glass-mobile-cta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 5px;
+        padding: 15px 14px;
+        border-radius: 16px;
+        background: rgba(41, 46, 58, 0.92);
+        color: #fff;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+        box-shadow:
+            inset 1px 1px 1px rgba(255, 255, 255, 0.25),
+            0 4px 10px rgba(20, 30, 50, 0.25);
+    }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+    .brand-name span {
+        display: none;
+    }
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .glass-navbar,
+    .glass-nav-link,
+    .glass-nav-indicator,
+    .glass-cta,
+    .glass-cta-icon,
+    .glass-menu-toggle span,
+    .glass-mobile-menu,
+    .glass-mobile-link {
+        transition: none;
+    }
+}
+
+/* ---------- Fallback when backdrop-filter is unsupported ---------- */
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-layer-blur {
+        background: rgba(245, 247, 252, 0.88);
+    }
+}

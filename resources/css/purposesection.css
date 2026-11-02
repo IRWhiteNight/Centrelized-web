@@ -1,0 +1,247 @@
+
+.purpose-section {
+    --purpose-ink: #17191c;
+    --purpose-muted: #6b7076;
+    --purpose-accent: #168dcc;
+    --purpose-line: #e6e7e8;
+    --purpose-bg: #ffffff;
+
+    position: relative;
+    padding: clamp(100px, 12vw, 170px) 0 36px;
+    overflow: hidden;
+    background: var(--purpose-bg);
+    color: var(--purpose-ink);
+}
+
+.purpose-container {
+    width: min(1180px, 86%);
+    margin: 0 auto;
+}
+
+/* Introduction */
+
+.purpose-intro {
+    max-width: 850px;
+    margin-bottom: clamp(75px, 10vw, 130px);
+}
+
+.purpose-eyebrow,
+.purpose-label {
+    display: block;
+    color: var(--purpose-muted);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    line-height: 1.6;
+}
+
+.purpose-intro h2 {
+    margin: 28px 0;
+    font-size: clamp(46px, 7.2vw, 88px);
+    font-weight: 500;
+    line-height: 1.02;
+    letter-spacing: -0.065em;
+}
+
+.purpose-intro h2 span {
+    color: #92979d;
+}
+
+.purpose-intro > p {
+    max-width: 470px;
+    margin: 0;
+    color: var(--purpose-muted);
+    font-size: clamp(15px, 1.4vw, 17px);
+    line-height: 1.85;
+}
+
+/* Two-column layout */
+
+.purpose-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(36px, 7vw, 100px);
+    align-items: stretch;
+}
+
+.purpose-group {
+    min-width: 0;
+}
+
+.purpose-heading {
+    min-height: 155px;
+    margin-bottom: 30px;
+}
+
+.purpose-heading h3 {
+    max-width: 430px;
+    margin: 22px 0 12px;
+    font-size: clamp(26px, 3vw, 38px);
+    font-weight: 500;
+    line-height: 1.16;
+    letter-spacing: -0.045em;
+}
+
+.purpose-group-intro {
+    margin: 0;
+    color: var(--purpose-muted);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+/* Vision and mission items */
+
+.purpose-list {
+    border-top: 1px solid var(--purpose-line);
+}
+
+.purpose-item {
+    display: grid;
+    grid-template-columns: 26px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+
+    padding: 27px 0;
+    border-bottom: 1px solid var(--purpose-line);
+
+    transition: padding-left 300ms ease;
+}
+
+.purpose-number {
+    padding-top: 4px;
+    color: #969ba1;
+    font-size: 10px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.purpose-item-content {
+    min-width: 0;
+}
+
+.purpose-item h4 {
+    margin: 0 0 9px;
+    font-size: clamp(17px, 1.5vw, 20px);
+    font-weight: 550;
+    line-height: 1.4;
+    letter-spacing: -0.035em;
+    transition: color 250ms ease;
+}
+
+.purpose-item p {
+    max-width: 390px;
+    margin: 0;
+    color: var(--purpose-muted);
+    font-size: 13px;
+    line-height: 1.85;
+}
+
+.purpose-item:hover {
+    padding-left: 6px;
+}
+
+.purpose-item:hover h4 {
+    color: var(--purpose-accent);
+}
+
+/* Closing statement */
+
+.purpose-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+
+    margin-top: clamp(75px, 10vw, 125px);
+    padding: 24px 0 8px;
+    border-top: 1px solid var(--purpose-line);
+}
+
+.purpose-footer p {
+    margin: 0;
+    font-size: clamp(16px, 2vw, 21px);
+    font-weight: 450;
+    letter-spacing: -0.035em;
+}
+
+.purpose-footer-mark {
+    color: var(--purpose-muted);
+    font-size: 9px;
+    letter-spacing: 1.4px;
+    text-align: right;
+}
+
+/* Scroll reveal */
+
+.purpose-reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+        opacity 700ms ease,
+        transform 700ms cubic-bezier(0.2, 0.65, 0.3, 1);
+    transition-delay: calc(var(--item-index, 0) * 70ms);
+}
+
+.purpose-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Responsive */
+
+@media (max-width: 760px) {
+    .purpose-container {
+        width: 88%;
+    }
+
+    .purpose-intro {
+        margin-bottom: 75px;
+    }
+
+    .purpose-intro h2 {
+        font-size: clamp(42px, 11vw, 64px);
+    }
+
+    .purpose-columns {
+        grid-template-columns: 1fr;
+        gap: 65px;
+    }
+
+    .purpose-heading {
+        min-height: auto;
+        margin-bottom: 24px;
+    }
+
+    .purpose-heading h3 {
+        font-size: clamp(27px, 7vw, 34px);
+    }
+
+    .purpose-item {
+        padding: 23px 0;
+        gap: 14px;
+    }
+
+    .purpose-footer {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: 75px;
+    }
+
+    .purpose-footer-mark {
+        text-align: left;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .purpose-reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+
+    .purpose-item,
+    .purpose-item h4 {
+        transition: none;
+    }
+}
