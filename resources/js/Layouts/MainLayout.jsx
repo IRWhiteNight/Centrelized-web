@@ -1,5 +1,5 @@
-import Navbar from '../Components/Navbar4';
-import Footer from '../Components/Footer';
+import Navbar from '../Components/PSB-Components/Navbar4';
+import Footer from '../Components/PSB-Components/Footer';
 import Splash from '../Components/Splash';
 
 export default function MainLayout({ children }) {

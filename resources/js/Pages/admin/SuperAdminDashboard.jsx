@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, usePage } from "@inertiajs/react";
 // Adjust this path to wherever you placed adminRoutes.js
 import { ROUTES, WORKSPACES } from "../../Components/Admin-Components/adminRoutes";
@@ -14,6 +15,11 @@ import "../../../css/admin-css/admin-dashboard.css";
    Source tables (from the ERD): users, sites, psb_applications,
    contact_enquiries, soft-deleted rows (deleted_at), audit_logs,
    login_attempts, posts / pages (status).
+
+   New in this version:
+     health  → one row per system service (status: "ok" | "warn" | "down").
+               Feed it from your own checks (queue, mail, public sites).
+   Everything else keeps the same shape as before.
 ------------------------------------------------------------------- */
 const defaultData = {
     stats: [
@@ -101,6 +107,13 @@ const defaultData = {
         suspended: 1,
         lastLogin: "Today, 08:42",
     },
+
+    health: [
+        { key: "psb", label: "PSB public site", status: "ok" },
+        { key: "coeuas", label: "COE-UAS public site", status: "ok" },
+        { key: "email", label: "Email service", status: "ok" },
+        { key: "audit", label: "Audit logging", status: "ok" },
+    ],
 };
 
 /* ------------------------------ helpers ------------------------------ */
@@ -115,6 +128,13 @@ function Icon({ name, size = 18 }) {
             <>
                 <path d="M3 13h5l1 3h6l1-3h5" />
                 <path d="M5 5h14l2 8v6H3v-6z" />
+            </>
+        ),
+        activity: <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />,
+        lock: (
+            <>
+                <rect x="4" y="11" width="16" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4M12 15v2" />
             </>
         ),
     };
@@ -161,7 +181,73 @@ const ACTION_LABEL = {
     RESTORE: "Restored",
 };
 
+const HEALTH_LABEL = { ok: "Operational", warn: "Degraded", down: "Down" };
+
+function greetingFor(date = new Date()) {
+    const hour = date.getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+}
+
 /* ------------------------------ pieces ------------------------------- */
+
+function Hero({ name, data }) {
+    const first = (name || "Super Administrator").split(" ")[0];
+    const today = new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    const failed = data.security?.failed ?? 0;
+    const allWell = data.health.every((h) => h.status === "ok");
+
+    return (
+        <section className="dash-hero" aria-labelledby="dash-title">
+            <div className="hero-main">
+                <p className="hero-date">{today}</p>
+                <h1 id="dash-title">{greetingFor()}, {first}</h1>
+                <p className="hero-summary">
+                    <strong>{data.attention.headline}.</strong>{" "}
+                    {failed > 0
+                        ? `${failed} failed sign-in${failed === 1 ? "" : "s"} in the last 24 hours.`
+                        : "No failed sign-ins in the last 24 hours."}
+                </p>
+
+                <div className="hero-actions">
+                    <Link href={ROUTES.users} className="btn-yellow btn-lg">
+                        <Icon name="plus" size={16} />
+                        Add Admin User
+                    </Link>
+                    <Link href={data.attention.href} className="btn-light">
+                        <Icon name="inbox" size={16} />
+                        {data.attention.cta}
+                    </Link>
+                    <Link href={ROUTES.auditLogs} className="btn-light">
+                        <Icon name="activity" size={16} />
+                        View Audit Logs
+                    </Link>
+                    <Link href={ROUTES.securityEvents} className="btn-light">
+                        <Icon name="lock" size={16} />
+                        Security Events
+                    </Link>
+                </div>
+            </div>
+
+            <aside className="hero-health" aria-label="System status">
+                <p className={`hero-health-title ${allWell ? "" : "is-warn"}`}>
+                    <span className="health-pulse" aria-hidden="true" />
+                    {allWell ? "All systems operational" : "Some services need attention"}
+                </p>
+                <ul>
+                    {data.health.map((item) => (
+                        <li key={item.key}>
+                            <span className={`health-dot is-${item.status}`} aria-hidden="true" />
+                            <span className="health-label">{item.label}</span>
+                            <span className={`health-state is-${item.status}`}>{HEALTH_LABEL[item.status] || item.status}</span>
+                        </li>
+                    ))}
+                </ul>
+            </aside>
+        </section>
+    );
+}
 
 function StatCard({ stat }) {
     return (
@@ -325,6 +411,12 @@ function SitesCard({ sites }) {
 }
 
 function RecentActivity({ items }) {
+    const [filter, setFilter] = useState("all");
+
+    // filter chips come from the actions that are actually in the list
+    const actions = [...new Set(items.map((item) => item.action))];
+    const shown = filter === "all" ? items : items.filter((item) => item.action === filter);
+
     return (
         <article className="dash-card recent-card">
             <header className="card-head">
@@ -334,9 +426,23 @@ function RecentActivity({ items }) {
                 </Link>
             </header>
 
+            {actions.length > 1 && (
+                <div className="recent-filters" role="group" aria-label="Filter recent activity">
+                    <button type="button" className={filter === "all" ? "is-on" : ""} aria-pressed={filter === "all"} onClick={() => setFilter("all")}>
+                        All
+                    </button>
+                    {actions.map((action) => (
+                        <button key={action} type="button" className={filter === action ? "is-on" : ""} aria-pressed={filter === action} onClick={() => setFilter(action)}>
+                            {ACTION_LABEL[action] || action}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             <ul className="recent-list">
-                {items.map((item, index) => (
-                    <li key={index} className="recent-row">
+                {shown.length === 0 && <li className="recent-empty">No recent activity matches this filter.</li>}
+                {shown.map((item, index) => (
+                    <li key={`${item.user}-${item.entity}-${index}`} className="recent-row">
                         <span className={`recent-avatar avatar-${index % 3}`}>
                             {initialsOf(item.user)}
                         </span>
@@ -469,26 +575,7 @@ export default function SuperAdminDashboard() {
 
     return (
         <div className="admin-dashboard">
-            <div className="dashboard-heading">
-                <div>
-                    <h1>Dashboard</h1>
-                    <p>
-                        Monitor every site, administrator account and logged action in one place.
-                    </p>
-                </div>
-
-                <div className="dashboard-actions">
-                    <Link href={ROUTES.users} className="btn-dark">
-                        <span className="btn-plus">
-                            <Icon name="plus" size={15} />
-                        </span>
-                        Add Admin User
-                    </Link>
-                    <Link href={ROUTES.auditLogs} className="btn-outline">
-                        View Audit Logs
-                    </Link>
-                </div>
-            </div>
+            <Hero name={props.auth?.user?.name} data={data} />
 
             <div className="dashboard-grid">
                 {data.stats.map((stat) => (

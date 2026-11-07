@@ -121,13 +121,13 @@ function Badge({ value }) {
     return <span className="cu-badge">{value > 99 ? "99+" : value}</span>;
 }
 
-function SidebarGroup({ item, active, collapsed, open, onToggle, counts }) {
+function SidebarGroup({ item, active, collapsed, open, onToggle, onOpen, counts }) {
     const childActive = item.children.some((child) => child.href === active);
 
     if (collapsed) {
         return (
             <Link
-                href={item.children[0].href}
+                href={item.href ?? item.children[0].href}
                 className={`cu-nav-item ${childActive ? "is-active" : ""}`}
                 title={item.label}
             >
@@ -143,7 +143,16 @@ function SidebarGroup({ item, active, collapsed, open, onToggle, counts }) {
             <button
                 type="button"
                 className={`cu-nav-item ${childActive ? "has-active-child" : ""}`}
-                onClick={onToggle}
+                onClick={() => {
+                    // A group with its own href (e.g. Home Page) opens its page AND its dropdown.
+                    // Once you are already inside the group, the click just folds/unfolds it.
+                    if (item.href && !childActive) {
+                        onOpen();
+                        router.visit(item.href);
+                    } else {
+                        onToggle();
+                    }
+                }}
                 aria-expanded={open}
             >
                 <span className="cu-nav-icon"><Icon name={item.icon} size={19} /></span>
@@ -196,6 +205,8 @@ export function COEUASSidebar({ collapsed, onToggleCollapse, mobileOpen, onClose
         }
     }, [activeGroupKey]);
 
+    const openKey = (key) => setOpenKeys((keys) => (keys.includes(key) ? keys : [...keys, key]));
+
     const toggleKey = (key) =>
         setOpenKeys((keys) => (keys.includes(key) ? keys.filter((k) => k !== key) : [...keys, key]));
 
@@ -246,6 +257,7 @@ export function COEUASSidebar({ collapsed, onToggleCollapse, mobileOpen, onClose
                                         collapsed={collapsed}
                                         open={openKeys.includes(item.key)}
                                         onToggle={() => toggleKey(item.key)}
+                                        onOpen={() => openKey(item.key)}
                                     />
                                 );
                             }

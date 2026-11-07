@@ -1,0 +1,205 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+/* ==========================================================
+   ADMIN LOGIN — black · yellow · white. All classes start with al-
+   Layout: picture card (left) + form (right) inside one dark frame.
+   The drone perches on the TOP EDGE of that frame, outside it.
+   Drone is driven by CSS variables set from AdminLogin.jsx:
+   --rot (rotor turn time)  --power (0–1)  --lift (px)  --gaze (lens glint)
+========================================================== */
+.al-page {
+    --black: #0a0a0a; --panel: #141414; --field: #232323; --line: rgba(255, 255, 255, .1);
+    --yellow: #facc15; --yellow-deep: #eab308; --muted: #9a9a9a;
+    --font: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --dw: clamp(230px, 28vw, 360px);                      /* drone width */
+    position: relative; min-height: 100vh; display: grid; place-items: center;
+    padding: calc(var(--dw) * .62 + 28px) 20px 32px; overflow: hidden;
+    background:
+        radial-gradient(900px 520px at 14% 8%, rgba(250, 204, 21, .14), transparent 60%),
+        radial-gradient(700px 480px at 94% 98%, rgba(250, 204, 21, .07), transparent 60%),
+        var(--black);
+    font-family: var(--font); color: #fff; -webkit-font-smoothing: antialiased;
+}
+.al-page *, .al-page *::before, .al-page *::after { box-sizing: border-box; }
+
+.al-wrap { position: relative; width: min(1020px, 100%); }
+
+/* ================= frame ================= */
+.al-shell {
+    position: relative; z-index: 2; min-height: 590px;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    border-radius: 30px; background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: 0 40px 90px rgba(0, 0, 0, .6);
+}
+
+/* ================= LEFT: picture card ================= */
+.al-visual { position: relative; margin: 14px; border-radius: 22px; overflow: hidden; background: #1b1b1b; isolation: isolate; min-height: 420px; }
+.al-slide {
+    position: absolute; inset: 0; z-index: -2; background-size: cover; background-position: center;
+    opacity: 0; transform: scale(1.06); transition: opacity 1.1s ease, transform 7s ease-out;
+}
+.al-slide.is-on { opacity: 1; transform: scale(1); }
+.al-visual-shade {
+    position: absolute; inset: 0; z-index: -1;
+    background: linear-gradient(180deg, rgba(10, 10, 10, .5) 0%, rgba(10, 10, 10, 0) 28%, rgba(10, 10, 10, 0) 48%, rgba(10, 10, 10, .82) 100%);
+}
+.al-visual-top { position: absolute; top: 22px; left: 24px; right: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.al-logo { display: inline-flex; align-items: center; gap: 10px; color: #fff; }
+.al-logo svg { color: var(--yellow); flex: none; }
+.al-logo b { font-size: 13px; font-weight: 800; letter-spacing: .02em; line-height: 1.15; }
+.al-back {
+    flex: none; padding: 8px 15px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: #fff; text-decoration: none;
+    background: rgba(255, 255, 255, .16); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    transition: background .2s, color .2s;
+}
+.al-back:hover { background: var(--yellow); color: var(--black); }
+.al-back:focus-visible { outline: 3px solid var(--yellow); outline-offset: 2px; }
+
+.al-visual-bottom { position: absolute; left: 24px; right: 24px; bottom: 26px; text-align: center; }
+.al-caption { margin: 0 0 22px; font-size: clamp(22px, 2.5vw, 30px); line-height: 1.22; font-weight: 600; letter-spacing: -.015em; animation: al-rise .8s cubic-bezier(.22, 1, .36, 1); }
+.al-dashes { display: flex; justify-content: center; gap: 8px; }
+.al-dashes button { width: 30px; height: 4px; padding: 0; border: 0; border-radius: 4px; background: rgba(255, 255, 255, .32); cursor: pointer; transition: background .3s, width .3s; }
+.al-dashes button.is-on { width: 44px; background: var(--yellow); }
+.al-dashes button:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+
+/* ================= RIGHT: form ================= */
+.al-card { position: relative; min-width: 0; padding: clamp(28px, 4.6vw, 56px) clamp(24px, 4.4vw, 52px); display: flex; flex-direction: column; justify-content: center; }
+.al-card h1 { margin: 0; font-size: clamp(34px, 4vw, 46px); line-height: 1.05; font-weight: 800; letter-spacing: -.035em; }
+.al-sub { margin: 14px 0 28px; font-size: 14px; line-height: 1.55; color: var(--muted); max-width: 42ch; }
+.al-ok { margin: 0 0 16px; padding: 10px 14px; border-radius: 10px; background: rgba(34, 197, 94, .14); color: #4ade80; font-size: 13px; font-weight: 600; }
+
+.al-field { display: block; margin-bottom: 14px; }
+.al-field > span { display: block; margin: 0 0 7px 2px; font-size: 12.5px; font-weight: 600; color: #d4d4d4; }
+.al-input {
+    display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 8px 0 16px;
+    border-radius: 10px; background: var(--field); border: 1.5px solid transparent;
+    transition: border-color .2s, background .2s, box-shadow .2s;
+}
+.al-input.is-focus { background: #1c1c1c; border-color: var(--yellow); box-shadow: 0 0 0 4px rgba(250, 204, 21, .16); }
+.al-input input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; font: 500 14.5px var(--font); color: #fff; }
+.al-input input::placeholder { color: #737373; }
+.al-input input:disabled { opacity: .65; }
+.al-input input:-webkit-autofill { -webkit-text-fill-color: #fff; box-shadow: 0 0 0 40px var(--field) inset; caret-color: #fff; }
+.al-eye { width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: #a3a3a3; display: grid; place-items: center; cursor: pointer; }
+.al-eye:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.al-eye:focus-visible { outline: 2px solid var(--yellow); }
+.al-caps { display: block; margin: 7px 0 0 2px; font-size: 12px; font-style: normal; font-weight: 700; color: #fbbf24; }
+
+.al-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 6px 0 4px; font-size: 13px; }
+.al-check { position: relative; display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; color: #d4d4d4; user-select: none; }
+.al-check input { position: absolute; opacity: 0; pointer-events: none; }
+.al-check i { width: 20px; height: 20px; border-radius: 5px; border: 1.5px solid #525252; background: transparent; display: grid; place-items: center; transition: .2s; }
+.al-check input:checked + i { background: var(--yellow); border-color: var(--yellow); }
+.al-check input:checked + i::after { content: ''; width: 9px; height: 5px; border: solid var(--black); border-width: 0 0 2.5px 2.5px; transform: translateY(-1px) rotate(-45deg); }
+.al-check input:focus-visible + i { outline: 3px solid var(--yellow); outline-offset: 2px; }
+.al-link { color: var(--yellow); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgba(250, 204, 21, .45); }
+.al-link:hover { text-decoration-color: var(--yellow); }
+
+.al-error { min-height: 22px; margin: 8px 2px; font-size: 13px; font-weight: 600; color: #f87171; }
+
+.al-submit {
+    width: 100%; height: 50px; border: 0; border-radius: 10px; cursor: pointer;
+    background: var(--yellow); color: var(--black); font: 800 15px var(--font); letter-spacing: .01em;
+    transition: transform .2s, background .2s, box-shadow .2s;
+}
+.al-submit:hover:not(:disabled) { background: #fff; transform: translateY(-1px); box-shadow: 0 10px 26px rgba(250, 204, 21, .25); }
+.al-submit:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.al-submit:disabled { cursor: progress; opacity: .88; }
+.al-phase-flying .al-submit { background: #22c55e; color: #fff; }
+
+.al-or { display: flex; align-items: center; gap: 14px; margin: 24px 0 14px; font-size: 12px; color: #7c7c7c; }
+.al-or::before, .al-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.al-foot { margin: 0; text-align: center; font-size: 12px; line-height: 1.5; color: #7c7c7c; }
+.al-demo { margin: 14px 0 0; padding: 8px 14px; border-radius: 10px; background: rgba(250, 204, 21, .1); font-size: 12px; color: #fde68a; text-align: center; }
+.al-demo code { font-weight: 800; color: var(--yellow); }
+.al-card.is-shake { animation: al-shake .5s; }
+
+/* ================= status readout (outside the frame, top-left) ================= */
+.al-tele { position: absolute; z-index: 3; left: 6px; bottom: calc(100% + 18px); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; max-width: calc(100% - var(--dw) - 90px); }
+.al-chip {
+    display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px;
+    background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .14);
+    font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+}
+.al-chip i { width: 8px; height: 8px; border-radius: 50%; background: #6b7280; transition: background .3s, box-shadow .3s; }
+.al-phase-armed .al-chip i    { background: var(--yellow); box-shadow: 0 0 10px var(--yellow); animation: al-blink 1s infinite; }
+.al-phase-checking .al-chip i { background: #fff; box-shadow: 0 0 10px #fff; animation: al-blink .45s infinite; }
+.al-phase-flying .al-chip i   { background: #22c55e; box-shadow: 0 0 12px #22c55e; }
+.al-phase-denied .al-chip i   { background: #ef4444; box-shadow: 0 0 12px #ef4444; }
+.al-rpm { font-size: 11.5px; font-weight: 600; letter-spacing: .1em; color: rgba(255, 255, 255, .55); }
+.al-rpm b { color: var(--yellow); font-weight: 800; font-variant-numeric: tabular-nums; }
+.al-statusText { flex-basis: 100%; margin: 0; font-size: 13.5px; color: rgba(255, 255, 255, .72); }
+
+/* ================= the drone (perched on the frame's top edge) ================= */
+.al-droneWrap {
+    position: absolute; z-index: 4; right: clamp(20px, 6%, 70px); bottom: calc(100% - 8px); width: var(--dw);
+    pointer-events: none;
+}
+.al-drone { transform: translateY(calc(var(--lift, 0px) * -1)); transition: transform .5s cubic-bezier(.22, 1, .36, 1); filter: drop-shadow(0 16px 14px rgba(0, 0, 0, .55)); }
+.al-drone-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.al-phase-armed .al-drone-svg, .al-phase-checking .al-drone-svg { animation: al-vib .13s linear infinite; }
+
+/* soft rim light so the dark drone reads against the dark page */
+.al-droneWrap::before {
+    content: ''; position: absolute; left: 6%; right: 6%; top: 10%; bottom: -4%; z-index: -1; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(250, 204, 21, .22), rgba(250, 204, 21, .06) 60%, transparent);
+    filter: blur(8px); transition: opacity .4s; opacity: calc(.45 + var(--power, 0) * .55);
+}
+
+/* propellers */
+.al-blade { transform-box: fill-box; transform-origin: center; animation: al-spin var(--rot, .85s) linear infinite; animation-play-state: paused; }
+.al-blur { opacity: calc(var(--power, 0) * .95); transition: opacity .3s; }
+.al-phase-armed .al-blade, .al-phase-checking .al-blade, .al-phase-flying .al-blade { animation-play-state: running; }
+.al-phase-denied .al-blade { animation-play-state: running; animation-duration: 1.2s; }   /* spins down */
+.al-phase-idle .al-blade { transform: scaleX(1); }
+
+/* status light on the body */
+.al-led { fill: #3f3f46; transition: fill .3s; }
+.al-phase-armed .al-led { fill: var(--yellow); animation: al-blink 1s infinite; }
+.al-phase-checking .al-led { fill: #fff; animation: al-blink .4s infinite; }
+.al-phase-flying .al-led { fill: #22c55e; }
+.al-phase-denied .al-led { fill: #ef4444; }
+
+/* lens glint follows the field you are typing in */
+.al-pupil { transform: translate(var(--gaze, 0 0)); transition: transform .35s cubic-bezier(.22, 1, .36, 1); }
+.al-phase-denied .al-pupil { transform: translate(0, 2px); }
+
+/* take-off: lifts, banks and flies off across the whole page */
+.al-droneWrap.is-flying { animation: al-takeoff 2.3s cubic-bezier(.45, 0, .7, .4) forwards; }
+.al-droneWrap.is-denied { animation: al-nope .55s ease-in-out; }
+
+/* ================= motion ================= */
+@keyframes al-spin   { 0% { transform: scaleX(1); } 25% { transform: scaleX(.04); } 50% { transform: scaleX(-1); } 75% { transform: scaleX(.04); } 100% { transform: scaleX(1); } }
+@keyframes al-vib    { 0% { transform: translate(0, 0); } 25% { transform: translate(.7px, -.5px); } 50% { transform: translate(-.6px, .4px); } 75% { transform: translate(.5px, .6px); } 100% { transform: translate(0, 0); } }
+@keyframes al-blink  { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+@keyframes al-rise   { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes al-takeoff {
+    0%   { transform: translate(0, 0) rotate(0) scale(1); opacity: 1; }
+    20%  { transform: translate(0, -34px) rotate(-2deg) scale(1); }
+    45%  { transform: translate(6vw, -14vh) rotate(-8deg) scale(.96); }
+    100% { transform: translate(62vw, -92vh) rotate(11deg) scale(.28); opacity: 0; }
+}
+@keyframes al-nope   { 0%, 100% { transform: none; } 20% { transform: translateX(-9px) rotate(-2deg); } 40% { transform: translateX(9px) rotate(2deg); } 60% { transform: translateX(-6px) rotate(-1.5deg); } 80% { transform: translateX(4px) rotate(1deg); } }
+@keyframes al-shake  { 0%, 100% { transform: none; } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(4px); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .al-page *, .al-page *::before, .al-page *::after { animation: none !important; transition: none !important; }
+    .al-slide.is-on { transform: none; }
+    .al-droneWrap.is-flying { opacity: 0; }
+}
+
+/* ================= responsive ================= */
+@media (max-width: 880px) {
+    .al-page { --dw: 210px; }
+    .al-shell { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+    .al-visual { min-height: 250px; }
+    .al-caption { font-size: 20px; margin-bottom: 16px; }
+    .al-visual-bottom { bottom: 18px; }
+    .al-statusText { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }   /* still read by screen readers */
+}
+@media (max-width: 420px) {
+    .al-page { padding-left: 14px; padding-right: 14px; }
+    .al-logo b { display: none; }
+    .al-row { flex-direction: column; align-items: flex-start; }
+}

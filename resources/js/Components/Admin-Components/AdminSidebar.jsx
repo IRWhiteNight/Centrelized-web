@@ -3,6 +3,43 @@ import { Link, usePage } from "@inertiajs/react";
 import { ROUTES, WORKSPACES, isPathActive } from "./adminRoutes";
 import "../../../css/admin-css/admin-sidebar.css";
 
+/* ====================================================================
+   SUPER ADMIN SIDEBAR
+
+   • Black card with a yellow active state, matching the topbar.
+   • Sections collapse and stay collapsed (remembered in this browser). The section that
+     holds the current page always stays open.
+   • Live badges: send an optional `sidebar` Inertia prop and the menu shows what needs
+     attention. Nothing shows while a count is 0 or missing.
+         'sidebar' => [
+             'counts' => ['users' => 2, 'securityEvents' => 5, 'trash' => 12],
+             'systemOnline' => true,
+         ]
+       users           → suspended admin accounts
+       securityEvents  → failed sign-ins and denied access since the last review
+       trash           → items waiting in Content Trash
+==================================================================== */
+
+const STORAGE_KEY = "admin.sidebar.collapsed";
+
+function loadCollapsed() {
+    if (typeof window === "undefined") return [];
+    try {
+        const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
+        return Array.isArray(saved) ? saved : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveCollapsed(list) {
+    try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    } catch {
+        /* storage can be blocked; the menu still works */
+    }
+}
+
 const Icon = ({ name, size = 19 }) => {
     const icons = {
         dashboard: (
@@ -60,6 +97,7 @@ const Icon = ({ name, size = 19 }) => {
         ),
         menu: <path d="M4 6h16M4 12h16M4 18h16" />,
         close: <path d="M18 6 6 18M6 6l12 12" />,
+        chevron: <path d="m6 9 6 6 6-6" />,
         plane: (
             <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
         ),
@@ -87,15 +125,16 @@ const coeuas = WORKSPACES.find((w) => w.code === "COEUAS");
 const vertiport = WORKSPACES.find((w) => w.code === "VERTIPORT");
 
 // Every page of the Super Admin Console from the Site Map, in menu order.
+// `count` names a key in the optional `sidebar.counts` prop; `alert` makes its badge red.
 const navigation = [
     {
-        title: "OVERVIEW",
+        title: "Overview",
         items: [
             { label: "Dashboard", href: ROUTES.dashboard, icon: "dashboard", exact: true },
         ],
     },
     {
-        title: "SITES",
+        title: "Sites",
         items: [
             { label: "Site Workspaces", href: ROUTES.workspaces, icon: "workspace" },
             { label: psb.short, href: psb.href, tone: psb.tone, child: true },
@@ -111,27 +150,27 @@ const navigation = [
         ],
     },
     {
-        title: "ADMINISTRATION",
+        title: "Administration",
         items: [
-            { label: "Admin Users", href: ROUTES.users, icon: "users" },
+            { label: "Admin Users", href: ROUTES.users, icon: "users", count: "users" },
             { label: "Roles & Permissions", href: ROUTES.roles, icon: "shield" },
         ],
     },
     {
-        title: "AUDIT & SECURITY",
+        title: "Audit & security",
         items: [
             { label: "Audit Logs", href: ROUTES.auditLogs, icon: "activity" },
-            { label: "Security Events", href: ROUTES.securityEvents, icon: "lock" },
+            { label: "Security Events", href: ROUTES.securityEvents, icon: "lock", count: "securityEvents", alert: true },
         ],
     },
     {
-        title: "GOVERNANCE",
+        title: "Governance",
         items: [
-            { label: "Content Trash", href: ROUTES.trash, icon: "trash" },
+            { label: "Content Trash", href: ROUTES.trash, icon: "trash", count: "trash" },
         ],
     },
     {
-        title: "GENERAL",
+        title: "General",
         items: [
             { label: "System Settings", href: ROUTES.settings, icon: "settings" },
             { label: "My Account", href: ROUTES.account, icon: "user" },
@@ -141,14 +180,27 @@ const navigation = [
 
 export default function AdminSidebar() {
     const [isOpen, setIsOpen] = useState(false);
-    const { url } = usePage();
+    const [collapsed, setCollapsed] = useState(loadCollapsed);
+    const { url, props } = usePage();
+
+    const counts = props.sidebar?.counts || {};
+    const systemOnline = props.sidebar?.systemOnline !== false;
 
     useEffect(() => {
         setIsOpen(false);
     }, [url]);
 
+    const toggleSection = (title) => {
+        setCollapsed((current) => {
+            const next = current.includes(title) ? current.filter((t) => t !== title) : [...current, title];
+            saveCollapsed(next);
+            return next;
+        });
+    };
+
     const renderItem = (item) => {
         const active = !item.reserved && isPathActive(url, item.href, item.exact);
+        const count = item.count ? Number(counts[item.count]) || 0 : 0;
         const classes = [
             "admin-nav-link",
             item.child ? "child" : "",
@@ -166,8 +218,14 @@ export default function AdminSidebar() {
                 ) : (
                     <span className={`admin-nav-dot tone-${item.tone}`} />
                 )}
-                <span>{item.label}</span>
+                <span className="admin-nav-label">{item.label}</span>
                 {item.badge && <span className="admin-nav-badge">{item.badge}</span>}
+                {count > 0 && (
+                    <span className={`admin-nav-count ${item.alert ? "is-alert" : ""}`}>
+                        {count > 99 ? "99+" : count}
+                        <span className="admin-sr-only"> need attention</span>
+                    </span>
+                )}
             </>
         );
 
@@ -186,7 +244,7 @@ export default function AdminSidebar() {
         }
 
         return (
-            <Link key={item.href} href={item.href} className={classes}>
+            <Link key={item.href} href={item.href} className={classes} aria-current={active ? "page" : undefined}>
                 {content}
             </Link>
         );
@@ -198,6 +256,7 @@ export default function AdminSidebar() {
                 className="admin-mobile-toggle"
                 onClick={() => setIsOpen(!isOpen)}
                 aria-label="Toggle sidebar"
+                aria-expanded={isOpen}
             >
                 <Icon name={isOpen ? "close" : "menu"} size={22} />
             </button>
@@ -223,38 +282,64 @@ export default function AdminSidebar() {
 
                 {/* NAVIGATION */}
                 <nav className="admin-navigation" aria-label="Super Admin navigation">
-                    {navigation.map((section) => (
-                        <div className="admin-nav-section" key={section.title}>
-                            <p className="admin-nav-heading">{section.title}</p>
+                    {navigation.map((section) => {
+                        const hasActive = section.items.some(
+                            (item) => !item.reserved && isPathActive(url, item.href, item.exact)
+                        );
+                        const open = hasActive || !collapsed.includes(section.title);
+                        const listId = `admin-nav-${section.title.toLowerCase().replace(/[^a-z]+/g, "-")}`;
+                        const isGeneral = section.title === "General";
 
-                            {section.items.map(renderItem)}
-
-                            {section.title === "GENERAL" && (
-                                <Link
-                                    href={ROUTES.logout}
-                                    method="post"
-                                    as="button"
-                                    className="admin-nav-link admin-logout"
+                        return (
+                            <div className="admin-nav-section" key={section.title}>
+                                <button
+                                    type="button"
+                                    className="admin-nav-heading"
+                                    aria-expanded={open}
+                                    aria-controls={listId}
+                                    onClick={() => toggleSection(section.title)}
                                 >
-                                    <Icon name="logout" />
-                                    <span>Sign Out</span>
-                                </Link>
-                            )}
-                        </div>
-                    ))}
+                                    <span>{section.title}</span>
+                                    <span className={`admin-nav-chevron ${open ? "is-open" : ""}`}>
+                                        <Icon name="chevron" size={14} />
+                                    </span>
+                                </button>
+
+                                <div id={listId} hidden={!open}>
+                                    {section.items.map(renderItem)}
+                                </div>
+
+                                {/* Sign out stays visible even when General is collapsed */}
+                                {isGeneral && (
+                                    <Link
+                                        href={ROUTES.logout}
+                                        method="post"
+                                        as="button"
+                                        className="admin-nav-link admin-logout"
+                                    >
+                                        <Icon name="logout" />
+                                        <span className="admin-nav-label">Sign Out</span>
+                                    </Link>
+                                )}
+                            </div>
+                        );
+                    })}
                 </nav>
 
                 {/* BOTTOM CARD */}
                 <div className="admin-sidebar-card">
-                    <div className="admin-sidebar-card-status">
+                    <div className={`admin-sidebar-card-status ${systemOnline ? "" : "is-warn"}`}>
                         <span className="admin-status-indicator" />
-                        System Online
+                        {systemOnline ? "System online" : "Needs attention"}
                     </div>
                     <h3>Recent activity</h3>
                     <p>See who changed what across all sites.</p>
                     <Link href={ROUTES.auditLogs} className="admin-sidebar-card-button">
                         Open Audit Logs
                     </Link>
+                    <span className="admin-sidebar-card-hint">
+                        Search anything with <kbd>⌘ K</kbd>
+                    </span>
                 </div>
             </aside>
         </>

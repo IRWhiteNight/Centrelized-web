@@ -1,0 +1,63 @@
+/* ==========================================================================
+   PSB MOTION LAYER  —  /resources/css/PSB-css/motion.css
+   Import AFTER home.css. Pure additive: delete the import to go back.
+   Effects: stacking sticky sections (curtain), card-style corners + depth,
+   dimming/scaling of the section being covered, mask reveals for headings
+   and images, cursor glow, magnetic buttons.
+   JS in Home.jsx sets:  --stick (per section)   --cv (0..1 "covered" amount)
+========================================================================== */
+
+/* 1. STACKING SECTIONS — each section sticks, the next one slides over it */
+.psb > section.p-sec { position: sticky; top: var(--stick, 0px); }
+
+/* the one being covered: dims + shrinks back into the page */
+.psb > section.p-sec::after {
+    content: ''; position: absolute; inset: 0; z-index: 6; pointer-events: none;
+    background: #000; opacity: calc(var(--cv, 0) * .78);
+}
+.psb > section.p-sec > .p-wrap {
+    transform: translateY(calc(var(--cv, 0) * -44px)) scale(calc(1 - var(--cv, 0) * .07));
+    transform-origin: 50% 100%; will-change: transform;
+}
+
+/* sections that slide over look like cards with depth */
+.psb > section.p-sec:not(.p-hero) {
+    border-radius: clamp(26px, 4vw, 60px) clamp(26px, 4vw, 60px) 0 0;
+    box-shadow: 0 -40px 90px -30px rgba(0, 0, 0, .6);
+}
+
+/* 2. HEADINGS — masked rise instead of a plain fade */
+.psb .p-head h2.p-rv {
+    clip-path: inset(0 0 100% 0);
+    transform: translate3d(0, 70px, 0) skewY(4deg); transform-origin: left top;
+    transition: clip-path 1.2s var(--ease) calc(var(--d, 0) * 1ms),
+                transform 1.3s var(--ease) calc(var(--d, 0) * 1ms),
+                opacity .6s var(--ease) calc(var(--d, 0) * 1ms);
+}
+.psb .p-head h2.p-rv.p-in { clip-path: inset(-12% -2% -12% -2%); transform: none; }
+
+/* 3. BIG IMAGES — curtain open as they enter */
+.psb .p-parallax { transition: clip-path 1.5s var(--ease); clip-path: inset(0 round 20px); }
+.psb .p-rv:not(.p-in) .p-parallax { clip-path: inset(16% 12% round 34px); }
+
+/* 4. CURSOR GLOW */
+.psb .p-cursor {
+    position: fixed; left: 0; top: 0; z-index: 90; width: 460px; height: 460px; margin: -230px 0 0 -230px;
+    border-radius: 50%; pointer-events: none; mix-blend-mode: screen;
+    background: radial-gradient(circle, rgba(255, 196, 0, .2), transparent 65%);
+    transform: translate3d(var(--cx, -999px), var(--cy, -999px), 0); transition: transform .28s ease-out;
+}
+
+/* 5. MAGNETIC BUTTONS */
+.psb .p-btn { transform: translate(var(--bx, 0px), var(--by, 0px)); }
+.psb .p-btn:hover { transform: translate(var(--bx, 0px), calc(var(--by, 0px) - 3px)); }
+
+/* 6. SAFETY: touch + reduced motion fall back to a normal page */
+@media (hover: none) { .psb .p-cursor { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+    .psb > section.p-sec { position: relative; top: auto; }
+    .psb > section.p-sec::after { display: none; }
+    .psb > section.p-sec > .p-wrap { transform: none; }
+    .psb .p-head h2.p-rv { clip-path: none; }
+    .psb .p-cursor { display: none; }
+}

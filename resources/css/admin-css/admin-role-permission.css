@@ -1,149 +1,241 @@
-/* Uses the tokens defined in admin-sidebar.css (:root --admin-*).
-   Self-contained: it does not depend on admin-dashboard.css being loaded. */
+
+/* =========================================================
+   SUPER ADMIN — ROLES & PERMISSIONS
+   PREMIUM BLACK / GRAPHITE / SIGNAL YELLOW THEME
+   Rich gradients • Subtle glow • Clean borders
+   JSX remains unchanged.
+   ========================================================= */
 
 .admin-roles {
+    --rp-bg: #090a0b;
+    --rp-surface: #111315;
+    --rp-surface-2: #171a1d;
+    --rp-surface-3: #202429;
+    --rp-line: #30353a;
+    --rp-line-soft: #252a2e;
+    --rp-text: #f4f4f0;
+    --rp-muted: #969b9e;
+    --rp-yellow: #facc15;
+    --rp-yellow-hover: #ffe45c;
+    --rp-yellow-ink: #111111;
+    --rp-red: #ff7770;
+    --rp-green: #a3d977;
+
+    --rp-gradient-gold: linear-gradient(
+        120deg,
+        #facc15 0%,
+        #f5b900 48%,
+        #e89b00 100%
+    );
+
+    --rp-gradient-dark: linear-gradient(
+        145deg,
+        #1c2023 0%,
+        #131619 48%,
+        #0d0f11 100%
+    );
+
+    --rp-gradient-card: linear-gradient(
+        145deg,
+        rgba(34, 38, 41, .92) 0%,
+        rgba(19, 22, 24, .98) 58%,
+        rgba(13, 15, 17, .98) 100%
+    );
+
+    --rp-gradient-active: linear-gradient(
+        115deg,
+        rgba(250, 204, 21, .19) 0%,
+        rgba(234, 179, 8, .09) 48%,
+        rgba(30, 26, 8, .4) 100%
+    );
+
     display: flex;
     flex-direction: column;
     gap: 20px;
-    padding: 20px 0 14px;
+    min-width: 0;
+    padding: 20px 0 16px;
+    color: var(--rp-text);
     font-family: var(--admin-font, "Plus Jakarta Sans", system-ui, sans-serif);
-    color: var(--admin-ink, #171717);
 }
 
-/* HEADING */
+.admin-roles *,
+.admin-roles *::before,
+.admin-roles *::after {
+    box-sizing: border-box;
+}
+
+.admin-roles button,
+.admin-roles input {
+    font: inherit;
+}
+
+.admin-roles button:focus-visible,
+.admin-roles a:focus-visible,
+.admin-roles input:focus-visible {
+    outline: 2px solid var(--rp-yellow);
+    outline-offset: 3px;
+}
+
+/* =========================================================
+   HEADING
+   ========================================================= */
+
 .admin-roles .rp-heading {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 20px;
     flex-wrap: wrap;
-    padding: 0 4px;
+    gap: 18px;
+    padding: 0 3px;
 }
 
 .admin-roles .rp-heading h1 {
     margin: 0;
-    font-size: 38px;
-    font-weight: 600;
-    letter-spacing: -0.8px;
-    line-height: 1.1;
-    color: var(--admin-black, #0a0a0a);
+    color: #fff;
+    font-size: clamp(27px, 3vw, 38px);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.08;
+    background: linear-gradient(
+        100deg,
+        #ffffff 0%,
+        #f4f4ee 65%,
+        #d6c77c 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .admin-roles .rp-heading p {
-    margin: 8px 0 0;
-    max-width: 540px;
+    max-width: 650px;
+    margin: 9px 0 0;
+    color: var(--rp-muted);
     font-size: 13px;
-    color: var(--admin-muted, #8a8a85);
+    line-height: 1.65;
 }
 
 .admin-roles .rp-actions {
     display: flex;
-    gap: 12px;
     flex-wrap: wrap;
+    gap: 10px;
 }
 
-/* BUTTONS */
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
 .admin-roles .rp-btn-dark,
 .admin-roles .rp-btn-outline,
 .admin-roles .rp-btn-yellow {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    height: 50px;
-    padding: 0 24px;
-    border-radius: 999px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
+    gap: 9px;
+    min-height: 42px;
+    padding: 0 17px;
+    border: 1px solid var(--rp-line);
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 800;
     text-decoration: none;
     white-space: nowrap;
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    transition:
+        background .2s ease,
+        border-color .2s ease,
+        color .2s ease,
+        transform .2s ease,
+        filter .2s ease;
 }
 
-.admin-roles .rp-btn-dark {
-    background: var(--admin-black, #0a0a0a);
-    color: #ffffff;
-    border: 1.5px solid var(--admin-black, #0a0a0a);
+.admin-roles .rp-btn-dark,
+.admin-roles .rp-btn-yellow {
+    border-color: #f5c400;
+    background: var(--rp-gradient-gold);
+    color: #111;
 }
 
-.admin-roles .rp-btn-dark:hover {
-    background: #262626;
+.admin-roles .rp-btn-dark:hover,
+.admin-roles .rp-btn-yellow:hover:not(:disabled) {
+    border-color: #ffe66a;
+    background: linear-gradient(
+        120deg,
+        #ffe66a 0%,
+        #ffd52b 50%,
+        #f5b900 100%
+    );
+    transform: translateY(-2px);
+    filter: brightness(1.05);
 }
 
 .admin-roles .rp-btn-plus {
     display: inline-flex;
-    color: var(--admin-yellow, #facc15);
+    align-items: center;
+    justify-content: center;
 }
 
 .admin-roles .rp-btn-outline {
-    background: transparent;
-    color: var(--admin-black, #0a0a0a);
-    border: 1.5px solid var(--admin-black, #0a0a0a);
+    border-color: #383e42;
+    background: linear-gradient(
+        135deg,
+        #202428,
+        #15181a
+    );
+    color: #ededeb;
 }
 
-.admin-roles .rp-btn-outline:hover:not(:disabled) {
-    background: var(--admin-yellow, #facc15);
-    border-color: var(--admin-yellow, #facc15);
-}
-
-.admin-roles .rp-btn-yellow {
-    height: 44px;
-    border: 0;
-    background: var(--admin-yellow, #facc15);
-    color: var(--admin-black, #0a0a0a);
-    font-size: 13px;
-}
-
-.admin-roles .rp-btn-yellow:hover:not(:disabled) {
-    background: #fde047;
-}
-
-.admin-roles .rp-btn-sm {
-    height: 44px;
-    padding: 0 18px;
-    font-size: 13px;
+.admin-roles .rp-btn-outline:hover {
+    border-color: var(--rp-yellow);
+    background: linear-gradient(
+        135deg,
+        rgba(250, 204, 21, .12),
+        #191a17
+    );
+    color: var(--rp-yellow);
+    transform: translateY(-2px);
 }
 
 .admin-roles .rp-btn-block {
+    display: flex;
     width: 100%;
-    height: 44px;
-    font-size: 13px;
+    margin-top: 16px;
+}
+
+.admin-roles .rp-btn-sm {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 10px;
 }
 
 .admin-roles button:disabled {
-    opacity: 0.4;
+    opacity: .4;
     cursor: not-allowed;
+    transform: none;
 }
 
-.admin-roles .rp-btn-dark:focus-visible,
-.admin-roles .rp-btn-outline:focus-visible,
-.admin-roles .rp-btn-yellow:focus-visible,
-.admin-roles .rp-role:focus-visible,
-.admin-roles .rp-fchip:focus-visible,
-.admin-roles .rp-check:focus-visible,
-.admin-roles .rp-colhead:focus-visible,
-.admin-roles .rp-link:focus-visible,
-.admin-roles .rp-search input:focus-visible {
-    outline: 2px solid var(--admin-yellow-deep, #eab308);
-    outline-offset: 2px;
-}
+/* =========================================================
+   CARDS
+   ========================================================= */
 
-/* CARDS */
 .admin-roles .rp-card {
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 20px 22px;
-    box-sizing: border-box;
+    position: relative;
     min-width: 0;
+    padding: 19px;
+    overflow: hidden;
+    border: 1px solid var(--rp-line);
+    border-radius: 10px;
+    background: var(--rp-gradient-card);
+    transition:
+        border-color .2s ease,
+        background .2s ease;
 }
 
 .admin-roles .rp-card h3 {
     margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--admin-black, #0a0a0a);
+    color: #f5f5f2;
+    font-size: 14px;
+    font-weight: 750;
 }
 
 .admin-roles .rp-card-head {
@@ -151,727 +243,1025 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .admin-roles .rp-sub {
-    margin: 4px 0 0;
-    font-size: 11px;
-    color: var(--admin-muted, #8a8a85);
+    margin: 5px 0 0;
+    color: var(--rp-muted);
+    font-size: 10px;
+    line-height: 1.5;
 }
 
-/* STATS */
+/* =========================================================
+   STATS
+   ========================================================= */
+
 .admin-roles .rp-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
+    gap: 13px;
+}
+
+.admin-roles .rp-stat {
+    position: relative;
+    min-height: 142px;
+    overflow: hidden;
+    background:
+        radial-gradient(
+            ellipse at 100% 0%,
+            rgba(250, 204, 21, .09),
+            transparent 58%
+        ),
+        linear-gradient(
+            145deg,
+            #1b1f22 0%,
+            #131619 55%,
+            #0e1012 100%
+        );
+}
+
+.admin-roles .rp-stat::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(
+        180deg,
+        transparent,
+        rgba(250, 204, 21, .65),
+        transparent
+    );
+    content: "";
+}
+
+.admin-roles .rp-stat.is-primary {
+    border-color: rgba(250, 204, 21, .48);
+    background:
+        radial-gradient(
+            ellipse at 100% 0%,
+            rgba(250, 204, 21, .2),
+            transparent 65%
+        ),
+        linear-gradient(
+            145deg,
+            #29250e 0%,
+            #1b1a10 48%,
+            #12130f 100%
+        );
+}
+
+.admin-roles .rp-stat.is-primary::after {
+    background: var(--rp-gradient-gold);
 }
 
 .admin-roles .rp-stat-value {
-    margin: 14px 0 12px;
-    font-size: 46px;
-    font-weight: 500;
-    letter-spacing: -1.5px;
+    margin: 17px 0 13px;
+    color: #fff;
+    font-size: 39px;
+    font-weight: 800;
+    letter-spacing: -1.7px;
     line-height: 1;
-    color: var(--admin-black, #0a0a0a);
+    font-variant-numeric: tabular-nums;
+}
+
+.admin-roles .rp-stat.is-primary .rp-stat-value {
+    color: var(--rp-yellow);
+    text-shadow: 0 0 22px rgba(250, 204, 21, .18);
 }
 
 .admin-roles .rp-stat-meta {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
     margin: 0;
-    font-size: 11px;
-    color: #6f6f6a;
+    color: var(--rp-muted);
+    font-size: 10px;
 }
 
 .admin-roles .rp-chip {
-    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 21px;
     padding: 2px 7px;
-    border: 1px solid #d9dbd5;
-    border-radius: 6px;
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--admin-black, #0a0a0a);
+    border: 1px solid rgba(250, 204, 21, .35);
+    border-radius: 4px;
+    background: linear-gradient(
+        120deg,
+        rgba(250, 204, 21, .16),
+        rgba(234, 179, 8, .06)
+    );
+    color: var(--rp-yellow);
+    font-size: 9px;
+    font-weight: 800;
 }
 
-.admin-roles .rp-stat.is-primary {
-    background: radial-gradient(circle at 100% 0%, rgba(250, 204, 21, 0.38), transparent 58%),
-        var(--admin-black, #0a0a0a);
-}
+/* =========================================================
+   MAIN LAYOUT
+   ========================================================= */
 
-.admin-roles .rp-stat.is-primary h3 {
-    color: #ffffff;
-}
-
-.admin-roles .rp-stat.is-primary .rp-stat-value {
-    color: var(--admin-yellow, #facc15);
-}
-
-.admin-roles .rp-stat.is-primary .rp-stat-meta {
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.admin-roles .rp-stat.is-primary .rp-chip {
-    border-color: rgba(250, 204, 21, 0.5);
-    color: var(--admin-yellow, #facc15);
-}
-
-/* LAYOUT */
 .admin-roles .rp-layout {
     display: grid;
-    grid-template-columns: 340px minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: minmax(245px, 290px) minmax(0, 1fr);
     align-items: start;
+    gap: 15px;
 }
 
 .admin-roles .rp-side {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    position: sticky;
-    top: 16px;
+    gap: 15px;
 }
 
-/* ROLE LIST */
+/* =========================================================
+   ROLE LIST
+   ========================================================= */
+
+.admin-roles .rp-roles {
+    padding: 18px 12px 12px;
+}
+
+.admin-roles .rp-roles .rp-card-head {
+    padding: 0 7px;
+}
+
 .admin-roles .rp-role-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
 .admin-roles .rp-role {
-    display: flex;
+    display: grid;
+    grid-template-columns: 39px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 11px;
+    gap: 10px;
     width: 100%;
-    padding: 11px 12px;
-    border: 1px solid #ececE7;
-    border-radius: 14px;
-    background: #ffffff;
-    font-family: inherit;
+    min-width: 0;
+    padding: 11px 9px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    background: transparent;
+    color: inherit;
     text-align: left;
     cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease;
+    transition:
+        background .2s ease,
+        border-color .2s ease,
+        transform .2s ease;
 }
 
 .admin-roles .rp-role:hover {
-    background: #fffbe6;
-    border-color: #f6e08a;
-}
-
-.admin-roles .rp-role.is-reserved {
-    border-style: dashed;
-    border-color: #dcdcd6;
+    border-color: #41474b;
+    background: linear-gradient(
+        110deg,
+        #24292c,
+        #191c1e
+    );
+    transform: translateX(2px);
 }
 
 .admin-roles .rp-role.is-on {
-    background: var(--admin-black, #0a0a0a);
-    border-color: var(--admin-black, #0a0a0a);
+    border-color: rgba(250, 204, 21, .48);
+    background: var(--rp-gradient-active);
 }
 
 .admin-roles .rp-role-logo {
-    width: 38px;
-    height: 38px;
-    flex-shrink: 0;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 11px;
-    background: var(--tone-super, #dc2626);
-    color: #ffffff;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border: 1px solid #41474b;
+    border-radius: 7px;
+    background: linear-gradient(
+        145deg,
+        #30363a,
+        #1a1e21
+    );
+    color: #e9e9e5;
     font-size: 11px;
     font-weight: 800;
 }
 
+.admin-roles .rp-role-logo.tone-super {
+    border-color: #f5c400;
+    background: var(--rp-gradient-gold);
+    color: #111;
+}
+
 .admin-roles .rp-role-logo.tone-psb {
-    background: var(--tone-psb, #f59e0b);
-    color: var(--admin-black, #0a0a0a);
+    border-color: #a68a13;
+    background: linear-gradient(
+        145deg,
+        #51410c,
+        #292108
+    );
+    color: #ffdf52;
 }
 
 .admin-roles .rp-role-logo.tone-coeuas {
-    background: var(--tone-coeuas, #7c3aed);
+    border-color: #666;
+    background: linear-gradient(
+        145deg,
+        #464646,
+        #242424
+    );
+    color: #fff;
 }
 
 .admin-roles .rp-role-logo.tone-vertiport {
-    background: #f2f2ef;
-    color: #8a8a85;
-    border: 1.5px dashed var(--tone-vertiport, #9ca3af);
+    border-color: #555d63;
+    background: linear-gradient(
+        145deg,
+        #353d43,
+        #1d2328
+    );
+    color: #dce3e7;
 }
 
 .admin-roles .rp-role-text {
-    flex: 1;
-    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    min-width: 0;
+    gap: 4px;
 }
 
 .admin-roles .rp-role-text strong {
     overflow: hidden;
-    font-size: 12.5px;
-    font-weight: 600;
+    color: #f0f0ec;
+    font-size: 11px;
+    font-weight: 750;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--admin-black, #0a0a0a);
 }
 
 .admin-roles .rp-role-text small {
-    font-size: 10px;
-    letter-spacing: 0.2px;
-    color: var(--admin-muted, #8a8a85);
-}
-
-.admin-roles .rp-role-side {
-    flex-shrink: 0;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-}
-
-.admin-roles .rp-role-side small {
-    font-size: 10px;
-    color: var(--admin-muted, #8a8a85);
-}
-
-.admin-roles .rp-role.is-on .rp-role-text strong {
-    color: #ffffff;
-}
-
-.admin-roles .rp-role.is-on .rp-role-text small,
-.admin-roles .rp-role.is-on .rp-role-side small {
-    color: rgba(255, 255, 255, 0.6);
-}
-
-.admin-roles .rp-dot {
-    position: absolute;
-    top: -3px;
-    left: -12px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--admin-yellow, #facc15);
-    box-shadow: 0 0 0 2px #ffffff;
-}
-
-.admin-roles .rp-role.is-on .rp-dot {
-    box-shadow: 0 0 0 2px var(--admin-black, #0a0a0a);
-}
-
-/* PILLS */
-.admin-roles .rp-pill {
-    padding: 3px 10px;
-    border: 1px solid transparent;
-    border-radius: 999px;
-    font-size: 10px;
-    font-weight: 600;
+    overflow: hidden;
+    color: #92999d;
+    font-size: 9px;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.admin-roles .pill-live {
-    background: #e8f7ee;
-    border-color: #bfe6cd;
-    color: #17713f;
-}
-
-.admin-roles .pill-global {
-    background: #fff8d6;
-    border-color: #f6e08a;
-    color: #7a5d00;
-}
-
-.admin-roles .pill-reserved {
-    background: transparent;
-    border: 1px dashed #c9cbc4;
-    color: #8a8a85;
-}
-
-/* NOTES */
-.admin-roles .rp-note-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+.admin-roles .rp-role-side {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    align-items: flex-end;
+    gap: 5px;
+}
+
+.admin-roles .rp-role-side > small {
+    color: #92999d;
+    font-size: 9px;
+}
+
+.admin-roles .rp-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--rp-yellow);
+    box-shadow: 0 0 10px rgba(250, 204, 21, .5);
+}
+
+.admin-roles .rp-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 19px;
+    padding: 2px 6px;
+    border: 1px solid #41474b;
+    border-radius: 4px;
+    background: linear-gradient(
+        120deg,
+        #262b2e,
+        #1b1f21
+    );
+    color: #c7c7c0;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .35px;
+    text-transform: uppercase;
+}
+
+.admin-roles .rp-pill.pill-global {
+    border-color: rgba(250, 204, 21, .42);
+    background: linear-gradient(
+        120deg,
+        rgba(250, 204, 21, .2),
+        rgba(234, 179, 8, .07)
+    );
+    color: var(--rp-yellow);
+}
+
+.admin-roles .rp-pill.pill-live {
+    border-color: #465347;
+    background: linear-gradient(
+        120deg,
+        #243327,
+        #172019
+    );
+    color: #b5e6a0;
+}
+
+.admin-roles .rp-pill.pill-reserved {
+    border-color: #41474b;
+    background: linear-gradient(
+        120deg,
+        #292d30,
+        #1c2022
+    );
+    color: #a3a8aa;
+}
+
+/* =========================================================
+   NOTES
+   ========================================================= */
+
+.admin-roles .rp-notes {
+    padding: 18px;
+}
+
+.admin-roles .rp-note-list {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    margin: 17px 0 0;
+    padding: 0;
+    list-style: none;
 }
 
 .admin-roles .rp-note-list li {
-    display: flex;
-    gap: 10px;
-    font-size: 12px;
-    line-height: 1.5;
-    color: #55554f;
+    display: grid;
+    grid-template-columns: 17px minmax(0, 1fr);
+    align-items: start;
+    gap: 9px;
+    color: #c0c4c4;
+    font-size: 10px;
+    line-height: 1.6;
 }
 
 .admin-roles .rp-note-list svg {
-    flex-shrink: 0;
-    margin-top: 2px;
-    color: var(--admin-black, #0a0a0a);
+    margin-top: 1px;
+    color: var(--rp-yellow);
 }
 
 .admin-roles .rp-notes-foot {
-    margin: 14px 0;
-    padding-top: 12px;
-    border-top: 1px solid #f0f0ec;
-    font-size: 11px;
-    color: var(--admin-muted, #8a8a85);
+    margin: 16px 0 0;
+    padding-top: 13px;
+    border-top: 1px solid var(--rp-line-soft);
+    color: #92999d;
+    font-size: 10px;
+    line-height: 1.6;
 }
 
-/* MATRIX CARD */
+/* =========================================================
+   PERMISSION MATRIX
+   ========================================================= */
+
 .admin-roles .rp-matrix-card {
     padding: 0;
     overflow: hidden;
+    background:
+        radial-gradient(
+            ellipse at 100% 0%,
+            rgba(250, 204, 21, .045),
+            transparent 42%
+        ),
+        linear-gradient(
+            145deg,
+            #171b1e,
+            #101315 65%,
+            #0d0f11
+        );
 }
 
 .admin-roles .rp-matrix-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 20px;
-    flex-wrap: wrap;
-    padding: 20px 22px;
+    gap: 18px;
+    padding: 20px;
+    border-bottom: 1px solid var(--rp-line);
+    background: linear-gradient(
+        115deg,
+        #252a2d 0%,
+        #191d20 48%,
+        #131618 100%
+    );
 }
 
 .admin-roles .rp-matrix-title {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
     min-width: 0;
 }
 
 .admin-roles .rp-matrix-title .rp-role-logo {
-    width: 46px;
-    height: 46px;
-    border-radius: 13px;
-    font-size: 13px;
+    width: 43px;
+    height: 43px;
+    flex-basis: 43px;
 }
 
 .admin-roles .rp-matrix-title h2 {
     margin: 0;
-    font-size: 21px;
-    font-weight: 600;
-    letter-spacing: -0.3px;
-    color: var(--admin-black, #0a0a0a);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -.4px;
 }
 
 .admin-roles .rp-matrix-title p {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 8px;
-    margin: 5px 0 0;
-    font-size: 11px;
-    color: var(--admin-muted, #8a8a85);
+    gap: 7px;
+    margin: 6px 0 0;
+    color: #a0a6a8;
+    font-size: 10px;
 }
 
 .admin-roles .rp-matrix-title code {
-    padding: 1px 6px;
-    border-radius: 5px;
-    background: #f5f5f2;
-    font-family: inherit;
-    font-size: 10.5px;
-    font-weight: 600;
-    color: #3a3a36;
+    color: #d0d3ce;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 9px;
 }
 
 .admin-roles .rp-sep {
     width: 3px;
     height: 3px;
     border-radius: 50%;
-    background: #c9cbc4;
+    background: #777e80;
 }
 
 .admin-roles .rp-coverage {
-    min-width: 190px;
+    width: min(180px, 28%);
+    flex: 0 0 auto;
 }
 
 .admin-roles .rp-coverage p {
-    margin: 0 0 7px;
-    font-size: 11px;
+    margin: 0 0 8px;
+    color: #b1b6b6;
+    font-size: 10px;
     text-align: right;
-    color: var(--admin-muted, #8a8a85);
 }
 
-.admin-roles .rp-coverage strong {
+.admin-roles .rp-coverage p strong {
+    color: var(--rp-yellow);
     font-size: 17px;
-    color: var(--admin-black, #0a0a0a);
+    font-weight: 800;
 }
 
 .admin-roles .rp-meter {
-    height: 8px;
-    border-radius: 999px;
-    background: #f0f0ec;
+    height: 6px;
     overflow: hidden;
+    border-radius: 99px;
+    background: #343a3d;
 }
 
 .admin-roles .rp-meter span {
     display: block;
     height: 100%;
-    border-radius: 999px;
-    background: var(--admin-yellow, #facc15);
-    transition: width 0.3s ease;
+    border-radius: inherit;
+    background: var(--rp-gradient-gold);
+    transition: width .25s ease;
 }
 
-/* BANNERS */
+/* =========================================================
+   BANNERS
+   ========================================================= */
+
 .admin-roles .rp-banner {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 0 22px 14px;
-    padding: 11px 14px;
-    border-radius: 12px;
-    background: #fff8d6;
-    font-size: 12px;
-    color: #6b5200;
+    align-items: flex-start;
+    gap: 9px;
+    margin: 14px 18px 0;
+    padding: 11px 13px;
+    border: 1px solid rgba(250, 204, 21, .4);
+    border-radius: 6px;
+    background: linear-gradient(
+        110deg,
+        rgba(250, 204, 21, .16),
+        rgba(234, 179, 8, .06),
+        rgba(30, 26, 8, .25)
+    );
+    color: #f1df78;
+    font-size: 10px;
+    line-height: 1.55;
+}
+
+.admin-roles .rp-banner svg {
+    flex: 0 0 auto;
+    margin-top: 1px;
 }
 
 .admin-roles .rp-banner.is-reserved {
-    background: #f5f5f2;
-    color: #55554f;
+    border-color: #41474b;
+    background: linear-gradient(
+        110deg,
+        #272d30,
+        #1a1e20
+    );
+    color: #c2c8c9;
 }
 
-/* TOOLBAR */
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
 .admin-roles .rp-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
     flex-wrap: wrap;
-    padding: 0 22px 14px;
+    gap: 12px;
+    padding: 15px 18px;
+    border-bottom: 1px solid var(--rp-line);
+    background: linear-gradient(
+        110deg,
+        rgba(31, 36, 39, .8),
+        rgba(18, 21, 23, .9)
+    );
 }
 
 .admin-roles .rp-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 5px;
 }
 
 .admin-roles .rp-fchip {
-    height: 32px;
-    padding: 0 14px;
-    border: 1px solid #d9dbd5;
-    border-radius: 999px;
-    background: transparent;
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 600;
-    color: #55554f;
+    min-height: 29px;
+    padding: 0 10px;
+    border: 1px solid #3b4246;
+    border-radius: 5px;
+    background: linear-gradient(
+        135deg,
+        #252a2d,
+        #181c1e
+    );
+    color: #bdc2c2;
+    font-size: 9px;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    transition:
+        background .18s ease,
+        border-color .18s ease,
+        color .18s ease,
+        transform .18s ease;
 }
 
 .admin-roles .rp-fchip:hover {
-    border-color: var(--admin-black, #0a0a0a);
+    border-color: #777e80;
+    color: #fff;
+    transform: translateY(-1px);
 }
 
 .admin-roles .rp-fchip.is-on {
-    background: var(--admin-black, #0a0a0a);
-    border-color: var(--admin-black, #0a0a0a);
-    color: var(--admin-yellow, #facc15);
+    border-color: #f5c400;
+    background: var(--rp-gradient-gold);
+    color: #111;
 }
 
 .admin-roles .rp-search {
     display: flex;
     align-items: center;
     gap: 8px;
-    height: 36px;
-    padding: 0 12px;
-    border: 1px solid #d9dbd5;
-    border-radius: 999px;
-    color: var(--admin-muted, #8a8a85);
+    width: 190px;
+    min-height: 34px;
+    padding: 0 10px;
+    border: 1px solid #3b4246;
+    border-radius: 6px;
+    background: linear-gradient(
+        135deg,
+        #1c2124,
+        #111416
+    );
+    color: #a4aaac;
+    transition: border-color .2s ease, background .2s ease;
 }
 
 .admin-roles .rp-search:focus-within {
-    border-color: var(--admin-black, #0a0a0a);
+    border-color: var(--rp-yellow);
+    background: linear-gradient(
+        135deg,
+        #292718,
+        #171811
+    );
 }
 
 .admin-roles .rp-search input {
-    width: 150px;
+    width: 100%;
+    min-width: 0;
     border: 0;
+    outline: 0;
     background: transparent;
-    font-family: inherit;
-    font-size: 12px;
-    color: var(--admin-ink, #171717);
+    color: #f4f4f0;
+    font-size: 10px;
 }
 
-.admin-roles .rp-search input:focus {
-    outline: none;
+.admin-roles .rp-search input::placeholder {
+    color: #858c8e;
 }
 
-/* TABLE */
+/* =========================================================
+   MATRIX TABLE
+   ========================================================= */
+
 .admin-roles .rp-table-wrap {
+    width: 100%;
     overflow-x: auto;
-    border-top: 1px solid #f0f0ec;
+    scrollbar-color: #676044 #171a1c;
 }
 
 .admin-roles .rp-table {
     width: 100%;
-    min-width: 760px;
-    border-collapse: collapse;
+    min-width: 700px;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .admin-roles .rp-table thead th {
     position: sticky;
     top: 0;
-    padding: 12px 6px;
-    background: #fafaf8;
-    border-bottom: 1px solid #f0f0ec;
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
+    z-index: 1;
+    height: 43px;
+    padding: 8px 7px;
+    border-bottom: 1px solid #41484b;
+    background: linear-gradient(
+        180deg,
+        #292f32,
+        #202528
+    );
+    color: #c0c6c6;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .45px;
     text-align: center;
-    color: var(--admin-muted, #8a8a85);
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .admin-roles .rp-table thead th:first-child {
-    padding-left: 22px;
+    width: 31%;
+    min-width: 190px;
+    padding-left: 18px;
     text-align: left;
+}
+
+.admin-roles .rp-table thead th:last-child {
+    width: 55px;
 }
 
 .admin-roles .rp-colhead {
-    padding: 4px 8px;
+    padding: 5px 6px;
     border: 0;
-    border-radius: 999px;
+    border-radius: 4px;
     background: transparent;
-    font-family: inherit;
-    font-size: 10.5px;
-    font-weight: 600;
-    color: #55554f;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
     cursor: pointer;
+    transition: background .18s ease, color .18s ease;
 }
 
 .admin-roles .rp-colhead:hover {
-    background: var(--admin-yellow, #facc15);
-    color: var(--admin-black, #0a0a0a);
+    background: rgba(250, 204, 21, .15);
+    color: var(--rp-yellow);
 }
 
-.admin-roles .rp-table tbody tr:not(.rp-group) {
-    border-bottom: 1px solid #f5f5f2;
-}
-
-.admin-roles .rp-table tbody tr:not(.rp-group):hover {
-    background: #fffdf2;
-}
-
+.admin-roles .rp-table tbody td,
 .admin-roles .rp-table tbody th {
-    padding: 10px 6px 10px 22px;
-    text-align: left;
-    font-weight: 500;
-}
-
-.admin-roles .rp-module {
-    font-size: 12.5px;
-    color: var(--admin-black, #0a0a0a);
-}
-
-.admin-roles tr.is-na .rp-module {
-    color: #b5b7b0;
-}
-
-.admin-roles .rp-table td {
-    padding: 8px 4px;
+    height: 42px;
+    padding: 7px;
+    border-bottom: 1px solid #282e31;
+    background: linear-gradient(
+        90deg,
+        #171b1d,
+        #141719
+    );
     text-align: center;
 }
 
-.admin-roles .rp-group td {
-    padding: 14px 22px 8px;
-    background: #ffffff;
-    font-size: 10.5px;
+.admin-roles .rp-table tbody th {
+    padding-left: 18px;
+    color: #e8e8e3;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.8px;
+    text-align: left;
+}
+
+.admin-roles .rp-module {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+
+.admin-roles .rp-table tbody tr:not(.rp-group):hover td,
+.admin-roles .rp-table tbody tr:not(.rp-group):hover th {
+    background: linear-gradient(
+        90deg,
+        #282c2d,
+        #1e2325
+    );
+}
+
+.admin-roles .rp-table tbody tr.is-na td,
+.admin-roles .rp-table tbody tr.is-na th {
+    background: #111416;
+}
+
+.admin-roles .rp-table .rp-group td {
+    height: 32px;
+    padding: 8px 18px;
+    border-bottom: 1px solid rgba(250, 204, 21, .3);
+    background: linear-gradient(
+        100deg,
+        rgba(250, 204, 21, .19),
+        rgba(234, 179, 8, .07),
+        rgba(25, 25, 18, .7)
+    );
+    color: var(--rp-yellow);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .65px;
     text-align: left;
     text-transform: uppercase;
-    color: var(--admin-muted, #8a8a85);
 }
 
-.admin-roles .rp-row-tools {
-    width: 56px;
-    padding-right: 18px;
-}
+/* =========================================================
+   PERMISSION CHECKBOX
+   ========================================================= */
 
-.admin-roles .rp-link {
-    padding: 2px 4px;
-    border: 0;
-    background: transparent;
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    color: #55554f;
-    cursor: pointer;
-}
-
-.admin-roles .rp-link:hover {
-    color: var(--admin-black, #0a0a0a);
-}
-
-/* CHECK CELLS */
 .admin-roles .rp-check {
-    width: 26px;
-    height: 26px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    width: 22px;
+    height: 22px;
     padding: 0;
-    border: 1.5px solid #cfd1ca;
-    border-radius: 50%;
-    background: #ffffff;
-    color: var(--admin-yellow, #facc15);
-    cursor: pointer;
+    border: 1px solid #535c60;
+    border-radius: 5px;
+    background: linear-gradient(
+        145deg,
+        #292f32,
+        #191e20
+    );
+    color: #111;
     vertical-align: middle;
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    cursor: pointer;
+    transition:
+        background .18s ease,
+        border-color .18s ease,
+        transform .18s ease;
 }
 
-.admin-roles .rp-check:hover:not(:disabled) {
-    border-color: var(--admin-black, #0a0a0a);
-}
-
-.admin-roles .rp-check:active:not(:disabled) {
-    transform: scale(0.92);
+.admin-roles button.rp-check:hover:not(:disabled) {
+    border-color: var(--rp-yellow);
+    transform: scale(1.08);
 }
 
 .admin-roles .rp-check.is-on {
-    background: var(--admin-black, #0a0a0a);
-    border-color: var(--admin-black, #0a0a0a);
+    border-color: #f5c400;
+    background: var(--rp-gradient-gold);
+    color: #111;
 }
 
 .admin-roles .rp-check.is-edited {
-    box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.55);
+    outline: 2px solid rgba(250, 204, 21, .35);
+    outline-offset: 2px;
 }
 
 .admin-roles .rp-check:disabled {
     opacity: 1;
-    cursor: default;
-}
-
-.admin-roles .rp-check.is-on:disabled {
-    background: #3a3a36;
-    border-color: #3a3a36;
+    cursor: not-allowed;
 }
 
 .admin-roles .rp-na {
     display: inline-block;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
+    width: 18px;
+    height: 2px;
+    border-radius: 2px;
+    background: #535b5e;
     vertical-align: middle;
-    background: repeating-linear-gradient(-45deg, #d6d8d1 0 1.5px, #ffffff 1.5px 5px);
-    box-shadow: inset 0 0 0 1px #e8eae4;
-    opacity: 0.8;
 }
 
-/* LEGEND */
+.admin-roles .rp-row-tools {
+    width: 55px;
+    white-space: nowrap;
+}
+
+.admin-roles .rp-link {
+    padding: 5px 7px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--rp-yellow);
+    font-size: 9px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background .18s ease, border-color .18s ease;
+}
+
+.admin-roles .rp-link:hover {
+    border-color: rgba(250, 204, 21, .4);
+    background: linear-gradient(
+        120deg,
+        rgba(250, 204, 21, .18),
+        rgba(234, 179, 8, .06)
+    );
+}
+
+.admin-roles .rp-empty {
+    padding: 28px !important;
+    color: #a0a6a8;
+    font-size: 11px;
+    text-align: center !important;
+}
+
+/* =========================================================
+   LEGEND
+   ========================================================= */
+
 .admin-roles .rp-legend {
-    list-style: none;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 20px;
+    gap: 10px 18px;
     margin: 0;
-    padding: 14px 22px;
-    border-top: 1px solid #f0f0ec;
-    font-size: 11px;
-    color: #55554f;
+    padding: 14px 18px;
+    border-top: 1px solid var(--rp-line);
+    background: linear-gradient(
+        110deg,
+        rgba(35, 40, 42, .55),
+        rgba(17, 20, 22, .7)
+    );
+    list-style: none;
 }
 
 .admin-roles .rp-legend li {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
+    color: #aeb4b5;
+    font-size: 9px;
 }
 
-.admin-roles .rp-check.is-legend,
+.admin-roles .rp-check.is-legend {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    cursor: default;
+}
+
 .admin-roles .rp-na.is-legend {
-    width: 18px;
-    height: 18px;
-    pointer-events: none;
+    width: 14px;
 }
 
-/* SAVE BAR */
+/* =========================================================
+   SAVE BAR
+   ========================================================= */
+
 .admin-roles .rp-savebar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 14px;
     flex-wrap: wrap;
-    padding: 14px 22px;
-    background: #fafaf8;
-    border-top: 1px solid #f0f0ec;
-    transition: background 0.2s ease;
+    gap: 12px;
+    min-height: 65px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--rp-line);
+    background: linear-gradient(
+        110deg,
+        #1b2022,
+        #121618
+    );
 }
 
 .admin-roles .rp-savebar.has-changes {
-    background: #fffbe6;
+    border-top-color: rgba(250, 204, 21, .5);
+    background:
+        radial-gradient(
+            ellipse at 0% 50%,
+            rgba(250, 204, 21, .13),
+            transparent 55%
+        ),
+        linear-gradient(
+            110deg,
+            #242313,
+            #171811
+        );
 }
 
 .admin-roles .rp-savebar p {
     margin: 0;
-    font-size: 12px;
-    color: #55554f;
+    color: #c0c5c5;
+    font-size: 10px;
 }
 
-.admin-roles .rp-savebar strong {
-    color: var(--admin-black, #0a0a0a);
-}
-
-.admin-roles .rp-notice.is-ok {
-    font-weight: 600;
-    color: #17713f;
-}
-
-.admin-roles .rp-notice.is-error {
-    font-weight: 600;
-    color: #b42318;
+.admin-roles .rp-savebar p strong {
+    color: var(--rp-yellow);
+    font-weight: 800;
 }
 
 .admin-roles .rp-save-actions {
     display: flex;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
-/* RESPONSIVE */
-@media (max-width: 1280px) {
+.admin-roles .rp-notice {
+    font-weight: 700;
+}
+
+.admin-roles .rp-notice.is-ok {
+    color: #c9e9a2;
+}
+
+.admin-roles .rp-notice.is-error {
+    color: #ff8c84;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1180px) {
+    .admin-roles .rp-layout {
+        grid-template-columns: minmax(220px, 250px) minmax(0, 1fr);
+    }
+
     .admin-roles .rp-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+}
 
+@media (max-width: 900px) {
     .admin-roles .rp-layout {
         grid-template-columns: minmax(0, 1fr);
     }
 
     .admin-roles .rp-side {
-        position: static;
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         align-items: start;
     }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 650px) {
+    .admin-roles {
+        gap: 16px;
+        padding-top: 12px;
+    }
+
+    .admin-roles .rp-heading {
+        align-items: flex-start;
+    }
+
+    .admin-roles .rp-heading p {
+        font-size: 11px;
+    }
+
+    .admin-roles .rp-actions {
+        width: 100%;
+    }
+
+    .admin-roles .rp-actions > a {
+        flex: 1;
+        padding: 0 10px;
+        font-size: 10px;
+    }
+
+    .admin-roles .rp-stats {
+        gap: 9px;
+    }
+
+    .admin-roles .rp-stat {
+        min-height: 125px;
+        padding: 15px;
+    }
+
+    .admin-roles .rp-stat-value {
+        font-size: 32px;
+    }
+
     .admin-roles .rp-side {
         grid-template-columns: minmax(0, 1fr);
     }
-}
 
-@media (max-width: 650px) {
-    .admin-roles .rp-stats {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .admin-roles .rp-heading h1 {
-        font-size: 30px;
-    }
-
-    .admin-roles .rp-btn-dark,
-    .admin-roles .rp-btn-outline {
-        height: 46px;
-        padding: 0 18px;
+    .admin-roles .rp-matrix-head {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 16px;
     }
 
     .admin-roles .rp-coverage {
@@ -882,24 +1272,61 @@
         text-align: left;
     }
 
+    .admin-roles .rp-toolbar {
+        align-items: stretch;
+        padding: 12px;
+    }
+
+    .admin-roles .rp-search {
+        width: 100%;
+    }
+
+    .admin-roles .rp-legend {
+        gap: 9px 13px;
+        padding: 12px;
+    }
+
+    .admin-roles .rp-savebar {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 13px;
+    }
+
     .admin-roles .rp-save-actions {
         width: 100%;
     }
 
-    .admin-roles .rp-save-actions > * {
+    .admin-roles .rp-save-actions button {
         flex: 1;
     }
 }
 
+@media (max-width: 390px) {
+    .admin-roles .rp-stats {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-roles .rp-role {
+        grid-template-columns: 36px minmax(0, 1fr) auto;
+        gap: 8px;
+    }
+
+    .admin-roles .rp-role-logo {
+        width: 35px;
+        height: 35px;
+        flex-basis: 35px;
+    }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
 @media (prefers-reduced-motion: reduce) {
-    .admin-roles .rp-check,
-    .admin-roles .rp-meter span,
-    .admin-roles .rp-role,
-    .admin-roles .rp-fchip,
-    .admin-roles .rp-savebar,
-    .admin-roles .rp-btn-dark,
-    .admin-roles .rp-btn-outline,
-    .admin-roles .rp-btn-yellow {
-        transition: none;
+    .admin-roles *,
+    .admin-roles *::before,
+    .admin-roles *::after {
+        transition: none !important;
+        animation: none !important;
     }
 }

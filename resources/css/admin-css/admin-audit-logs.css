@@ -1,16 +1,108 @@
-/* Uses the tokens defined in admin-sidebar.css (:root --admin-*).
-   Self-contained: it does not depend on admin-dashboard.css being loaded. */
+/* =========================================================
+   SUPER ADMIN — AUDIT LOGS
+   GRAPHITE / WARM YELLOW / GOLD GRADIENT EDITION
+   JSX remains unchanged.
+   Smooth rounded corners. No heavy shadows.
+   ========================================================= */
 
 .admin-audit {
+    --au-bg: #090a0b;
+    --au-surface: #121416;
+    --au-surface-2: #191c1f;
+    --au-surface-3: #22262a;
+
+    --au-line: rgba(255, 255, 255, 0.10);
+    --au-line-soft: rgba(255, 255, 255, 0.065);
+
+    --au-text: #f4f5f2;
+    --au-muted: #92999f;
+
+    --au-yellow: #facc15;
+    --au-yellow-hover: #fde047;
+    --au-yellow-soft: rgba(250, 204, 21, .12);
+    --au-yellow-border: rgba(250, 204, 21, .35);
+    --au-yellow-ink: #090a0b;
+
+    --au-orange: #f59e0b;
+    --au-red: #ff6868;
+    --au-green: #70d6a0;
+
+    --au-gradient-yellow: linear-gradient(
+        135deg,
+        #fff8bd 0%,
+        #fde047 28%,
+        #facc15 65%,
+        #eab308 100%
+    );
+
+    --au-gradient-gold: linear-gradient(
+        135deg,
+        #fff2a6 0%,
+        #facc15 38%,
+        #f59e0b 72%,
+        #ea580c 100%
+    );
+
+    --au-gradient-dark: linear-gradient(
+        145deg,
+        #242729 0%,
+        #191c1f 48%,
+        #101214 100%
+    );
+
+    --au-gradient-surface: linear-gradient(
+        145deg,
+        #1b1e21 0%,
+        #141719 55%,
+        #101214 100%
+    );
+
+    --au-gradient-active: linear-gradient(
+        110deg,
+        rgba(250, 204, 21, .16),
+        rgba(250, 204, 21, .055) 55%,
+        rgba(250, 204, 21, .01)
+    );
+
+    --au-radius-card: 12px;
+    --au-radius-panel: 10px;
+    --au-radius-control: 8px;
+    --au-radius-small: 6px;
+
     display: flex;
     flex-direction: column;
     gap: 20px;
-    padding: 20px 0 14px;
+    min-width: 0;
+    padding: 20px 0 16px;
+
     font-family: var(--admin-font, "Plus Jakarta Sans", system-ui, sans-serif);
-    color: var(--admin-ink, #171717);
+    color: var(--au-text);
 }
 
-/* HEADING */
+.admin-audit *,
+.admin-audit *::before,
+.admin-audit *::after {
+    box-sizing: border-box;
+}
+
+.admin-audit button,
+.admin-audit input,
+.admin-audit select {
+    font: inherit;
+}
+
+.admin-audit button:focus-visible,
+.admin-audit select:focus-visible,
+.admin-audit input:focus-visible,
+.admin-audit a:focus-visible {
+    outline: 2px solid var(--au-yellow);
+    outline-offset: 3px;
+}
+
+/* =========================================================
+   HEADING
+   ========================================================= */
+
 .admin-audit .au-heading {
     display: flex;
     align-items: flex-end;
@@ -22,122 +114,255 @@
 
 .admin-audit .au-heading h1 {
     margin: 0;
-    font-size: 38px;
-    font-weight: 600;
-    letter-spacing: -0.8px;
+    font-size: clamp(27px, 3vw, 38px);
+    font-weight: 800;
+    letter-spacing: -1.4px;
     line-height: 1.1;
-    color: var(--admin-black, #0a0a0a);
+
+    background: linear-gradient(
+        110deg,
+        #ffffff 0%,
+        #f4f5f2 48%,
+        #fde047 100%
+    );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .admin-audit .au-heading p {
-    margin: 8px 0 0;
     max-width: 560px;
+    margin: 8px 0 0;
+    color: var(--au-muted);
     font-size: 13px;
-    color: var(--admin-muted, #8a8a85);
+    line-height: 1.6;
 }
 
 .admin-audit .au-actions {
     display: flex;
-    gap: 12px;
     flex-wrap: wrap;
+    gap: 10px;
 }
 
-/* BUTTONS */
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
 .admin-audit .au-btn-dark,
 .admin-audit .au-btn-outline {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    height: 50px;
-    padding: 0 24px;
-    border-radius: 999px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
+    gap: 9px;
+
+    min-height: 43px;
+    padding: 0 18px;
+
+    border: 1px solid var(--au-line);
+    border-radius: var(--au-radius-control);
+
+    font-size: 12px;
+    font-weight: 800;
     white-space: nowrap;
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+    transition:
+        background .25s ease,
+        border-color .25s ease,
+        color .25s ease,
+        transform .25s ease;
 }
 
 .admin-audit .au-btn-dark {
-    background: var(--admin-black, #0a0a0a);
-    color: #ffffff;
-    border: 1.5px solid var(--admin-black, #0a0a0a);
+    isolation: isolate;
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            115deg,
+            rgba(255,255,255,.45),
+            transparent 32%
+        ),
+        var(--au-gradient-yellow);
+
+    border-color: var(--au-yellow);
+    color: var(--au-yellow-ink);
+}
+
+.admin-audit .au-btn-dark::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    left: -120%;
+    width: 75%;
+
+    background: linear-gradient(
+        100deg,
+        transparent,
+        rgba(255,255,255,.55),
+        transparent
+    );
+
+    transform: skewX(-20deg);
+    transition: left .55s ease;
+    z-index: -1;
 }
 
 .admin-audit .au-btn-dark:hover:not(:disabled) {
-    background: #262626;
+    background:
+        linear-gradient(
+            115deg,
+            rgba(255,255,255,.5),
+            transparent 35%
+        ),
+        linear-gradient(
+            135deg,
+            #fff8bd,
+            #fde047 45%,
+            #facc15
+        );
+
+    border-color: var(--au-yellow-hover);
+    transform: translateY(-2px);
+}
+
+.admin-audit .au-btn-dark:hover::before {
+    left: 140%;
 }
 
 .admin-audit .au-btn-icon {
     display: inline-flex;
-    color: var(--admin-yellow, #facc15);
+    color: inherit;
 }
 
 .admin-audit .au-btn-outline {
-    background: transparent;
-    color: var(--admin-black, #0a0a0a);
-    border: 1.5px solid var(--admin-black, #0a0a0a);
+    background: var(--au-gradient-surface);
+    color: var(--au-text);
 }
 
 .admin-audit .au-btn-outline:hover:not(:disabled) {
-    background: var(--admin-yellow, #facc15);
-    border-color: var(--admin-yellow, #facc15);
+    border-color: var(--au-yellow-border);
+    background: var(--au-gradient-dark);
+    color: var(--au-yellow);
+    transform: translateY(-2px);
 }
 
 .admin-audit button:disabled {
-    opacity: 0.4;
+    opacity: .4;
     cursor: not-allowed;
 }
 
-.admin-audit button:focus-visible,
-.admin-audit select:focus-visible,
-.admin-audit input:focus-visible,
-.admin-audit a:focus-visible {
-    outline: 2px solid var(--admin-yellow-deep, #eab308);
-    outline-offset: 2px;
-}
+/* =========================================================
+   NOTICE
+   ========================================================= */
 
-/* NOTICE */
 .admin-audit .au-notice {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+
     margin: 0;
-    padding: 11px 16px;
-    border-radius: 12px;
-    background: #fff8d6;
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b5200;
+    padding: 14px 17px;
+    overflow: hidden;
+
+    border: 1px solid rgba(250,204,21,.20);
+    border-left: 3px solid var(--au-yellow);
+    border-radius: var(--au-radius-panel);
+
+    background:
+        radial-gradient(
+            ellipse at 0% 50%,
+            rgba(250,204,21,.12),
+            transparent 58%
+        ),
+        var(--au-gradient-surface);
+
+    color: var(--au-yellow-hover);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.admin-audit .au-notice::after {
+    content: "";
+    position: absolute;
+    top: -45px;
+    right: 8%;
+
+    width: 130px;
+    height: 130px;
+
+    border-radius: 50%;
+
+    background: radial-gradient(
+        circle,
+        rgba(250,204,21,.10),
+        transparent 70%
+    );
+
+    pointer-events: none;
 }
 
 .admin-audit .au-notice button {
+    position: relative;
+    z-index: 1;
+
     display: inline-flex;
     padding: 4px;
+
     border: 0;
     border-radius: 50%;
     background: transparent;
+
     color: inherit;
     cursor: pointer;
 }
 
-/* CARDS */
+/* =========================================================
+   CARDS
+   ========================================================= */
+
 .admin-audit .au-card {
-    background: #ffffff;
-    border-radius: 20px;
-    padding: 20px 22px;
-    box-sizing: border-box;
+    position: relative;
+    isolation: isolate;
+
     min-width: 0;
+    padding: 20px;
+    overflow: hidden;
+
+    border: 1px solid var(--au-line);
+    border-radius: var(--au-radius-card);
+
+    background:
+        radial-gradient(
+            ellipse at 100% 0%,
+            rgba(255,255,255,.035),
+            transparent 43%
+        ),
+        radial-gradient(
+            ellipse at 0% 100%,
+            rgba(250,204,21,.025),
+            transparent 48%
+        ),
+        var(--au-gradient-surface);
+
+    transition:
+        border-color .25s ease,
+        background .25s ease;
+}
+
+.admin-audit .au-card:hover {
+    border-color: rgba(250,204,21,.20);
 }
 
 .admin-audit .au-card h3 {
     margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--admin-black, #0a0a0a);
+    color: var(--au-text);
+    font-size: 14px;
+    font-weight: 800;
 }
 
 .admin-audit .au-card-head {
@@ -145,77 +370,190 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .admin-audit .au-sub {
-    margin: 4px 0 0;
+    margin: 5px 0 0;
+    color: var(--au-muted);
     font-size: 11px;
-    color: var(--admin-muted, #8a8a85);
 }
 
-/* STATS */
+/* =========================================================
+   STATS
+   ========================================================= */
+
 .admin-audit .au-stats {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 16px;
+    gap: 13px;
+}
+
+.admin-audit .au-stat {
+    position: relative;
+    isolation: isolate;
+
+    min-height: 142px;
+    overflow: hidden;
+
+    border: 1px solid var(--au-line-soft);
+    border-radius: var(--au-radius-card);
+
+    background:
+        radial-gradient(
+            ellipse at 100% 0%,
+            rgba(255,255,255,.045),
+            transparent 48%
+        ),
+        radial-gradient(
+            ellipse at 0% 100%,
+            rgba(250,204,21,.035),
+            transparent 60%
+        ),
+        var(--au-gradient-dark);
+}
+
+.admin-audit .au-stat::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 18px;
+    right: 18px;
+    height: 1px;
+
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,.25),
+        rgba(250,204,21,.3),
+        transparent
+    );
+}
+
+.admin-audit .au-stat::after {
+    content: "";
+    position: absolute;
+    top: -75px;
+    right: -65px;
+
+    width: 180px;
+    height: 180px;
+
+    border-radius: 50%;
+
+    background: radial-gradient(
+        circle,
+        rgba(250,204,21,.075) 0%,
+        rgba(250,204,21,.02) 38%,
+        transparent 72%
+    );
+
+    pointer-events: none;
 }
 
 .admin-audit .au-stat-value {
-    margin: 14px 0 12px;
-    font-size: 46px;
-    font-weight: 500;
-    letter-spacing: -1.5px;
+    position: relative;
+    z-index: 1;
+
+    margin: 17px 0 13px;
+
+    color: var(--au-text);
+    font-size: 39px;
+    font-weight: 800;
+    letter-spacing: -1.7px;
     line-height: 1;
-    color: var(--admin-black, #0a0a0a);
+
+    font-variant-numeric: tabular-nums;
 }
 
 .admin-audit .au-stat-meta {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
+
     margin: 0;
-    font-size: 11px;
-    color: #6f6f6a;
+
+    color: var(--au-muted);
+    font-size: 10.5px;
 }
 
 .admin-audit .au-chip {
-    flex-shrink: 0;
-    padding: 2px 7px;
-    border: 1px solid #d9dbd5;
-    border-radius: 6px;
-    font-size: 10px;
-    font-weight: 600;
-    color: var(--admin-black, #0a0a0a);
+    display: inline-flex;
+    align-items: center;
+
+    padding: 4px 8px;
+
+    border: 1px solid rgba(250,204,21,.25);
+    border-radius: var(--au-radius-small);
+
+    background: var(--au-yellow-soft);
+    color: var(--au-yellow);
+    font-size: 9px;
+    font-weight: 800;
 }
 
 .admin-audit .au-stat.is-primary {
-    background: radial-gradient(circle at 100% 0%, rgba(250, 204, 21, 0.38), transparent 58%),
-        var(--admin-black, #0a0a0a);
+    border-color: rgba(250,204,21,.35);
+
+    background:
+        radial-gradient(
+            ellipse at 100% 0%,
+            rgba(250,204,21,.15),
+            transparent 58%
+        ),
+        radial-gradient(
+            ellipse at 0% 100%,
+            rgba(250,204,21,.045),
+            transparent 65%
+        ),
+        linear-gradient(
+            145deg,
+            #292719 0%,
+            #191811 50%,
+            #101214 100%
+        );
 }
 
-.admin-audit .au-stat.is-primary h3 {
-    color: #ffffff;
+.admin-audit .au-stat.is-primary::before {
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #fff2a6,
+        #facc15,
+        transparent
+    );
+}
+
+.admin-audit .au-stat.is-primary::after {
+    background: radial-gradient(
+        circle,
+        rgba(250,204,21,.14),
+        rgba(250,204,21,.025) 40%,
+        transparent 72%
+    );
 }
 
 .admin-audit .au-stat.is-primary .au-stat-value {
-    color: var(--admin-yellow, #facc15);
+    background: var(--au-gradient-yellow);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .admin-audit .au-stat.is-primary .au-stat-meta {
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.admin-audit .au-stat.is-primary .au-chip {
-    border-color: rgba(250, 204, 21, 0.5);
-    color: var(--admin-yellow, #facc15);
+    color: #d7cb8d;
 }
 
 .admin-audit .au-stat.is-danger .au-stat-value {
-    color: #b42318;
+    color: var(--au-red);
 }
 
-/* FILTERS */
+/* =========================================================
+   FILTERS
+   ========================================================= */
+
 .admin-audit .au-filters {
     display: flex;
     flex-direction: column;
@@ -225,7 +563,7 @@
 .admin-audit .au-filter-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
@@ -235,13 +573,20 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    height: 40px;
-    padding: 0 14px;
-    border: 1px solid #d9dbd5;
-    border-radius: 999px;
-    background: #ffffff;
-    font-size: 12px;
-    color: var(--admin-muted, #8a8a85);
+
+    min-height: 39px;
+    padding: 0 12px;
+
+    border: 1px solid var(--au-line);
+    border-radius: var(--au-radius-control);
+
+    background: var(--au-surface-2);
+    color: var(--au-muted);
+    font-size: 11px;
+
+    transition:
+        border-color .2s ease,
+        background .2s ease;
 }
 
 .admin-audit .au-search {
@@ -252,41 +597,51 @@
 .admin-audit .au-search:focus-within,
 .admin-audit .au-select:focus-within,
 .admin-audit .au-date:focus-within {
-    border-color: var(--admin-black, #0a0a0a);
+    border-color: var(--au-yellow);
+    background: var(--au-surface-3);
 }
 
 .admin-audit .au-search input {
     flex: 1;
     min-width: 0;
+
     border: 0;
+    outline: none;
+
     background: transparent;
-    font-family: inherit;
-    font-size: 12.5px;
-    color: var(--admin-ink, #171717);
+    color: var(--au-text);
+    font-size: 11px;
 }
 
-.admin-audit .au-search input:focus,
-.admin-audit .au-select select:focus,
-.admin-audit .au-date input:focus {
-    outline: none;
+.admin-audit .au-search input::placeholder {
+    color: #777f85;
 }
 
 .admin-audit .au-select span,
 .admin-audit .au-date span {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--admin-muted, #8a8a85);
+    color: var(--au-muted);
+    font-size: 10px;
+    font-weight: 700;
 }
 
 .admin-audit .au-select select,
 .admin-audit .au-date input {
+    min-width: 0;
+
     border: 0;
+    outline: none;
+
     background: transparent;
-    font-family: inherit;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--admin-black, #0a0a0a);
+    color: var(--au-text);
+
+    font-size: 11px;
+    font-weight: 650;
     cursor: pointer;
+}
+
+.admin-audit .au-select select option {
+    background: #191c1f;
+    color: var(--au-text);
 }
 
 .admin-audit .au-chips {
@@ -299,118 +654,208 @@
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    height: 32px;
-    padding: 0 14px;
-    border: 1px solid #d9dbd5;
-    border-radius: 999px;
-    background: transparent;
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 600;
-    color: #55554f;
+
+    min-height: 31px;
+    padding: 0 12px;
+
+    border: 1px solid var(--au-line);
+    border-radius: var(--au-radius-small);
+
+    background: var(--au-surface-2);
+    color: #b5bbc0;
+    font-size: 10px;
+    font-weight: 700;
+
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+    transition:
+        background .2s ease,
+        border-color .2s ease,
+        color .2s ease,
+        transform .2s ease;
 }
 
 .admin-audit .au-fchip:hover {
-    border-color: var(--admin-black, #0a0a0a);
+    border-color: var(--au-yellow-border);
+    background: var(--au-surface-3);
+    color: var(--au-text);
+    transform: translateY(-1px);
 }
 
 .admin-audit .au-fchip.is-on {
-    background: var(--admin-black, #0a0a0a);
-    border-color: var(--admin-black, #0a0a0a);
-    color: var(--admin-yellow, #facc15);
+    border-color: var(--au-yellow);
+    background: var(--au-gradient-yellow);
+    color: var(--au-yellow-ink);
 }
 
 .admin-audit .au-fchip small {
-    font-size: 10px;
-    opacity: 0.6;
+    font-size: 9px;
+    opacity: .75;
 }
 
 .admin-audit .au-clear {
     display: inline-flex;
     align-items: center;
     gap: 6px;
+
     padding: 6px 10px;
+
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--au-radius-small);
+
     background: transparent;
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 600;
+    color: var(--au-yellow);
+
+    font-size: 10px;
+    font-weight: 700;
+
     text-decoration: underline;
     text-underline-offset: 3px;
-    color: #55554f;
     cursor: pointer;
+
+    transition:
+        background .2s ease,
+        color .2s ease;
 }
 
 .admin-audit .au-clear:hover {
-    color: var(--admin-black, #0a0a0a);
+    background: var(--au-yellow-soft);
+    color: var(--au-yellow-hover);
 }
 
-/* ACTION PILLS (also used as filter chips) */
+/* =========================================================
+   ACTION PILLS
+   ========================================================= */
+
 .admin-audit .au-pill {
     display: inline-block;
-    padding: 3px 10px;
+
+    padding: 4px 9px;
+
     border: 1px solid transparent;
-    border-radius: 999px;
-    font-size: 10px;
-    font-weight: 600;
+    border-radius: var(--au-radius-small);
+
+    font-size: 9px;
+    font-weight: 800;
     white-space: nowrap;
 }
 
-.admin-audit .au-create { background: #fff8d6; border-color: #f6e08a; color: #7a5d00; }
-.admin-audit .au-update { background: #f4f4f1; border-color: #e3e5df; color: #55554f; }
-.admin-audit .au-delete { background: #fdeceb; border-color: #f6c9c6; color: #b42318; }
-.admin-audit .au-restore { background: #e8f7ee; border-color: #bfe6cd; color: #17713f; }
-.admin-audit .au-publish { background: var(--admin-black, #0a0a0a); color: #ffffff; }
-.admin-audit .au-unpublish { background: transparent; border-color: var(--admin-black, #0a0a0a); color: var(--admin-black, #0a0a0a); }
-.admin-audit .au-session { background: #eef2f7; border-color: #d5deea; color: #3d4d63; }
-.admin-audit .au-export { background: #f1ecfb; border-color: #dcd0f3; color: #5b3a8c; }
-.admin-audit .au-denied { background: #b42318; color: #ffffff; }
+.admin-audit .au-create {
+    background: rgba(250,204,21,.12);
+    border-color: rgba(250,204,21,.3);
+    color: #fde68a;
+}
 
-.admin-audit .au-achip.is-on.au-create { background: #fff8d6; color: #7a5d00; border-color: #7a5d00; }
-.admin-audit .au-achip.is-on.au-update { background: #f4f4f1; color: #171717; border-color: #171717; }
-.admin-audit .au-achip.is-on.au-delete { background: #fdeceb; color: #b42318; border-color: #b42318; }
-.admin-audit .au-achip.is-on.au-restore { background: #e8f7ee; color: #17713f; border-color: #17713f; }
-.admin-audit .au-achip.is-on.au-publish { background: var(--admin-black, #0a0a0a); color: #ffffff; }
-.admin-audit .au-achip.is-on.au-unpublish { background: #ffffff; color: var(--admin-black, #0a0a0a); border-color: var(--admin-black, #0a0a0a); }
-.admin-audit .au-achip.is-on.au-session { background: #eef2f7; color: #3d4d63; border-color: #3d4d63; }
-.admin-audit .au-achip.is-on.au-export { background: #f1ecfb; color: #5b3a8c; border-color: #5b3a8c; }
-.admin-audit .au-achip.is-on.au-denied { background: #b42318; color: #ffffff; border-color: #b42318; }
-.admin-audit .au-achip:not(.is-on) { background: transparent; border-color: #d9dbd5; color: #55554f; }
+.admin-audit .au-update {
+    background: var(--au-surface-3);
+    border-color: var(--au-line);
+    color: #d5d9dc;
+}
 
-/* TABLE */
+.admin-audit .au-delete {
+    background: rgba(255,104,104,.10);
+    border-color: rgba(255,104,104,.25);
+    color: #ff9999;
+}
+
+.admin-audit .au-restore {
+    background: rgba(112,214,160,.10);
+    border-color: rgba(112,214,160,.25);
+    color: #8de0b1;
+}
+
+.admin-audit .au-publish {
+    background: var(--au-gradient-yellow);
+    border-color: var(--au-yellow);
+    color: var(--au-yellow-ink);
+}
+
+.admin-audit .au-unpublish {
+    background: var(--au-surface-3);
+    border-color: var(--au-line);
+    color: #c8cdd0;
+}
+
+.admin-audit .au-session {
+    background: rgba(120,160,200,.10);
+    border-color: rgba(120,160,200,.25);
+    color: #b4c9df;
+}
+
+.admin-audit .au-export {
+    background: rgba(170,145,220,.10);
+    border-color: rgba(170,145,220,.25);
+    color: #c9b9ed;
+}
+
+.admin-audit .au-denied {
+    background: rgba(255,104,104,.14);
+    border-color: rgba(255,104,104,.3);
+    color: #ffaaa3;
+}
+
+.admin-audit .au-achip.is-on {
+    outline: 1px solid currentColor;
+    outline-offset: 2px;
+}
+
+.admin-audit .au-achip:not(.is-on) {
+    background: var(--au-surface-2);
+    border-color: var(--au-line);
+    color: #b5bbc0;
+}
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
 .admin-audit .au-tablecard {
     padding: 20px 0 0;
     overflow: hidden;
+
+    border-radius: var(--au-radius-card);
+
+    background:
+        radial-gradient(
+            ellipse at 100% 0%,
+            rgba(250,204,21,.035),
+            transparent 45%
+        ),
+        var(--au-gradient-surface);
 }
 
 .admin-audit .au-tablecard .au-card-head {
-    padding: 0 22px;
+    padding: 0 20px;
 }
 
 .admin-audit .au-sort {
-    height: 30px;
-    padding: 0 14px;
-    border: 1px solid var(--admin-black, #0a0a0a);
-    border-radius: 999px;
-    background: transparent;
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--admin-black, #0a0a0a);
+    min-height: 32px;
+    padding: 0 12px;
+
+    border: 1px solid var(--au-line);
+    border-radius: var(--au-radius-small);
+
+    background: var(--au-surface-2);
+    color: #d0d5d8;
+    font-size: 10px;
+    font-weight: 700;
     cursor: pointer;
+
+    transition:
+        border-color .2s ease,
+        color .2s ease,
+        background .2s ease;
 }
 
 .admin-audit .au-sort:hover {
-    background: var(--admin-yellow, #facc15);
-    border-color: var(--admin-yellow, #facc15);
+    border-color: var(--au-yellow-border);
+    background: var(--au-surface-3);
+    color: var(--au-yellow);
 }
 
 .admin-audit .au-table-wrap {
     overflow-x: auto;
-    border-top: 1px solid #f0f0ec;
+    border-top: 1px solid var(--au-line);
 }
 
 .admin-audit .au-table {
@@ -420,61 +865,77 @@
 }
 
 .admin-audit .au-table thead th {
-    padding: 12px 10px;
-    background: #fafaf8;
-    border-bottom: 1px solid #f0f0ec;
-    font-size: 10.5px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
+    padding: 13px 10px;
+
+    border-bottom: 1px solid var(--au-line);
+
+    background: rgba(255,255,255,.025);
+
+    color: #aab0b5;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .65px;
+
     text-align: left;
-    color: var(--admin-muted, #8a8a85);
+    text-transform: uppercase;
 }
 
 .admin-audit .au-table thead th:first-child {
-    padding-left: 22px;
+    padding-left: 20px;
 }
 
 .admin-audit .au-table td {
     padding: 12px 10px;
+
+    border-bottom: 1px solid var(--au-line-soft);
+
+    color: #cbd0d3;
+    font-size: 11px;
     vertical-align: middle;
-    font-size: 12px;
 }
 
 .admin-audit .au-table td:first-child {
-    padding-left: 22px;
+    padding-left: 20px;
 }
 
 .admin-audit .au-row {
-    border-bottom: 1px solid #f5f5f2;
+    background: rgba(255,255,255,.008);
     cursor: pointer;
-    transition: background 0.15s ease;
+    transition: background .2s ease;
+}
+
+.admin-audit .au-row:nth-child(even) {
+    background: rgba(255,255,255,.018);
 }
 
 .admin-audit .au-row:hover,
 .admin-audit .au-row.is-open {
-    background: #fffdf2;
+    background: var(--au-gradient-active);
 }
 
 .admin-audit .au-time strong,
 .admin-audit .au-record strong,
 .admin-audit .au-user strong {
     display: block;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--admin-black, #0a0a0a);
+
+    color: var(--au-text);
+    font-size: 11.5px;
+    font-weight: 750;
 }
 
 .admin-audit .au-time small,
 .admin-audit .au-record small,
 .admin-audit .au-user small {
     display: block;
-    margin-top: 2px;
-    font-size: 10.5px;
-    color: var(--admin-muted, #8a8a85);
+    margin-top: 3px;
+
+    color: var(--au-muted);
+    font-size: 9.5px;
 }
 
 .admin-audit .au-record strong {
     max-width: 260px;
+
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -487,24 +948,42 @@
 }
 
 .admin-audit .au-avatar {
-    width: 34px;
-    height: 34px;
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    font-size: 11px;
+
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+
+    border: 1px solid var(--au-line);
+    border-radius: var(--au-radius-small);
+
+    font-size: 10px;
     font-weight: 800;
 }
 
-.admin-audit .avatar-0 { background: var(--admin-yellow, #facc15); color: var(--admin-black, #0a0a0a); }
-.admin-audit .avatar-1 { background: var(--admin-black, #0a0a0a); color: var(--admin-yellow, #facc15); }
-.admin-audit .avatar-2 { background: #ececE7; color: var(--admin-black, #0a0a0a); }
+.admin-audit .avatar-0 {
+    background: var(--au-gradient-yellow);
+    border-color: var(--au-yellow);
+    color: var(--au-yellow-ink);
+}
+
+.admin-audit .avatar-1 {
+    background: var(--au-gradient-dark);
+    border-color: var(--au-line);
+    color: var(--au-text);
+}
+
+.admin-audit .avatar-2 {
+    background: linear-gradient(145deg, #30363a, #171a1d);
+    border-color: var(--au-line);
+    color: #dddddd;
+}
 
 .admin-audit .au-ip {
-    font-size: 11.5px;
-    color: #55554f;
+    color: #b0b8bd;
+    font-size: 10.5px;
     font-variant-numeric: tabular-nums;
 }
 
@@ -516,133 +995,167 @@
 
 .admin-audit .au-toggle button {
     display: inline-flex;
-    width: 28px;
-    height: 28px;
     align-items: center;
     justify-content: center;
-    border: 1px solid #d9dbd5;
-    border-radius: 50%;
-    background: #ffffff;
-    color: var(--admin-black, #0a0a0a);
+
+    width: 30px;
+    height: 30px;
+
+    border: 1px solid var(--au-line);
+    border-radius: var(--au-radius-small);
+
+    background: var(--au-surface-2);
+    color: #dddddd;
     cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease;
+
+    transition:
+        transform .2s ease,
+        background .2s ease,
+        border-color .2s ease,
+        color .2s ease;
 }
 
 .admin-audit .au-row:hover .au-toggle button {
-    background: var(--admin-yellow, #facc15);
-    border-color: var(--admin-yellow, #facc15);
+    border-color: var(--au-yellow);
+    background: var(--au-yellow);
+    color: var(--au-yellow-ink);
 }
 
 .admin-audit .au-row.is-open .au-toggle button {
     transform: rotate(180deg);
 }
 
-/* SITE TAG */
+/* =========================================================
+   SITE TAG
+   ========================================================= */
+
 .admin-audit .au-site {
     display: inline-flex;
     align-items: center;
     gap: 7px;
-    font-size: 11.5px;
-    font-weight: 600;
-    color: var(--admin-black, #0a0a0a);
+
+    color: #dddddd;
+    font-size: 10.5px;
+    font-weight: 700;
 }
 
 .admin-audit .au-site i {
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
+
     border-radius: 50%;
-    background: var(--tone-psb, #f59e0b);
+    background: var(--au-yellow);
 }
 
-.admin-audit .au-site.tone-coeuas i { background: var(--tone-coeuas, #7c3aed); }
-.admin-audit .au-site.tone-vertiport i { background: transparent; border: 1.5px dashed var(--tone-vertiport, #9ca3af); }
-.admin-audit .au-site.is-none { font-weight: 500; color: var(--admin-muted, #8a8a85); }
+.admin-audit .au-site.tone-coeuas i {
+    background: #a5a5a5;
+}
 
-/* DETAIL */
+.admin-audit .au-site.tone-vertiport i {
+    background: transparent;
+    border: 1px dashed #aaaaaa;
+}
+
+.admin-audit .au-site.is-none {
+    color: var(--au-muted);
+    font-weight: 500;
+}
+
+/* =========================================================
+   DETAIL
+   ========================================================= */
+
 .admin-audit .au-detail-row td {
-    padding: 0 22px 18px;
-    background: #fffdf2;
-    border-bottom: 1px solid #f0e9c4;
+    padding: 0 20px 18px;
+
+    background: var(--au-surface);
+
+    border-bottom: 1px solid var(--au-yellow-border);
 }
 
 .admin-audit .au-detail {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
     gap: 24px;
-    padding: 16px 18px;
-    border-radius: 14px;
-    background: #ffffff;
-    border: 1px solid #efeade;
+
+    padding: 17px;
+
+    border: 1px solid var(--au-line);
+    border-radius: var(--au-radius-panel);
+
+    background: var(--au-gradient-dark);
 }
 
 .admin-audit .au-detail h4 {
     margin: 0 0 10px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.7px;
+
+    color: var(--au-yellow);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .7px;
     text-transform: uppercase;
-    color: var(--admin-muted, #8a8a85);
 }
 
 .admin-audit .au-diff-title {
     margin: 0 0 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #55554f;
+
+    color: #b5bbc0;
+    font-size: 10px;
+    font-weight: 700;
 }
 
 .admin-audit .au-diff {
     width: 100%;
+
     border-collapse: separate;
     border-spacing: 0 4px;
-    font-size: 12px;
+
+    font-size: 11px;
 }
 
 .admin-audit .au-diff th {
     padding: 7px 10px;
+
+    color: #999fa4;
+    font-size: 10px;
     text-align: left;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--admin-muted, #8a8a85);
 }
 
 .admin-audit .au-diff thead th {
-    padding-top: 0;
-    padding-bottom: 2px;
-    font-size: 10px;
-    letter-spacing: 0.5px;
+    font-size: 9px;
+    letter-spacing: .5px;
     text-transform: uppercase;
 }
 
 .admin-audit .au-diff tbody th {
     width: 28%;
-    color: #3a3a36;
+    color: #cccccc;
     word-break: break-word;
 }
 
 .admin-audit .au-diff td {
     padding: 7px 10px;
-    border-radius: 8px;
+    border-radius: var(--au-radius-small);
+
+    color: #eeeeee;
     word-break: break-word;
-    color: var(--admin-black, #0a0a0a);
 }
 
 .admin-audit .au-diff td.is-old {
-    background: #fdeceb;
-    color: #8f1d14;
+    background: rgba(255,104,104,.10);
+    color: #e6a09a;
     text-decoration: line-through;
-    text-decoration-color: rgba(180, 35, 24, 0.45);
 }
 
 .admin-audit .au-diff td.is-new {
-    background: #e8f7ee;
-    color: #145c34;
+    background: rgba(250,204,21,.10);
+    color: #fde68a;
 }
 
 .admin-audit .au-nochange {
     margin: 0;
-    font-size: 12px;
-    color: var(--admin-muted, #8a8a85);
+    color: var(--au-muted);
+    font-size: 11px;
 }
 
 .admin-audit .au-meta {
@@ -653,27 +1166,29 @@
 }
 
 .admin-audit .au-meta dt {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.4px;
+    color: #90999f;
+    font-size: 9px;
+    font-weight: 750;
+    letter-spacing: .4px;
     text-transform: uppercase;
-    color: var(--admin-muted, #8a8a85);
 }
 
 .admin-audit .au-meta dd {
-    margin: 3px 0 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--admin-black, #0a0a0a);
+    margin: 4px 0 0;
+
+    color: #eeeeee;
+    font-size: 11px;
+    font-weight: 700;
     word-break: break-word;
 }
 
 .admin-audit .au-meta dd small {
     display: block;
-    margin-top: 2px;
-    font-size: 10px;
+    margin-top: 3px;
+
+    color: #858d93;
+    font-size: 9px;
     font-weight: 500;
-    color: var(--admin-muted, #8a8a85);
 }
 
 .admin-audit .au-meta .is-wide {
@@ -681,144 +1196,128 @@
 }
 
 .admin-audit .au-ua {
-    font-size: 10.5px;
+    color: #aaaaaa;
+    font-size: 10px;
     font-weight: 500;
-    color: #55554f;
 }
 
-/* EMPTY */
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
 .admin-audit .au-empty {
     padding: 40px 22px;
+    color: var(--au-muted);
     text-align: center;
-    color: #55554f;
 }
 
 .admin-audit .au-empty strong {
     display: block;
     margin-bottom: 6px;
-    font-size: 13px;
-    color: var(--admin-black, #0a0a0a);
+
+    color: var(--au-text);
+    font-size: 12px;
 }
 
-/* PAGER */
+/* =========================================================
+   PAGER
+   ========================================================= */
+
 .admin-audit .au-pager {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
-    padding: 14px 22px;
-    border-top: 1px solid #f0f0ec;
-    background: #fafaf8;
+
+    padding: 14px 20px;
+
+    border-top: 1px solid var(--au-line-soft);
+
+    background: var(--au-surface);
 }
 
 .admin-audit .au-pager p {
     margin: 0;
-    font-size: 12px;
-    color: #55554f;
+    color: #aaaaaa;
+    font-size: 11px;
 }
 
 .admin-audit .au-pager-btns {
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 12px;
-    color: #55554f;
+
+    color: #aaaaaa;
+    font-size: 11px;
 }
 
 .admin-audit .au-pager-btns button {
     display: inline-flex;
-    width: 34px;
-    height: 34px;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--admin-black, #0a0a0a);
-    border-radius: 50%;
-    background: transparent;
-    color: var(--admin-black, #0a0a0a);
+
+    width: 34px;
+    height: 34px;
+
+    border: 1px solid var(--au-line);
+    border-radius: var(--au-radius-control);
+
+    background: var(--au-surface-2);
+    color: var(--au-text);
     cursor: pointer;
-    transition: background 0.2s ease;
+
+    transition:
+        border-color .2s ease,
+        background .2s ease,
+        color .2s ease;
 }
 
 .admin-audit .au-pager-btns button:hover:not(:disabled) {
-    background: var(--admin-yellow, #facc15);
-    border-color: var(--admin-yellow, #facc15);
+    border-color: var(--au-yellow);
+    background: var(--au-yellow);
+    color: var(--au-yellow-ink);
 }
 
-/* FOOTNOTE */
+/* =========================================================
+   FOOTNOTE
+   ========================================================= */
+
 .admin-audit .au-foot {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 8px;
+
     margin: 0;
     padding: 0 4px;
-    font-size: 11px;
-    color: var(--admin-muted, #8a8a85);
+
+    color: var(--au-muted);
+    font-size: 10px;
 }
 
 .admin-audit .au-foot a {
     margin-left: 6px;
-    font-weight: 600;
+
+    color: var(--au-yellow);
+    font-weight: 750;
+
     text-decoration: underline;
     text-underline-offset: 3px;
-    color: var(--admin-black, #0a0a0a);
 }
 
-/* PRINT VERSION (hidden on screen) */
+.admin-audit .au-foot a:hover {
+    color: var(--au-yellow-hover);
+}
+
+/* =========================================================
+   PRINT
+   ========================================================= */
+
 .admin-audit .au-print {
     display: none;
 }
 
-/* RESPONSIVE */
-@media (max-width: 1280px) {
-    .admin-audit .au-stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 900px) {
-    .admin-audit .au-detail {
-        grid-template-columns: minmax(0, 1fr);
-    }
-}
-
-@media (max-width: 650px) {
-    .admin-audit .au-stats {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .admin-audit .au-heading h1 {
-        font-size: 30px;
-    }
-
-    .admin-audit .au-btn-dark,
-    .admin-audit .au-btn-outline {
-        height: 46px;
-        padding: 0 18px;
-    }
-
-    .admin-audit .au-search {
-        min-width: 100%;
-    }
-
-    .admin-audit .au-meta {
-        grid-template-columns: minmax(0, 1fr);
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .admin-audit .au-row,
-    .admin-audit .au-toggle button,
-    .admin-audit .au-fchip,
-    .admin-audit .au-btn-dark,
-    .admin-audit .au-btn-outline,
-    .admin-audit .au-pager-btns button {
-        transition: none;
-    }
-}
-
-/* Export PDF: print only the audit page, as a plain table of every filtered entry */
 @media print {
     body * {
         visibility: hidden;
@@ -834,8 +1333,10 @@
         left: 0;
         top: 0;
         width: 100%;
+
         padding: 0;
         gap: 0;
+
         color: #000000;
     }
 
@@ -858,8 +1359,8 @@
 
     .admin-audit .au-print p {
         margin: 0 0 12px;
-        font-size: 10px;
         color: #444444;
+        font-size: 10px;
     }
 
     .admin-audit .au-print table {
@@ -872,6 +1373,7 @@
     .admin-audit .au-print td {
         padding: 4px 5px;
         border: 1px solid #bbbbbb;
+
         text-align: left;
         vertical-align: top;
         word-break: break-word;
@@ -883,5 +1385,63 @@
 
     .admin-audit .au-print tr {
         page-break-inside: avoid;
+    }
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1280px) {
+    .admin-audit .au-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .admin-audit .au-detail {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 650px) {
+    .admin-audit {
+        gap: 16px;
+        padding-top: 12px;
+    }
+
+    .admin-audit .au-stats {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .admin-audit .au-heading h1 {
+        font-size: 30px;
+    }
+
+    .admin-audit .au-btn-dark,
+    .admin-audit .au-btn-outline {
+        min-height: 42px;
+        padding: 0 13px;
+    }
+
+    .admin-audit .au-search {
+        min-width: 100%;
+    }
+
+    .admin-audit .au-meta {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-audit *,
+    .admin-audit *::before,
+    .admin-audit *::after {
+        transition: none !important;
+        animation: none !important;
     }
 }

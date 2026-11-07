@@ -6,31 +6,26 @@ import { createInertiaApp } from '@inertiajs/react';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from './Contexts/ThemeContext';
 
+// PUBLIC WEBSITE LAYOUTS
 import MainLayout from './Layouts/MainLayout';
+import COEUASWebsiteLayout from './Layouts/COEUAsWebsiteLayout';
+
+// ADMIN LAYOUTS
 import AdminLayout from './Layouts/AdminLayout';
 import PSBLayout from './Layouts/PSBLayout';
 import COEUASLayout from './Layouts/COEUASLayout';
 
-/* -------------------------------------------------- */
-/* PAGE REGISTRY                                      */
-/* -------------------------------------------------- */
+/* ==========================================================
+   PAGE REGISTRY
+========================================================== */
 
 const pages = import.meta.glob('./Pages/**/*.jsx', {
     eager: true,
 });
 
-/* -------------------------------------------------- */
-/* PAGE ALIASES                                       */
-/* -------------------------------------------------- */
-
-const PAGE_ALIASES = {
-    'admin/coeuas/Dashboard':
-        './Pages/Admin-COEUAS/AdminCOEUASDashboard.jsx',
-};
-
-/* -------------------------------------------------- */
-/* PAGES WITHOUT LAYOUT                               */
-/* -------------------------------------------------- */
+/* ==========================================================
+   PAGES WITHOUT LAYOUT
+========================================================== */
 
 const NO_LAYOUT = [
     /login/i,
@@ -41,58 +36,92 @@ const NO_LAYOUT = [
     /vertiport/i,
 ];
 
-/* -------------------------------------------------- */
-/* ADMIN PAGE DETECTION                               */
-/* -------------------------------------------------- */
+/* ==========================================================
+   NORMALISE PAGE NAME
+========================================================== */
 
-const isAdminPage = (name) => {
-    const first = name.split('/')[0].toLowerCase();
+const normalisePageName = (name) =>
+    name.replace(/\\/g, '/').replace(/\.jsx$/i, '').toLowerCase();
 
-    return (
-        first.startsWith('admin') ||
-        first === 'psb' ||
-        first === 'coeuas' ||
-        first === 'coe-uas'
-    );
-};
+/* ==========================================================
+   WEBSITE DETECTION
+========================================================== */
 
-/* -------------------------------------------------- */
-/* LAYOUT SELECTION                                   */
-/* -------------------------------------------------- */
+// COE-UAS PUBLIC WEBSITE
+const isCOEUASWebsite = (name) =>
+    /^(coe-uas|coeuas)\//i.test(name);
+
+// ADMIN WEBSITES
+const isAdminPage = (name) =>
+    /^admin(?:-|\/)/i.test(name);
+
+// PSB ADMIN
+const isPSBAdmin = (name) =>
+    /^admin-psb\//i.test(name);
+
+// COE-UAS ADMIN
+const isCOEUASAdmin = (name) =>
+    /^admin-coeuas\//i.test(name);
+
+/* ==========================================================
+   LAYOUT SELECTION
+========================================================== */
 
 function pickLayout(name) {
-    if (!isAdminPage(name)) {
-        return (content) => (
-            <MainLayout>{content}</MainLayout>
-        );
-    }
+    const pageName = normalisePageName(name);
 
-    if (NO_LAYOUT.some((pattern) => pattern.test(name))) {
+    // 1. Pages without layout
+    if (NO_LAYOUT.some((pattern) => pattern.test(pageName))) {
         return (content) => content;
     }
 
-    const key = name.toLowerCase();
-
-    if (/(^|[\/-])psb(\/|-|$)/.test(key)) {
+    // 2. COE-UAS PUBLIC WEBSITE
+    if (isCOEUASWebsite(pageName)) {
         return (content) => (
-            <PSBLayout>{content}</PSBLayout>
+            <COEUASWebsiteLayout>
+                {content}
+            </COEUASWebsiteLayout>
         );
     }
 
-    if (/(^|[\/-])coe-?uas(\/|-|$)/.test(key)) {
+    // 3. PSB ADMIN WEBSITE
+    if (isPSBAdmin(pageName)) {
         return (content) => (
-            <COEUASLayout>{content}</COEUASLayout>
+            <PSBLayout>
+                {content}
+            </PSBLayout>
         );
     }
 
+    // 4. COE-UAS ADMIN WEBSITE
+    if (isCOEUASAdmin(pageName)) {
+        return (content) => (
+            <COEUASLayout>
+                {content}
+            </COEUASLayout>
+        );
+    }
+
+    // 5. SUPER ADMIN WEBSITE
+    if (isAdminPage(pageName)) {
+        return (content) => (
+            <AdminLayout>
+                {content}
+            </AdminLayout>
+        );
+    }
+
+    // 6. PSB PUBLIC WEBSITE (DEFAULT)
     return (content) => (
-        <AdminLayout>{content}</AdminLayout>
+        <MainLayout>
+            {content}
+        </MainLayout>
     );
 }
 
-/* -------------------------------------------------- */
-/* INERTIA APPLICATION                                */
-/* -------------------------------------------------- */
+/* ==========================================================
+   INERTIA APPLICATION
+========================================================== */
 
 createInertiaApp({
     title: (title) =>
@@ -101,24 +130,19 @@ createInertiaApp({
             : 'Perlis Airspace Sandbox',
 
     resolve: (name) => {
-        const pagePath =
-            PAGE_ALIASES[name] || `./Pages/${name}.jsx`;
-
+        const pagePath = `./Pages/${name}.jsx`;
         const page = pages[pagePath];
 
         if (!page) {
             console.error('Page not found:', name);
             console.error('Expected file:', pagePath);
-            console.error(
-                'Available pages:',
-                Object.keys(pages)
-            );
-
+            console.error('Available pages:', Object.keys(pages));
             throw new Error(`Page not found: ${name}`);
         }
 
         if (import.meta.env.DEV) {
-            console.info('[inertia page]', name);
+            console.info('[Inertia Page]', name);
+            console.info('[Selected Layout]', page.default.layout ? 'Custom Page Layout' : 'Automatic Layout');
         }
 
         page.default.layout =

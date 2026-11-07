@@ -76,6 +76,7 @@ export const PSB_NAV = [
                 key: "site-information",
                 label: "Site Information",
                 icon: "pin",
+                href: p("/site-information"),
                 children: [
                     { label: "Location and Access", href: p("/site-information/location") },
                     { label: "Facilities and Infrastructure", href: p("/site-information/facilities") },
@@ -88,6 +89,7 @@ export const PSB_NAV = [
                 key: "media-centre",
                 label: "Media Centre",
                 icon: "image",
+                href: p("/media-centre"),
                 children: [
                     { label: "News and Project Updates", href: p("/media-centre/news") },
                     { label: "Press Releases", href: p("/media-centre/press-releases") },
@@ -100,6 +102,7 @@ export const PSB_NAV = [
                 key: "faq",
                 label: "FAQ",
                 icon: "help",
+                href: "/admin/psb/faq",
                 children: [
                     { label: "FAQ categories", href: p("/faq/categories") },
                     { label: "Questions and answers", href: p("/faq/questions") },
@@ -115,6 +118,7 @@ export const PSB_NAV = [
                 label: "Contact and Enquiries",
                 icon: "mail",
                 badge: "enquiries",
+                href: p("/contact"),
                 children: [
                     { label: "Programme contact persons", href: p("/contact/persons") },
                     { label: "Email, phone, address, hours", href: p("/contact/details") },
@@ -133,6 +137,7 @@ export const PSB_NAV = [
                 key: "settings",
                 label: "Navigation and Settings",
                 icon: "sliders",
+                href: p("/settings"),
                 children: [
                     { label: "Header menu and Apply button", href: p("/settings/navigation") },
                     { label: "Footer and social links", href: p("/settings/footer") },
@@ -143,6 +148,7 @@ export const PSB_NAV = [
                 key: "account",
                 label: "My Account",
                 icon: "user",
+                href:p("/account"),
                 children: [
                     { label: "Profile and password", href: p("/account") },
                     { label: "My activity log", href: p("/account/activity") },

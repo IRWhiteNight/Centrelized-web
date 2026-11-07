@@ -1,0 +1,201 @@
+/* COE-UAS Facilities & Services: black and blue, slide-style sections.
+   If a fixed navbar sits above the page, set --fac-nav-h on .fac (e.g. 72px).
+
+   Every class is prefixed "fac-" so rules from home.css / about.css (which stay loaded
+   when you navigate with Inertia) cannot affect this page. */
+.fac {
+  --black: #010308;
+  --navy: #04112b;
+  --blue: #2f7bff;
+  --cyan: #3fd9ff;
+  --text: #e9f1ff;
+  --muted: #8ea6cf;
+  --line: rgba(80, 140, 255, 0.22);
+  --ease: cubic-bezier(0.77, 0, 0.18, 1);
+  --mx: 0;
+  --my: 0;
+  position: relative;
+  width: 100%;
+  height: calc(100dvh - var(--fac-nav-h, 0px));
+  margin-top: var(--fac-nav-h, 0px);
+  overflow: hidden;
+  background: var(--black);
+  color: var(--text);
+  font-family: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  box-sizing: border-box;
+}
+.fac *, .fac *::before, .fac *::after { box-sizing: border-box; }
+
+/* ---------- background ---------- */
+.fac-bg { position: absolute; inset: 0; pointer-events: none; }
+.fac-bg::after { content: ""; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 120%, rgba(47, 123, 255, 0.18), transparent 60%); }
+.fac-grid {
+  position: absolute; inset: -60px;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at center, #000 20%, transparent 75%);
+  animation: fac-grid-drift 14s linear infinite;
+}
+@keyframes fac-grid-drift { to { transform: translate(64px, 64px); } }
+.fac-orb { position: absolute; border-radius: 50%; filter: blur(80px); transition: transform 0.6s ease-out; }
+.fac-orb--a { width: 46vmax; height: 46vmax; left: -12vmax; top: -16vmax; background: rgba(47, 123, 255, 0.35); transform: translate(calc(var(--mx) * 60px), calc(var(--my) * 60px)); animation: fac-breathe 9s ease-in-out infinite; }
+.fac-orb--b { width: 34vmax; height: 34vmax; right: -10vmax; bottom: -12vmax; background: rgba(63, 217, 255, 0.22); transform: translate(calc(var(--mx) * -80px), calc(var(--my) * -80px)); animation: fac-breathe 11s ease-in-out infinite reverse; }
+@keyframes fac-breathe { 50% { opacity: 0.55; scale: 1.12; } }
+.fac-scan { position: absolute; left: 0; right: 0; height: 120px; background: linear-gradient(transparent, rgba(63, 217, 255, 0.07), transparent); animation: fac-scan 7s linear infinite; }
+@keyframes fac-scan { from { top: -120px; } to { top: 100%; } }
+
+/* ---------- chrome: progress, counter, rail ---------- */
+.fac-progress { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: rgba(255, 255, 255, 0.06); z-index: 30; }
+.fac-progress span { display: block; height: 100%; transform-origin: left; background: linear-gradient(90deg, var(--blue), var(--cyan)); box-shadow: 0 0 14px var(--cyan); transition: transform 0.9s var(--ease); }
+
+.fac-count { position: absolute; left: clamp(20px, 4vw, 56px); bottom: 28px; z-index: 30; display: flex; align-items: baseline; gap: 8px; overflow: hidden; }
+.fac-count__n { font-size: 2.2rem; font-weight: 700; color: var(--cyan); animation: fac-roll 0.7s var(--ease) both; }
+.fac-count__t { color: var(--muted); }
+.fac-count__label { margin-left: 12px; color: var(--muted); font-size: 0.9rem; }
+@keyframes fac-roll { from { transform: translateY(100%); opacity: 0; } }
+
+.fac-rail { position: absolute; right: clamp(14px, 2.5vw, 34px); top: 50%; transform: translateY(-50%); z-index: 30; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.fac-rail button { all: unset; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 7px 4px; }
+.fac-rail__label { font-size: 0.85rem; color: var(--text); opacity: 0; transform: translateX(10px); transition: 0.3s; pointer-events: none; white-space: nowrap; }
+.fac-rail button:hover .fac-rail__label, .fac-rail button:focus-visible .fac-rail__label { opacity: 1; transform: none; }
+.fac-rail__dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--muted); transition: 0.4s var(--ease); }
+.fac-rail .is-on .fac-rail__dot { height: 30px; border-radius: 6px; border-color: var(--cyan); background: var(--cyan); box-shadow: 0 0 14px var(--cyan); }
+.fac-rail button:focus-visible .fac-rail__dot { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+/* ---------- the curtain wipe ---------- */
+.fac-wipe { position: absolute; inset: 0; z-index: 20; pointer-events: none; background: linear-gradient(115deg, var(--black) 0 40%, var(--blue) 40% 44%, var(--cyan) 44% 45%, var(--navy) 45% 100%); animation: fac-wipe-down 0.95s var(--ease) both; }
+.fac-wipe.is-up { animation-name: fac-wipe-up; }
+@keyframes fac-wipe-down { 0% { clip-path: inset(0 0 100% 0); } 45% { clip-path: inset(0); } 100% { clip-path: inset(100% 0 0 0); } }
+@keyframes fac-wipe-up { 0% { clip-path: inset(100% 0 0 0); } 45% { clip-path: inset(0); } 100% { clip-path: inset(0 0 100% 0); } }
+
+/* ---------- slides ---------- */
+.fac .fac-slide {
+  position: absolute; inset: 0; z-index: 1;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: row; align-items: center; justify-content: center;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 72px clamp(20px, 7vw, 120px) 80px;
+  background: transparent;
+  visibility: hidden; opacity: 0;
+  transition: transform 0.95s var(--ease), opacity 0.6s ease 0.2s, clip-path 0.95s var(--ease), visibility 0s linear 0.95s;
+}
+.fac .fac-slide[data-state="before"] { transform: translateY(-6%) scale(1.06); clip-path: inset(0 0 100% 0); }
+.fac .fac-slide[data-state="after"] { transform: translateY(6%) scale(0.94); clip-path: inset(100% 0 0 0); }
+.fac .fac-slide[data-state="active"] { visibility: visible; opacity: 1; transform: none; clip-path: inset(0); z-index: 2; transition-delay: 0.25s, 0.3s, 0.25s, 0s; }
+
+.fac-slide__in { width: min(1000px, 100%); margin: auto; }
+.fac-slide__in--wide { width: min(1180px, 100%); }
+.fac-slide__in--split { width: min(1180px, 100%); display: grid; grid-template-columns: 1fr 1.1fr; gap: clamp(24px, 5vw, 72px); align-items: center; }
+
+/* content reveals only once its slide is active, after the curtain passes */
+.fac-rv { opacity: 0; transform: translateY(34px); filter: blur(6px); transition: opacity 0.7s ease, transform 0.8s var(--ease), filter 0.7s ease; transition-delay: 0s; }
+.fac-slide[data-state="active"] .fac-rv { opacity: 1; transform: none; filter: none; transition-delay: calc(0.55s + var(--d, 0) * 0.09s); }
+
+.fac h2 { margin: 0 0 14px; font-size: clamp(1.9rem, 4.2vw, 3.4rem); line-height: 1.05; font-weight: 700; letter-spacing: -0.02em; background: linear-gradient(180deg, #fff, #9cc2ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fac h3 { margin: 0 0 8px; font-size: 1.12rem; line-height: 1.25; }
+.fac p { margin: 0; color: var(--muted); line-height: 1.55; }
+.fac .fac-lead { max-width: 56ch; font-size: clamp(1rem, 1.5vw, 1.2rem); margin-bottom: 28px; }
+
+.fac .fac-btn { display: inline-block; padding: 14px 26px; border-radius: 999px; border: 1px solid var(--blue); background: linear-gradient(135deg, var(--blue), #1647c7); color: #fff; font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; transition: transform 0.3s var(--ease), box-shadow 0.3s; }
+.fac .fac-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(47, 123, 255, 0.5); }
+.fac .fac-btn--ghost { background: transparent; color: var(--text); border-color: var(--line); }
+.fac a:focus-visible, .fac button:focus-visible, .fac-panel:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+
+/* ---------- 0 overview ---------- */
+.fac-slide--intro .fac-slide__in { width: min(1180px, 100%); position: relative; z-index: 2; }
+.fac-title { margin: 6px 0 22px; max-width: 16ch; font-size: clamp(2.4rem, 7vw, 5.6rem); line-height: 1; font-weight: 700; letter-spacing: -0.03em; color: #fff; }
+.fac-word { display: inline-block; overflow: hidden; vertical-align: top; }
+.fac-word > span { display: inline-block; transform: translateY(110%); transition: transform 0.9s var(--ease); }
+.fac-slide[data-state="active"] .fac-word > span { transform: none; transition-delay: calc(0.55s + var(--d) * 0.07s); }
+.fac-stats { display: flex; flex-wrap: wrap; gap: 14px 40px; list-style: none; margin: 0 0 32px; padding: 0; }
+.fac-stats b { display: block; font-size: clamp(2rem, 4vw, 3rem); color: var(--cyan); line-height: 1; }
+.fac-stats span { color: var(--muted); font-size: 0.9rem; }
+.fac-hint { all: unset; cursor: pointer; display: inline-flex; align-items: center; gap: 12px; color: var(--muted); font-size: 0.9rem; }
+.fac-hint:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
+.fac-hint__mouse { width: 22px; height: 34px; border: 1.5px solid var(--muted); border-radius: 12px; display: grid; justify-items: center; padding-top: 6px; }
+.fac-hint__mouse i { width: 3px; height: 7px; border-radius: 2px; background: var(--cyan); animation: fac-wheel 1.6s ease-in-out infinite; }
+@keyframes fac-wheel { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(12px); opacity: 0; } }
+
+.fac-radar { position: absolute; right: clamp(-120px, -6vw, -20px); top: 50%; width: min(60vmin, 560px); transform: translateY(-50%); z-index: 1; opacity: 0.85; }
+.fac-radar circle, .fac-radar path { fill: none; stroke: var(--line); stroke-width: 1; }
+.fac-radar__sweep { transform-origin: 200px 200px; animation: fac-spin 5s linear infinite; }
+.fac-radar__sweep path { fill: rgba(63, 217, 255, 0.22); stroke: var(--cyan); }
+@keyframes fac-spin { to { transform: rotate(360deg); } }
+.fac-radar .fac-blip { fill: var(--cyan); stroke: none; animation: fac-blip 5s linear infinite; }
+.fac-radar .fac-b2 { animation-delay: 1.6s; } .fac-radar .fac-b3 { animation-delay: 3.2s; }
+@keyframes fac-blip { 0% { opacity: 1; r: 4; } 30% { opacity: 0; r: 14; } 100% { opacity: 0; } }
+
+/* ---------- 1 facility panels: a row that opens on hover ---------- */
+.fac-panels { display: flex; gap: 14px; height: clamp(300px, 52vh, 440px); }
+.fac-panel { position: relative; flex: 1; min-width: 0; overflow: hidden; padding: 24px; border: 1px solid var(--line); border-radius: 18px; background: linear-gradient(180deg, rgba(10, 30, 70, 0.55), rgba(2, 6, 16, 0.85)); cursor: pointer; display: flex; flex-direction: column; justify-content: flex-end; transition: flex 0.8s var(--ease), border-color 0.4s, box-shadow 0.4s; }
+.fac-panel.is-open { flex: 3.2; border-color: var(--cyan); box-shadow: 0 0 40px rgba(47, 123, 255, 0.28) inset; }
+.fac-panel__bar { position: absolute; left: 0; top: 0; height: 3px; width: 100%; background: linear-gradient(90deg, var(--blue), var(--cyan)); transform: scaleX(0); transform-origin: left; transition: transform 0.8s var(--ease); }
+.fac-panel.is-open .fac-panel__bar { transform: none; }
+.fac-panel h3 { font-size: 1.2rem; transition: font-size 0.5s; }
+.fac-panel.is-open h3 { font-size: 1.7rem; }
+.fac-panel p { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.7s var(--ease), opacity 0.5s; }
+.fac-panel.is-open p { max-height: 160px; opacity: 1; transition-delay: 0.2s; }
+
+/* ---------- 2 sandbox map ---------- */
+.fac-chips { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0 0 28px; }
+.fac-chips li { padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: rgba(47, 123, 255, 0.08); font-size: 0.88rem; }
+.fac-map { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 20px; background: radial-gradient(circle at 50% 70%, rgba(47, 123, 255, 0.16), rgba(1, 3, 8, 0.8)); }
+.fac-map text { fill: var(--text); font-size: 15px; }
+.fac-route { fill: none; stroke: var(--cyan); stroke-width: 2.5; stroke-dasharray: 8 10; animation: fac-dash 1.4s linear infinite; filter: drop-shadow(0 0 6px var(--cyan)); }
+.fac-route--w { stroke: var(--blue); }
+@keyframes fac-dash { to { stroke-dashoffset: -36; } }
+.fac-node { fill: #fff; }
+.fac-pulse { fill: none; stroke: var(--cyan); stroke-width: 2; transform-origin: 400px 330px; animation: fac-ping 2.2s ease-out infinite; }
+@keyframes fac-ping { from { transform: scale(1); opacity: 1; } to { transform: scale(4.2); opacity: 0; } }
+.fac-flyer { fill: #fff; filter: drop-shadow(0 0 8px var(--cyan)); }
+
+/* ---------- 3 service flow (a real sequence, so it is numbered) ---------- */
+.fac-flow { list-style: none; margin: 40px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; position: relative; }
+.fac-flow::before { content: ""; position: absolute; left: 24px; right: 24px; top: 24px; height: 2px; background: linear-gradient(90deg, var(--blue), var(--cyan), var(--blue)); background-size: 200% 100%; animation: fac-flowline 3s linear infinite; opacity: 0.6; }
+@keyframes fac-flowline { to { background-position: -200% 0; } }
+.fac-flow li { position: relative; padding-top: 64px; }
+.fac-flow__n { position: absolute; top: 0; left: 0; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; background: var(--black); border: 2px solid var(--cyan); color: var(--cyan); font-weight: 700; box-shadow: 0 0 20px rgba(63, 217, 255, 0.4); }
+
+/* ---------- 4 solution tiles ---------- */
+.fac-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 28px; perspective: 900px; }
+.fac-tile { position: relative; min-height: 130px; padding: 20px; display: flex; align-items: flex-end; overflow: hidden; border: 1px solid var(--line); border-radius: 16px; background: rgba(6, 18, 44, 0.6); color: var(--text); text-decoration: none; font-weight: 600; line-height: 1.3; }
+.fac-tile:first-child { grid-column: span 2; }
+.fac-tile::before { content: ""; position: absolute; inset: 0; background: radial-gradient(240px circle at var(--x, 50%) var(--y, 50%), rgba(63, 217, 255, 0.28), transparent 70%); opacity: 0; transition: opacity 0.3s; }
+.fac-tile:hover::before { opacity: 1; }
+.fac-tile span { position: relative; }
+.fac-slide[data-state="active"] .fac-tile { transition-property: opacity, transform, filter, border-color; }
+.fac-slide[data-state="active"] .fac-tile:hover { transform: rotateX(var(--rx, 0)) rotateY(var(--ry, 0)) translateY(-4px); border-color: var(--cyan); transition-delay: 0s; transition-duration: 0.25s; }
+
+/* ---------- 5 training ---------- */
+.fac-stack { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.fac-stack li > a, .fac-stack li > div { display: block; padding: 18px 22px; border: 1px solid var(--line); border-left: 3px solid var(--blue); border-radius: 14px; background: rgba(6, 18, 44, 0.55); color: inherit; text-decoration: none; transition: transform 0.35s var(--ease), border-color 0.3s, background 0.3s; }
+.fac-stack li > a:hover, .fac-stack li > div:hover { transform: translateX(10px); border-left-color: var(--cyan); background: rgba(47, 123, 255, 0.14); }
+
+/* ---------- 6 enquire ---------- */
+.fac-slide--end .fac-title--end { max-width: 14ch; background: linear-gradient(90deg, #fff, var(--cyan)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.fac-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 40px; }
+.fac-foot { font-size: 0.85rem; }
+
+/* ---------- small screens ---------- */
+@media (max-width: 900px) {
+  .fac .fac-slide { align-items: flex-start; padding-top: 64px; }
+  .fac-slide__in--split { grid-template-columns: 1fr; }
+  .fac-panels { flex-direction: column; height: auto; }
+  .fac-panel { flex: none; min-height: 84px; justify-content: flex-start; }
+  .fac-panel.is-open { min-height: 190px; }
+  .fac-flow { grid-template-columns: 1fr 1fr; }
+  .fac-flow::before { display: none; }
+  .fac-tiles { grid-template-columns: 1fr 1fr; }
+  .fac-radar { opacity: 0.25; right: -30vmin; }
+  .fac-rail__label, .fac-count__label { display: none; }
+}
+@media (max-width: 520px) {
+  .fac-flow, .fac-tiles { grid-template-columns: 1fr; }
+  .fac-tile:first-child { grid-column: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fac *, .fac *::before, .fac *::after { animation: none !important; transition-duration: 0.01s !important; transition-delay: 0s !important; }
+  .fac-rv, .fac-word > span { opacity: 1 !important; transform: none !important; filter: none !important; }
+  .fac-wipe { display: none; }
+}

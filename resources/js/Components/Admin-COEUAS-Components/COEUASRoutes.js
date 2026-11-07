@@ -33,7 +33,7 @@ export const SHARED = {
     workspaces: "/admin/super/workspaces",
     users: "/admin/super/users",
     auditLogs: "/admin/super/audit-logs",
-    trash: "/admin/super/trash",
+    trash: "/admin/super/content-trash",
     logout: "/logout",
 };
 
@@ -70,6 +70,7 @@ export const COEUAS_NAV = [
                 key: "home",
                 label: "Home Page",
                 icon: "home",
+                href: r("/home/banner"), // clicking "Home Page" opens this page and the dropdown
                 children: [
                     { label: "Main banner and introduction", href: r("/home/banner") },
                     { label: "Research focus and capabilities", href: r("/home/research-focus") },
@@ -82,6 +83,7 @@ export const COEUAS_NAV = [
                 key: "about",
                 label: "About",
                 icon: "about",
+                href: r("/about/overview"),
                 children: [
                     { label: "About COE-UAS", href: r("/about/overview"), hint: "Background, vision, mission" },
                     { label: "History and Milestones", href: r("/about/history"), hint: "2013 - 2026" },
@@ -94,6 +96,7 @@ export const COEUAS_NAV = [
                 key: "people",
                 label: "People",
                 icon: "users",
+                href: r("/people/members"),
                 children: [
                     { label: "Member categories and directory", href: r("/people/members") },
                     { label: "Member profile", href: r("/people/profiles"), hint: "13 sections" },
@@ -111,6 +114,7 @@ export const COEUAS_NAV = [
                 key: "research",
                 label: "Research and Innovation",
                 icon: "flask",
+                href: r("/research/groups"),
                 children: [
                     { label: "Research areas and groups", href: r("/research/groups") },
                     { label: "Research projects", href: r("/research/projects") },
@@ -124,6 +128,7 @@ export const COEUAS_NAV = [
                 key: "publications",
                 label: "Publications and Impact",
                 icon: "book",
+                href: r("/publications"),
                 children: [
                     { label: "Publications", href: r("/publications"), hint: "Journal, conference, book, other" },
                     { label: "Author-to-member linking", href: r("/publications/authors") },
@@ -142,6 +147,7 @@ export const COEUAS_NAV = [
                 key: "facilities",
                 label: "Facilities and Services",
                 icon: "building",
+                href: r("/facilities/equipment"),
                 children: [
                     { label: "Facilities and equipment", href: r("/facilities/equipment") },
                     { label: "Engineering and technical services", href: r("/facilities/services") },
@@ -153,6 +159,7 @@ export const COEUAS_NAV = [
                 key: "engagement",
                 label: "Engagement",
                 icon: "globe",
+                href: r("/engagement/linkages"),
                 children: [
                     { label: "Networking and linkages", href: r("/engagement/linkages") },
                     { label: "Membership and affiliations", href: r("/engagement/affiliations") },
@@ -172,6 +179,7 @@ export const COEUAS_NAV = [
                 label: "Contact and Enquiries",
                 icon: "mail",
                 badge: "enquiries",
+                href: r("/contact/details"),
                 children: [
                     { label: "Contact details and offices", href: r("/contact/details") },
                     {
@@ -206,6 +214,7 @@ export const COEUAS_NAV = [
                 key: "settings",
                 label: "Navigation and Settings",
                 icon: "sliders",
+                href: r("/settings/menus"),
                 children: [
                     { label: "Header and footer menus", href: r("/settings/menus") },
                     { label: "Logo, SEO defaults, social links", href: r("/settings/site"), hint: "Site settings and footer" },
