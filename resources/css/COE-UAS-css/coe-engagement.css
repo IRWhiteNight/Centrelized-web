@@ -1,353 +1,382 @@
-/* ═══════════════════════════════════════════════════════════════
-   COE-UAS · ENGAGEMENT PAGE
-   Change the look from the variables right below.
-   Every class is prefixed `eg-` so nothing leaks into other pages.
-   ═══════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap');
 
-html.eg-lock,
-html.eg-lock body { overflow: hidden !important; overscroll-behavior: none; }
+/* ==========================================================================
+   COE-UAS ENGAGEMENT: black / blue / white
+   Same design system as the People page. Scoped to .ng (root of Engagement.jsx),
+   every class starts with "ng-", so nothing leaks to or from other pages
+   (this also replaces the old eg- scene styles).
 
-.eg-root {
-  --bg: #02050d;
-  --blue: #2d8cff;
-  --cyan: #3fe0ff;
-  --ink: #e8f1ff;
-  --mute: #8fa7cf;
-  --line: rgba(80, 160, 255, 0.22);
-  --glass: rgba(7, 18, 44, 0.58);
-  --accent: var(--cyan);
-  --display: "Rajdhani", "Bahnschrift", "Segoe UI", system-ui, sans-serif;
-  --body: "Inter", "Segoe UI", system-ui, sans-serif;
-  --cx: 50vw; --cy: 50vh;
+   --ng-nav = space kept free at the top of the hero for the COE-UAS navbar.
+   The sticky section menu always sticks to the very top (top: 0).
 
-  position: fixed; inset: 0; z-index: 50;
-  overflow: hidden;
-  background: radial-gradient(120% 90% at 50% 0%, #07163a 0%, var(--bg) 62%);
-  color: var(--ink);
-  font-family: var(--body);
-  -webkit-font-smoothing: antialiased;
+   Section tones (set per section in engagementContent.js):
+   dark (black) | navy (deep blue-black) | light (white) | blue (royal blue)
+========================================================================== */
+
+.ng {
+    --ng-nav: 72px;
+    --b: #2997ff;
+    --royal: #0a4dff;
+    --ice: #8fd0ff;
+    --ink: #050816;
+    --gut: clamp(16px, 2.6vw, 44px);
+    --sec: clamp(48px, 5.4vw, 88px);
+    --r: 22px;
+    --g: clamp(12px, 1.3vw, 18px);
+    --ease: cubic-bezier(.16, 1, .3, 1);
+    --progress: 0;
+
+    position: relative;
+    font-family: 'Inter Tight', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.5;
+    letter-spacing: -0.02em;
+    color: #f4f7fb;
+    background: #000;
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
-.eg-root *, .eg-root *::before, .eg-root *::after { box-sizing: border-box; }
-.eg-root button { font: inherit; color: inherit; cursor: pointer; background: none; border: 0; }
-.eg-root a { color: inherit; text-decoration: none; }
-.eg-root h1, .eg-root h2, .eg-root h3, .eg-root p, .eg-root ul, .eg-root ol { margin: 0; padding: 0; }
-.eg-root ul, .eg-root ol { list-style: none; }
-.eg-icon { flex: none; }
+.ng *, .ng *::before, .ng *::after { box-sizing: border-box; }
+.ng :is(h1, h2, h3, h4, p, ul, ol, figure, dl, dd, dt) { margin: 0; padding: 0; }
+.ng :is(ul, ol) { list-style: none; }
+.ng button { font: inherit; letter-spacing: inherit; color: inherit; cursor: pointer; background: none; border: 0; padding: 0; }
+.ng a { color: inherit; text-decoration: none; }
+.ng img { display: block; max-width: 100%; }
+.ng :is(h1, h2, h3, h4, p, li, dd) { overflow-wrap: break-word; }
+.ng ::selection { background: var(--b); color: #000; }
+.ng :focus-visible { outline: 2px solid var(--b); outline-offset: 3px; }
+.ng :is(.ng-light, .ng-blue) :focus-visible { outline-color: var(--royal); }
+.ng .ng-blue :focus-visible { outline-color: #fff; }
+.ng-icon { flex: none; }
 
-/* ───────────── ATMOSPHERE LAYERS ───────────── */
-.eg-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* keep the layout navbar above the page (same values as the People page) */
+.cn { z-index: 100; }
+.cn-scrim { z-index: 99; }
+.cn-m { z-index: 101; }
 
-.eg-floor {
-  position: absolute; left: -50%; right: -50%; bottom: -12%; height: 52%;
-  background-image:
-    linear-gradient(rgba(63, 160, 255, 0.28) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(63, 160, 255, 0.28) 1px, transparent 1px);
-  background-size: 64px 64px;
-  transform: perspective(520px) rotateX(64deg);
-  animation: eg-floor 3.2s linear infinite;
-  -webkit-mask-image: linear-gradient(to top, #000, transparent 85%);
-          mask-image: linear-gradient(to top, #000, transparent 85%);
-  opacity: 0.55; pointer-events: none;
-}
-@keyframes eg-floor { to { background-position: 0 64px, 0 0; } }
+.ng-wrap { width: calc(100% - 2 * var(--gut)); max-width: 1920px; margin-inline: auto; }
 
-.eg-aurora i {
-  position: absolute; width: 46vmax; height: 46vmax; border-radius: 50%;
-  filter: blur(90px); opacity: 0.22; pointer-events: none;
-  animation: eg-drift 22s ease-in-out infinite alternate;
+/* ---------- section tones ----------
+   --card/--cfg/--cmut = card surface, its text and its quiet text
+   --tagbg/--tagfg     = small tags and round icon badges
+   --kbg/--kfg         = number badge, active tab
+   --link              = accent text on cards                                   */
+.ng-dark {
+    --bg: #03050b; --fg: #f4f7fb; --mut: rgba(255, 255, 255, .78); --line: rgba(255, 255, 255, .14);
+    --card: #0c1730; --cfg: #f4f7fb; --cmut: rgba(244, 247, 251, .78); --chip: rgba(255, 255, 255, .07);
+    --shadow: inset 0 0 0 1px rgba(41, 151, 255, .2), 0 30px 60px -34px #000;
+    --tagbg: var(--b); --tagfg: #02060f; --link: var(--ice); --kbg: var(--b); --kfg: #02060f;
+    color: #f4f7fb;
 }
-.eg-aurora i:nth-child(1) { background: #1b5cff; left: -14vmax; top: -16vmax; }
-.eg-aurora i:nth-child(2) { background: #0fb7ff; right: -18vmax; bottom: -20vmax; animation-delay: -7s; }
-.eg-aurora i:nth-child(3) { background: #5b3cff; left: 36%; top: 40%; opacity: 0.12; animation-delay: -13s; }
-@keyframes eg-drift { to { transform: translate(8vmax, 6vmax) scale(1.2); } }
-
-.eg-spot {
-  position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(circle 380px at var(--cx) var(--cy), rgba(60, 150, 255, 0.16), transparent 70%);
+.ng-navy {
+    --bg: #04122b; --fg: #f4f7fb; --mut: rgba(255, 255, 255, .8); --line: rgba(255, 255, 255, .16);
+    --card: #0a1d44; --cfg: #f4f7fb; --cmut: rgba(244, 247, 251, .8); --chip: rgba(255, 255, 255, .08);
+    --shadow: inset 0 0 0 1px rgba(143, 208, 255, .22), 0 30px 60px -34px #000;
+    --tagbg: var(--b); --tagfg: #02060f; --link: var(--ice); --kbg: var(--b); --kfg: #02060f;
+    color: #f4f7fb;
 }
-.eg-scan {
-  position: absolute; inset: 0; pointer-events: none; opacity: 0.35; mix-blend-mode: overlay;
-  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
+.ng-light {
+    --bg: #f2f6fc; --fg: #0a1020; --mut: rgba(10, 16, 32, .72); --line: rgba(10, 16, 32, .13);
+    --card: #fff; --cfg: #0a1020; --cmut: rgba(10, 16, 32, .74); --chip: #fff;
+    --shadow: 0 24px 50px -32px rgba(10, 30, 80, .32);
+    --tagbg: var(--royal); --tagfg: #fff; --link: var(--royal); --kbg: var(--royal); --kfg: #fff;
+    color: #0a1020;
 }
-.eg-vignette {
-  position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.72) 100%);
-}
-
-/* giant outlined scene number */
-.eg-ghost {
-  position: absolute; right: 3vw; bottom: 2vh; pointer-events: none;
-  font-family: var(--display); font-weight: 700; line-height: 0.8;
-  font-size: clamp(9rem, 26vw, 24rem);
-  color: transparent; -webkit-text-stroke: 1px rgba(80, 170, 255, 0.22);
-}
-
-/* light bar that sweeps across during every transition */
-.eg-sweep {
-  position: absolute; top: 0; bottom: 0; left: 0; width: 100%; z-index: 30; pointer-events: none;
-  background: linear-gradient(90deg, transparent 46%, rgba(120, 210, 255, 0.9) 50%, transparent 54%);
-  mix-blend-mode: screen; filter: blur(2px);
+.ng-blue {
+    --bg: var(--royal); --fg: #fff; --mut: rgba(255, 255, 255, .88); --line: rgba(255, 255, 255, .3);
+    --card: #fff; --cfg: #0a1020; --cmut: rgba(10, 16, 32, .74); --chip: rgba(255, 255, 255, .92);
+    --shadow: 0 24px 50px -30px rgba(0, 10, 60, .6);
+    --tagbg: var(--royal); --tagfg: #fff; --link: var(--royal); --kbg: #fff; --kfg: var(--royal);
+    color: #fff;
 }
 
-/* ───────────── SCENE SHELL ───────────── */
-.eg-scene { position: absolute; inset: 0; z-index: 5; will-change: transform, clip-path, opacity; }
-.eg-scene-inner {
-  position: absolute; inset: 0; display: flex; overflow-y: auto; overflow-x: hidden;
-  padding: clamp(1.2rem, 4vh, 3rem) clamp(1.2rem, 6vw, 6rem) 6.2rem;
-  scrollbar-width: none;
+/* ---------- reveal + panel entrance ---------- */
+.ng-rv { opacity: 0; transform: translateY(30px); transition: opacity .85s var(--ease), transform .85s var(--ease); transition-delay: calc(var(--d, 0) * 1ms); }
+.ng-rv.in { opacity: 1; transform: none; }
+.ng-pop { opacity: 0; animation: ng-in .7s var(--ease) forwards; animation-delay: calc(var(--d, 0) * 1ms); }
+
+/* ---------- buttons ---------- */
+.ng-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 12px;
+    height: 54px; padding: 0 28px 0 6px; border-radius: 99px;
+    background: var(--b); color: #02060f; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; white-space: nowrap;
+    transform: translate(var(--tx, 0), var(--ty, 0));
+    transition: transform .45s var(--ease), background .3s, color .3s, box-shadow .3s;
 }
-.eg-scene-inner::-webkit-scrollbar { display: none; }
-.eg-body { margin: auto; width: 100%; max-width: 1240px; position: relative; z-index: 2; }
+.ng-btn .ng-arrow { order: -1; flex: none; width: 42px; height: 42px; padding: 13px; border-radius: 50%; background: #000; color: var(--b); transition: transform .45s var(--ease); }
+.ng-btn:hover { box-shadow: 0 14px 34px -14px rgba(41, 151, 255, .9); }
+.ng-btn:hover .ng-arrow { transform: translateX(3px); }
+.ng-btn--ghost { background: rgba(5, 8, 22, .45); color: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.ng-btn--ghost .ng-arrow { background: #fff; color: var(--ink); }
+.ng-btn--ghost:hover { background: #fff; color: var(--ink); box-shadow: none; }
+.ng-btn--ghost:hover .ng-arrow { background: var(--royal); color: #fff; }
 
-/* ───────────── TYPE ───────────── */
-.eg-eyebrow {
-  font-family: var(--display); font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase;
-  font-size: clamp(0.72rem, 1.1vw, 0.95rem); color: var(--cyan); margin-bottom: 0.9rem;
-  display: inline-flex; align-items: center; gap: 0.8rem;
+.ng-link {
+    display: inline-flex; align-items: center; gap: 8px; font-size: .92rem; font-weight: 600; color: var(--link, var(--ice));
+    background-image: linear-gradient(currentColor, currentColor); background-repeat: no-repeat;
+    background-size: 0 2px; background-position: 0 100%; padding-bottom: 3px; transition: background-size .5s var(--ease);
 }
-.eg-eyebrow::before { content: ""; width: 38px; height: 2px; background: linear-gradient(90deg, var(--blue), var(--cyan)); box-shadow: 0 0 12px var(--cyan); }
-.eg-title {
-  font-family: var(--display); font-weight: 700; text-transform: uppercase; line-height: 0.98;
-  font-size: clamp(2.2rem, 5.4vw, 4.6rem); letter-spacing: 0.01em;
-  background: linear-gradient(180deg, #fff 30%, #7fc4ff 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+.ng-link:hover { background-size: 100% 2px; }
+
+/* ---------- section shells ---------- */
+.ng-sec { position: relative; isolation: isolate; overflow: clip; padding: var(--sec) 0; background: var(--bg); color: var(--fg); scroll-margin-top: 60px; }
+.ng-sec::before {
+    content: ''; position: absolute; z-index: -1; inset: 0; pointer-events: none; opacity: .1;
+    background: radial-gradient(circle, currentColor .9px, transparent 1.3px) 0 0 / 7px 7px;
 }
-.eg-lead { color: var(--mute); font-size: clamp(0.95rem, 1.35vw, 1.15rem); line-height: 1.65; max-width: 56ch; margin-top: 1rem; }
+.ng-sec [id] { scroll-margin-top: 96px; }
 
-.eg-link { display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0.9rem; font-family: var(--display); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.9rem; color: var(--accent); transition: gap 0.25s; }
-.eg-link:hover { gap: 0.9rem; }
+/* header: title left, lede right */
+.ng-head { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); column-gap: clamp(24px, 4vw, 72px); align-items: end; margin-bottom: clamp(24px, 3vw, 44px); }
+.ng-head > .ng-kicker { grid-column: 1 / -1; }
+.ng-head:not(:has(.ng-lede)) .ng-h { grid-column: 1 / -1; }
+.ng-kicker { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; font-size: .84rem; font-weight: 600; color: var(--fg); }
+.ng-kicker span { display: inline-grid; place-items: center; min-width: 30px; height: 24px; padding: 0 9px; border-radius: 99px; background: var(--kbg); color: var(--kfg); font-size: .74rem; font-weight: 700; letter-spacing: 0; }
+.ng-h { font-size: clamp(2.3rem, 5.2vw, 5rem); font-weight: 600; line-height: 1.02; letter-spacing: -0.055em; text-wrap: balance; }
+.ng-lede { max-width: 56ch; margin-bottom: .5em; font-size: clamp(1rem, 1.35vw, 1.25rem); line-height: 1.55; color: var(--mut); text-wrap: pretty; }
 
-.eg-sample { font-style: normal; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 99px; border: 1px dashed rgba(251, 191, 36, 0.6); color: #fbbf24; }
+/* ---------- shared bits ---------- */
+.ng-card { border-radius: var(--r); background: var(--card); color: var(--cfg); box-shadow: var(--shadow); }
+.ng-card p { color: var(--cmut); }
+.ng-tag { display: inline-block; padding: 4px 12px; border-radius: 99px; background: var(--tagbg); color: var(--tagfg); font-size: .74rem; font-weight: 600; letter-spacing: .02em; line-height: 1.4; }
+.ng-ic { display: inline-grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: 50%; background: var(--tagbg); color: var(--tagfg); }
+.ng-more { display: inline-flex; align-items: center; gap: 8px; font-size: .92rem; font-weight: 600; color: var(--link); transition: color .3s; }
+.ng-more .ng-arrow, .ng-cta-link .ng-arrow { transition: transform .4s var(--ease); }
+.ng-sample { display: inline-block; font-style: normal; font-size: .68rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 2px 9px; border-radius: 99px; border: 1px dashed currentColor; color: #b7791f; }
+.ng-dark .ng-sample, .ng-navy .ng-sample { color: #fbbf24; }
+.ng-note { font-size: .92rem; font-style: italic; }
+.is-ph { border-style: dashed !important; font-style: italic; opacity: .6; }
 
-/* ───────────── BUTTONS ───────────── */
-.eg-cta {
-  position: relative; display: inline-flex; align-items: center; gap: 0.8rem; overflow: hidden;
-  padding: 0.95rem 1.8rem; border-radius: 99px; margin-top: 2rem;
-  font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; font-size: 1rem;
-  background: linear-gradient(110deg, #1b5cff, #12a4ff); color: #fff;
-  box-shadow: 0 0 0 1px rgba(120, 200, 255, 0.5), 0 10px 40px -8px rgba(30, 130, 255, 0.8);
-  transition: transform 0.25s, box-shadow 0.25s;
+/* ---------- image slots ---------- */
+.ng-media { position: relative; overflow: hidden; background: #071530; isolation: isolate; }
+.ng-photo { aspect-ratio: 16 / 9; border-radius: 14px; margin-bottom: 14px; }
+.ng-media > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s var(--ease); }
+.ng-ph { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px; text-align: center; border: 1.5px dashed rgba(41, 151, 255, .55); border-radius: inherit; color: var(--ice); background: #0a1a3a; }
+.ng-ph.quiet { border-color: transparent; }
+.ng-ph-ic { display: block; opacity: .85; }
+.ng-ph b { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+.ng-ph code { font: 500 .68rem/1.3 ui-monospace, Menlo, Consolas, monospace; color: rgba(255, 255, 255, .6); word-break: break-all; max-width: 100%; }
+
+/* ==========================================================================
+   HERO
+========================================================================== */
+.ng-hero {
+    --sy: 0; position: relative; isolation: isolate; overflow: clip; color: #fff;
+    min-height: min(100svh, 860px); display: flex; flex-direction: column; justify-content: flex-end; gap: clamp(28px, 5vh, 60px);
+    padding: calc(var(--ng-nav) + clamp(48px, 9vh, 110px)) 0 0; background: #000;
 }
-.eg-cta::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%); transform: translateX(-120%); animation: eg-shine 3.4s ease-in-out infinite; }
-@keyframes eg-shine { 55%, 100% { transform: translateX(120%); } }
-.eg-cta:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 0 0 1px #8fd4ff, 0 16px 56px -6px rgba(40, 150, 255, 0.95); }
-.eg-cta-big { padding: 1.15rem 2.4rem; font-size: 1.1rem; margin-top: 0; animation: eg-beat 2.4s ease-in-out infinite; }
-@keyframes eg-beat { 50% { box-shadow: 0 0 0 10px rgba(45, 140, 255, 0.12), 0 10px 60px -4px rgba(30, 130, 255, 0.95); } }
-.eg-ghost-btn { padding: 1rem 1.6rem; border-radius: 99px; border: 1px solid var(--line); font-family: var(--display); letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: var(--mute); transition: 0.25s; }
-.eg-ghost-btn:hover { color: #fff; border-color: var(--cyan); background: rgba(63, 224, 255, 0.08); }
+.ng-hero-media { position: absolute; inset: 0; z-index: -3; overflow: hidden; pointer-events: none; }
+.ng-hero-media img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.08); transform: scale(calc(1.08 + var(--sy) * .00008)) translateY(calc(var(--sy) * .06px)); animation: ng-settle 2.6s var(--ease) both; }
+.ng-hero-media::after { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, .68); }
+.ng-grid-bg { position: absolute; inset: 0; z-index: -2; opacity: .14; background: radial-gradient(circle, #fff .9px, transparent 1.3px) 0 0 / 7px 7px; }
 
-/* ───────────── PAGER / HUD ───────────── */
-.eg-pager { position: absolute; z-index: 40; left: 50%; bottom: 1.6rem; transform: translateX(-50%); display: flex; align-items: center; gap: 0.7rem; padding: 0.55rem 0.8rem; border-radius: 99px; background: rgba(4, 12, 30, 0.72); border: 1px solid var(--line); backdrop-filter: blur(14px); }
-.eg-pager > button { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); transition: 0.25s; }
-.eg-pager > button:hover:not(:disabled) { background: var(--blue); border-color: var(--blue); }
-.eg-pager > button:disabled { opacity: 0.3; cursor: default; }
-.eg-pager ol { display: flex; gap: 6px; }
-.eg-pager li button { position: relative; display: block; width: clamp(18px, 3.4vw, 46px); height: 22px; }
-.eg-pager li button::before { content: ""; position: absolute; left: 0; right: 0; top: 10px; height: 3px; border-radius: 3px; background: rgba(120, 170, 255, 0.25); transition: 0.4s; }
-.eg-pager li button.is-done::before { background: rgba(63, 224, 255, 0.6); }
-.eg-pager li button.is-on::before { background: var(--cyan); box-shadow: 0 0 14px var(--cyan); height: 5px; top: 9px; }
-.eg-seg-label { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(6px); padding: 0.25rem 0.6rem; border-radius: 6px; background: #06142f; border: 1px solid var(--line); font-family: var(--display); font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; opacity: 0; pointer-events: none; transition: 0.25s; }
-.eg-pager li button:hover .eg-seg-label { opacity: 1; transform: translateX(-50%); }
+.ng-hero-copy { max-width: min(100% - 2 * var(--gut), 1100px); margin-inline: var(--gut) auto; }
+@media (min-width: 1920px) { .ng-hero-copy { margin-left: calc((100% - 1920px) / 2 + var(--gut)); } }
+.ng-eyebrow { display: inline-flex; align-items: center; gap: 10px; max-width: 100%; padding: 9px 18px 9px 14px; border-radius: 99px; background: rgba(255, 255, 255, .08); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font-size: .84rem; font-weight: 600; color: #fff; opacity: 0; animation: ng-in .8s var(--ease) .15s forwards; }
+.ng-eyebrow i { position: relative; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--b); }
+.ng-eyebrow i::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 1px solid var(--b); animation: ng-ping 2.2s ease-out infinite; }
+.ng-title { margin-top: 24px; font-size: clamp(2.8rem, 7.4vw, 8.2rem); font-weight: 600; line-height: .94; letter-spacing: -0.065em; text-shadow: 0 2px 40px rgba(0, 0, 0, .45); }
+.ng-ln { display: block; overflow: hidden; padding: .06em 0 .14em; margin-bottom: -.06em; }
+.ng-ln > span { display: block; transform: translateY(118%) rotate(2deg); animation: ng-rise 1.1s var(--ease) calc(.25s + var(--i) * .12s) forwards; }
+.ng-ln > .ng-hl { color: var(--b); }
+.ng-hero-lede { margin-top: 24px; max-width: 56ch; font-size: clamp(1.05rem, 1.45vw, 1.35rem); line-height: 1.55; color: rgba(255, 255, 255, .94); text-shadow: 0 0 18px rgba(0, 0, 0, .6); opacity: 0; animation: ng-in .9s var(--ease) .75s forwards; text-wrap: pretty; }
+.ng-hero-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 32px; opacity: 0; animation: ng-in .9s var(--ease) .9s forwards; }
 
-.eg-hint { position: absolute; z-index: 40; left: 1.6rem; bottom: 2.1rem; font-family: var(--display); letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.74rem; color: rgba(143, 167, 207, 0.7); }
-.eg-counter { position: absolute; z-index: 40; right: 1.6rem; bottom: 2.1rem; font-family: var(--display); letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.8rem; color: var(--mute); }
-.eg-counter b { color: var(--cyan); font-size: 1.1rem; }
+/* at a glance strip */
+.ng-glance { opacity: 0; animation: ng-in .9s var(--ease) 1s forwards; }
+.ng-glance-bar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 24px; padding-bottom: 16px; font-size: .88rem; color: rgba(255, 255, 255, .8); }
+.ng-glance-bar span:first-child { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; color: #fff; }
+.ng-glance-bar span:first-child::before { content: ''; width: 22px; height: 2px; border-radius: 2px; background: var(--b); }
+.ng-glance-bar b { font-weight: 600; color: #fff; }
+.ng-glance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); border-top: 1px solid rgba(255, 255, 255, .26); }
+.ng-gl { position: relative; padding: clamp(16px, 1.8vw, 26px) clamp(16px, 2.2vw, 36px) clamp(20px, 2.4vw, 34px); border-left: 1px solid rgba(255, 255, 255, .14); }
+.ng-gl:first-child { padding-left: 0; border-left: 0; }
+.ng-gl::before { content: ''; position: absolute; left: 0; top: -1px; width: 44px; height: 3px; background: var(--b); }
+.ng-gl:not(:first-child)::before { left: clamp(16px, 2.2vw, 36px); }
+.ng-gl strong { display: block; font-size: clamp(2.4rem, 4.4vw, 4.4rem); font-weight: 600; line-height: .95; letter-spacing: -0.06em; color: #fff; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.ng-gl-label { display: block; margin-top: 14px; font-size: 1.02rem; font-weight: 600; line-height: 1.25; color: #fff; }
+.ng-gl-note { margin-top: 6px; max-width: 30ch; font-size: .9rem; line-height: 1.45; color: rgba(255, 255, 255, .78); }
 
-/* ═══════════════ SCENE · WELCOME ═══════════════ */
-.eg-hero { text-align: center; display: flex; flex-direction: column; align-items: center; }
-.eg-hero .eg-eyebrow::after { content: ""; width: 38px; height: 2px; background: linear-gradient(90deg, var(--cyan), var(--blue)); box-shadow: 0 0 12px var(--cyan); }
-.eg-hero-title {
-  font-family: var(--display); font-weight: 700; line-height: 0.9; letter-spacing: 0.06em;
-  font-size: clamp(3rem, 12.5vw, 10.5rem);
-  background: linear-gradient(180deg, #fff 20%, #4aa8ff 70%, #1b5cff 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 28px rgba(40, 140, 255, 0.55));
-  animation: eg-flicker 6s steps(1) infinite;
+/* ==========================================================================
+   STICKY MENU
+========================================================================== */
+.ng-subnav { position: sticky; top: 0; z-index: 120; background: rgba(3, 6, 14, .94); -webkit-backdrop-filter: saturate(1.5) blur(18px); backdrop-filter: saturate(1.5) blur(18px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.ng-subnav-scroll { position: relative; overflow-x: auto; scrollbar-width: none; }
+.ng-subnav-scroll::-webkit-scrollbar { display: none; }
+.ng-subnav ul { display: flex; gap: 4px; width: max-content; }
+.ng-subnav a { position: relative; display: block; padding: 18px 16px; font-size: 14px; font-weight: 500; color: #b9c3d6; white-space: nowrap; transition: color .3s; }
+.ng-subnav a::after { content: ''; position: absolute; left: 16px; right: 16px; bottom: 0; height: 2px; border-radius: 2px; background: var(--b); transform: scaleX(0); transform-origin: left; transition: transform .5s var(--ease); }
+.ng-subnav a:hover, .ng-subnav a.is-active { color: #fff; }
+.ng-subnav a.is-active::after { transform: scaleX(1); }
+.ng-progress { height: 2px; background: rgba(255, 255, 255, .06); }
+.ng-progress span { display: block; height: 100%; transform-origin: left; transform: scaleX(var(--progress)); background: var(--b); }
+
+/* ==========================================================================
+   NETWORKING: groups
+========================================================================== */
+.ng-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr)); gap: var(--g); }
+.ng-group { display: flex; flex-direction: column; gap: 12px; padding: 24px; border-top: 4px solid var(--royal); }
+.ng-dark .ng-group, .ng-navy .ng-group { border-top-color: var(--b); }
+.ng-group header { display: flex; align-items: center; gap: 14px; }
+.ng-group h3 { font-size: clamp(1.15rem, 1.5vw, 1.4rem); font-weight: 600; line-height: 1.15; letter-spacing: -0.035em; }
+.ng-group > p { font-size: .98rem; line-height: 1.55; }
+.ng-partners { display: grid; gap: 8px; margin-top: auto; padding-top: 6px; }
+.ng-partners li { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border-radius: 12px; background: rgba(10, 77, 255, .07); box-shadow: inset 0 0 0 1px rgba(10, 77, 255, .22); }
+.ng-dark .ng-partners li, .ng-navy .ng-partners li { background: rgba(41, 151, 255, .12); box-shadow: inset 0 0 0 1px rgba(41, 151, 255, .35); }
+.ng-partners b { font-size: .98rem; font-weight: 600; letter-spacing: -0.02em; }
+.ng-partners small { font-size: .84rem; line-height: 1.35; color: var(--cmut); }
+
+/* ==========================================================================
+   ECOSYSTEM: statement + pillars
+========================================================================== */
+.ng-quote-head { margin-bottom: clamp(24px, 3vw, 44px); }
+.ng-quote { max-width: 18ch; font-size: clamp(2.3rem, 5.6vw, 5.6rem); font-weight: 600; line-height: 1; letter-spacing: -0.055em; text-wrap: balance; }
+.ng-quote-line { display: block; }
+.ng-quote-line + .ng-quote-line { margin-top: .25em; }
+.ng-quote .ng-hl { color: var(--ice); }
+.ng-pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: var(--g); }
+.ng-pillar { display: flex; flex-direction: column; gap: 8px; padding: 22px; }
+.ng-pillar .ng-ic { margin-bottom: 10px; }
+.ng-pillar h3 { font-size: clamp(1.3rem, 1.7vw, 1.6rem); font-weight: 600; letter-spacing: -0.04em; line-height: 1.1; }
+.ng-pillar small { font-size: .84rem; font-weight: 600; line-height: 1.3; color: var(--link); }
+.ng-pillar p { font-size: .96rem; line-height: 1.5; }
+.ng-hub { width: fit-content; max-width: 100%; margin-top: clamp(20px, 2.4vw, 32px); padding: 12px 24px; border-radius: 99px; background: rgba(255, 255, 255, .12); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5); font-size: 1rem; font-weight: 600; color: #fff; }
+.ng-together { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-top: 22px; }
+.ng-together h3 { font-size: .95rem; font-weight: 600; color: var(--mut); }
+.ng-together ul { display: flex; flex-wrap: wrap; gap: 8px; }
+.ng-together li { padding: 7px 16px; border-radius: 99px; background: rgba(255, 255, 255, .92); color: var(--royal); font-size: .9rem; font-weight: 600; }
+
+/* ==========================================================================
+   MEMBERSHIP: panels
+========================================================================== */
+.ng-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--g); }
+.ng-panel { display: flex; flex-direction: column; gap: 10px; padding: 26px; }
+.ng-panel header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.ng-panel h3 { font-size: clamp(1.25rem, 1.7vw, 1.55rem); font-weight: 600; line-height: 1.12; letter-spacing: -0.04em; }
+.ng-panel > p { font-size: .98rem; line-height: 1.55; }
+.ng-dots { display: grid; gap: 8px; margin-top: 6px; }
+.ng-dots li { position: relative; padding: 11px 14px 11px 34px; border-radius: 12px; font-size: .94rem; background: rgba(41, 151, 255, .1); box-shadow: inset 0 0 0 1px rgba(41, 151, 255, .3); }
+.ng-dots li::before { content: ''; position: absolute; left: 14px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--tagbg); }
+.ng-panel .ng-more { margin-top: auto; padding-top: 12px; }
+
+/* ==========================================================================
+   NEWS
+========================================================================== */
+.ng-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.ng-tabs button { padding: 9px 16px; border-radius: 99px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line); font-size: .88rem; font-weight: 500; color: var(--mut); transition: background .3s, color .3s, transform .3s var(--ease), box-shadow .3s; }
+.ng-tabs button sup { margin-left: 6px; font-size: .68rem; opacity: .75; }
+.ng-tabs button:hover { color: var(--fg); transform: translateY(-2px); box-shadow: inset 0 0 0 1px var(--link); }
+.ng-tabs button.is-on { background: var(--kbg); color: var(--kfg); font-weight: 600; box-shadow: 0 8px 30px -12px var(--kbg); }
+.ng-count { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 18px 0; font-size: .94rem; color: var(--mut); }
+.ng-count b { color: var(--fg); font-weight: 600; }
+.ng-news { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--g); }
+.ng-story { display: flex; flex-direction: column; gap: 10px; padding: 24px; border-left: 4px solid var(--royal); transition: transform .5s var(--ease), box-shadow .5s; }
+.ng-dark .ng-story, .ng-navy .ng-story { border-left-color: var(--b); }
+.ng-story.is-link:hover { transform: translateY(-6px); box-shadow: 0 34px 70px -34px rgba(10, 77, 255, .6); }
+.ng-story.is-link:hover .ng-arrow { transform: translateX(5px); }
+.ng-story .ng-photo { margin: -8px -8px 8px; width: calc(100% + 16px); }
+.ng-news-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ng-news-top time { font-size: .86rem; font-weight: 600; color: var(--cmut); }
+.ng-story h3 { font-size: clamp(1.15rem, 1.5vw, 1.4rem); font-weight: 600; line-height: 1.2; letter-spacing: -0.035em; }
+.ng-story p { font-size: .96rem; line-height: 1.55; }
+.ng-story .ng-more { margin-top: auto; padding-top: 6px; }
+.ng-empty { padding: 36px; border: 1px dashed var(--line); border-radius: 18px; text-align: center; color: var(--mut); }
+.ng-empty .ng-link { margin-top: 12px; }
+
+/* ==========================================================================
+   MEDIA
+========================================================================== */
+.ng-sec-media .ng-tabs { margin-bottom: 22px; }
+.ng-mosaic { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: clamp(120px, 15vw, 220px); grid-auto-flow: dense; gap: var(--g); }
+.ng-tile { position: relative; overflow: hidden; border-radius: 18px; background: #071530; box-shadow: inset 0 0 0 1px rgba(41, 151, 255, .25); text-align: left; transition: transform .45s var(--ease), box-shadow .45s; }
+.ng-tile.wide { grid-column: span 2; }
+.ng-tile.tall { grid-row: span 2; }
+.ng-tile.big { grid-column: span 2; grid-row: span 2; }
+.ng-tile-media { position: absolute; inset: 0; border-radius: 0; }
+.ng-tile.is-open { cursor: zoom-in; }
+.ng-tile.is-open:hover { transform: translateY(-5px); box-shadow: inset 0 0 0 1px var(--b), 0 26px 60px -26px rgba(41, 151, 255, .7); }
+.ng-tile.is-open:hover .ng-media > img { transform: scale(1.06); }
+.ng-tile-cap { position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 8px; padding: 34px 16px 14px; font-size: .9rem; font-weight: 600; color: #fff; background: linear-gradient(transparent, rgba(0, 0, 0, .78)); }
+.ng-press, .ng-docs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: var(--g); }
+.ng-item { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 24px; }
+.ng-item small { font-size: .82rem; font-weight: 600; color: var(--cmut); }
+.ng-item h3 { font-size: clamp(1.15rem, 1.5vw, 1.4rem); font-weight: 600; line-height: 1.2; letter-spacing: -0.035em; }
+.ng-item p { font-size: .96rem; line-height: 1.5; }
+.ng-item .ng-more { margin-top: auto; padding-top: 8px; }
+.ng-soon { margin-top: auto; padding-top: 8px; font-style: normal; font-size: .84rem; font-weight: 600; color: var(--cmut); }
+
+.ng-lightbox { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: 20px; background: rgba(1, 4, 12, .9); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); animation: ng-settle .3s ease both; }
+.ng-lightbox figure { position: relative; max-width: 94vw; }
+.ng-lightbox img, .ng-lightbox video { max-width: 94vw; max-height: 78vh; margin-inline: auto; border-radius: 16px; box-shadow: 0 40px 120px -30px var(--royal); }
+.ng-lightbox figcaption { margin-top: 12px; text-align: center; font-size: .95rem; color: rgba(255, 255, 255, .8); }
+.ng-x { position: absolute; right: -8px; top: -18px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--b); color: #02060f; }
+
+/* ==========================================================================
+   CTA
+========================================================================== */
+.ng-sec-cta { padding-top: 0; }
+.ng-cta-in { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: clamp(22px, 4vw, 72px); align-items: end; padding: clamp(28px, 5vw, 80px); border-radius: calc(var(--r) * 1.4); background: var(--royal); color: #fff; }
+.ng-cta-in > * { min-width: 0; }
+.ng-cta-in .ng-h { font-size: clamp(2.5rem, 5.6vw, 5.6rem); line-height: .98; }
+.ng-cta-in .ng-lede { color: rgba(255, 255, 255, .88); }
+.ng-foot { margin-top: 28px; max-width: 52ch; font-size: .9rem; color: rgba(255, 255, 255, .78); }
+.ng-restart { margin-top: 18px; color: #fff; }
+.ng-cta-links { display: flex; flex-direction: column; gap: 10px; }
+.ng-cta-link { display: flex; align-items: center; gap: 16px; padding: 14px 20px 14px 14px; border-radius: 99px; background: #fff; color: var(--ink); transform: translate(var(--tx, 0), var(--ty, 0)); transition: transform .45s var(--ease), background .3s, color .3s, box-shadow .3s; }
+.ng-cta-link:hover { background: #000; color: #fff; box-shadow: 0 14px 34px -14px rgba(0, 0, 0, .7); }
+.ng-cta-n { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--royal); color: #fff; }
+.ng-cta-t { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.ng-cta-t b { font-size: 1.05rem; font-weight: 600; letter-spacing: -0.02em; }
+.ng-cta-t small { margin-top: 3px; font-size: .84rem; opacity: .72; }
+.ng-cta-link:hover .ng-arrow { transform: translateX(5px); }
+
+/* ==========================================================================
+   KEYFRAMES
+========================================================================== */
+@keyframes ng-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes ng-rise { to { transform: none; } }
+@keyframes ng-settle { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ng-ping { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(3.2); opacity: 0; } }
+
+/* ==========================================================================
+   RESPONSIVE
+========================================================================== */
+@media (max-width: 1100px) {
+    .ng-hero { min-height: 0; }
+    .ng-mosaic { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-@keyframes eg-flicker { 0%, 93%, 100% { opacity: 1; } 94% { opacity: 0.8; } 95% { opacity: 1; } 97% { opacity: 0.85; } }
-.eg-rotator { display: flex; gap: 0.7rem; justify-content: center; align-items: baseline; font-family: var(--display); font-size: clamp(1.1rem, 2.4vw, 1.9rem); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.8rem; }
-.eg-rotator > span:first-child { color: var(--mute); }
-.eg-rotator-word { display: inline-block; height: 1.35em; overflow: hidden; vertical-align: bottom; min-width: 7ch; text-align: left; }
-.eg-rotator-word b { display: block; color: var(--cyan); text-shadow: 0 0 18px rgba(63, 224, 255, 0.7); white-space: nowrap; }
-.eg-hero .eg-lead { margin-inline: auto; }
-.eg-stats { display: flex; gap: clamp(1.2rem, 4vw, 3.2rem); margin-top: 2rem; flex-wrap: wrap; justify-content: center; }
-.eg-stat { display: flex; flex-direction: column; gap: 0.2rem; padding-inline: clamp(0.6rem, 2vw, 1.6rem); border-left: 1px solid var(--line); }
-.eg-stat:first-child { border-left: 0; }
-.eg-stat strong { font-family: var(--display); font-size: clamp(1.8rem, 4vw, 3rem); color: #fff; line-height: 1; }
-.eg-stat span { font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mute); }
-
-.eg-rings { position: absolute; left: 50%; top: 50%; width: min(86vmin, 900px); aspect-ratio: 1; transform: translate(-50%, -50%); pointer-events: none; }
-.eg-rings i { position: absolute; inset: 0; border-radius: 50%; border: 1px solid rgba(70, 160, 255, 0.28); animation: eg-spin 40s linear infinite; }
-.eg-rings i:nth-child(2) { inset: 9%; border-style: dashed; animation-duration: 60s; animation-direction: reverse; }
-.eg-rings i:nth-child(3) { inset: 20%; border-color: rgba(63, 224, 255, 0.3); animation-duration: 30s; }
-.eg-rings i:nth-child(4) { inset: 32%; border-style: dotted; animation-duration: 80s; animation-direction: reverse; }
-.eg-rings b { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 18px 4px var(--cyan); animation: eg-orbit 14s linear infinite; }
-.eg-rings b:nth-of-type(2) { animation-duration: 22s; animation-direction: reverse; background: #5b8cff; box-shadow: 0 0 18px 4px #5b8cff; --r: 33vmin; }
-.eg-rings b:nth-of-type(3) { animation-duration: 31s; width: 6px; height: 6px; --r: 22vmin; }
-.eg-rings b { --r: 43vmin; }
-@keyframes eg-spin { to { transform: rotate(360deg); } }
-@keyframes eg-orbit { from { transform: rotate(0) translateX(var(--r)); } to { transform: rotate(360deg) translateX(var(--r)); } }
-
-/* ═══════════════ SCENE · NETWORKING ═══════════════ */
-.eg-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(1.5rem, 4vw, 4rem); align-items: center; }
-.eg-panel { margin-top: 1.6rem; padding: 1.3rem 1.4rem; min-height: 11.5rem; border-radius: 16px; background: var(--glass); border: 1px solid var(--line); border-left: 3px solid var(--accent); backdrop-filter: blur(12px); box-shadow: 0 20px 60px -30px var(--accent); transition: border-color 0.4s, box-shadow 0.4s; }
-.eg-panel header { display: flex; align-items: center; gap: 0.7rem; color: var(--accent); margin-bottom: 0.5rem; }
-.eg-panel h3 { font-family: var(--display); font-size: 1.3rem; letter-spacing: 0.06em; text-transform: uppercase; }
-.eg-panel p { color: var(--mute); font-size: 0.92rem; line-height: 1.55; }
-.eg-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.9rem; }
-.eg-chips li { display: flex; flex-direction: column; padding: 0.45rem 0.8rem; border-radius: 10px; background: rgba(255, 255, 255, 0.04); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); font-size: 0.85rem; }
-.eg-chips li b { font-weight: 600; }
-.eg-chips li small { color: var(--mute); font-size: 0.68rem; line-height: 1.3; }
-.is-placeholder { border-style: dashed !important; opacity: 0.55; font-style: italic; }
-
-.eg-orbit { position: relative; width: min(100%, 72vh); aspect-ratio: 1; margin-inline: auto; }
-.eg-orbit svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.eg-ring { fill: none; stroke: rgba(80, 170, 255, 0.3); stroke-width: 0.25; transform-origin: 50px 50px; }
-.eg-ring-a { stroke-dasharray: 1 2; animation: eg-spin 70s linear infinite; }
-.eg-ring-b { stroke-dasharray: 3 3; animation: eg-spin 50s linear infinite reverse; }
-.eg-ring-c { stroke-dasharray: 0.5 1.5; animation: eg-spin 90s linear infinite; }
-.eg-core { position: absolute; left: 50%; top: 50%; width: 26%; aspect-ratio: 1; transform: translate(-50%, -50%); display: grid; place-items: center; border-radius: 50%; text-align: center; font-family: var(--display); font-weight: 700; letter-spacing: 0.1em; font-size: clamp(0.8rem, 1.7vw, 1.4rem); background: radial-gradient(circle, #1b5cff 0%, #0b2a7a 70%); box-shadow: 0 0 0 1px rgba(120, 200, 255, 0.6), 0 0 60px 10px rgba(30, 120, 255, 0.55); animation: eg-core 3s ease-in-out infinite; }
-@keyframes eg-core { 50% { box-shadow: 0 0 0 1px rgba(120, 200, 255, 0.9), 0 0 90px 22px rgba(30, 120, 255, 0.7); } }
-.eg-node { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 0.3rem; width: 22%; padding: 0.7rem 0.3rem; border-radius: 16px; background: rgba(5, 14, 36, 0.85); border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); color: var(--accent); backdrop-filter: blur(8px); transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.35s, background 0.35s; animation: eg-bob 5s ease-in-out infinite; }
-.eg-node:nth-of-type(2) { animation-delay: -1s; } .eg-node:nth-of-type(3) { animation-delay: -2s; } .eg-node:nth-of-type(4) { animation-delay: -3s; } .eg-node:nth-of-type(5) { animation-delay: -4s; }
-.eg-node span { font-family: var(--display); font-weight: 600; font-size: clamp(0.62rem, 1.1vw, 0.9rem); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink); text-align: center; }
-.eg-node.is-on { transform: translate(-50%, -50%) scale(1.18); background: color-mix(in srgb, var(--accent) 22%, #04102a); box-shadow: 0 0 36px -2px var(--accent); }
-@keyframes eg-bob { 50% { margin-top: -7px; } }
-
-/* ═══════════════ SCENE · ECOSYSTEM ═══════════════ */
-.eg-ecosystem { text-align: center; }
-.eg-ecosystem .eg-eyebrow { justify-content: center; }
-.eg-quote { font-family: var(--display); font-weight: 700; text-transform: uppercase; line-height: 1.02; font-size: clamp(1.8rem, 5vw, 4.3rem); margin: 0.4rem 0 clamp(1.4rem, 4vh, 2.8rem); }
-.eg-quote-line { display: block; }
-.eg-quote-line span { display: inline-block; }
-.eg-quote .is-hl { color: var(--cyan); text-shadow: 0 0 30px rgba(63, 224, 255, 0.6); }
-
-.eg-pillars { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(0.6rem, 1.4vw, 1.2rem); align-items: end; }
-.eg-pillar { position: relative; text-align: left; padding: 1.3rem 1.1rem 1.4rem; border-radius: 16px; min-height: calc(14rem + var(--lift)); display: flex; flex-direction: column; gap: 0.35rem; background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 20%, transparent), rgba(5, 14, 36, 0.78) 70%); border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); color: var(--accent); overflow: hidden; transition: transform 0.35s, box-shadow 0.35s; }
-.eg-pillar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--accent); box-shadow: 0 0 22px 3px var(--accent); animation: eg-beam 3.5s ease-in-out infinite; }
-@keyframes eg-beam { 50% { opacity: 0.35; } }
-.eg-pillar:hover { transform: translateY(-10px); box-shadow: 0 24px 60px -24px var(--accent); }
-.eg-pillar-no { position: absolute; right: 0.9rem; top: 0.7rem; font-family: var(--display); font-size: 2rem; opacity: 0.25; }
-.eg-pillar h3 { font-family: var(--display); font-size: 1.5rem; letter-spacing: 0.08em; text-transform: uppercase; margin-top: auto; }
-.eg-pillar small { color: var(--ink); font-weight: 600; font-size: 0.78rem; }
-.eg-pillar p { color: var(--mute); font-size: 0.82rem; line-height: 1.5; }
-.eg-hub { margin: 1.4rem auto 0; width: fit-content; max-width: 100%; padding: 0.6rem 1.6rem; border-radius: 99px; font-family: var(--display); letter-spacing: 0.18em; text-transform: uppercase; font-size: 0.85rem; background: rgba(27, 92, 255, 0.2); border: 1px solid rgba(100, 180, 255, 0.5); box-shadow: 0 0 40px -8px var(--blue); }
-.eg-marquee { margin: 1.6rem -6vw 0; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
-.eg-marquee-track { display: flex; width: max-content; animation: eg-marquee 32s linear infinite; }
-.eg-marquee-track span { display: flex; align-items: center; gap: 1.6rem; padding-right: 1.6rem; font-family: var(--display); font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.95rem; color: var(--mute); white-space: nowrap; }
-.eg-marquee-track i { width: 8px; height: 8px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
-@keyframes eg-marquee { to { transform: translateX(-33.333%); } }
-
-/* ═══════════════ SCENE · MEMBERSHIP ═══════════════ */
-.eg-ghost-word { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-family: var(--display); font-weight: 700; font-size: clamp(6rem, 24vw, 26rem); letter-spacing: 0.04em; white-space: nowrap; color: transparent; -webkit-text-stroke: 1px rgba(70, 160, 255, 0.14); pointer-events: none; animation: eg-ghostmove 14s ease-in-out infinite alternate; }
-@keyframes eg-ghostmove { from { transform: translate(-54%, -50%); } to { transform: translate(-46%, -50%); } }
-.eg-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(0.8rem, 2vw, 1.6rem); margin-top: clamp(1.4rem, 4vh, 2.6rem); perspective: 1400px; }
-.eg-tilt { position: relative; transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.25s ease-out; transform-style: preserve-3d; }
-.eg-tilt::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 0.3s; background: radial-gradient(circle 220px at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.14), transparent 70%); }
-.eg-tilt:hover::after { opacity: 1; }
-.eg-card { height: 100%; padding: 1.7rem 1.5rem 1.6rem; border-radius: 20px; background: var(--glass); border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent); backdrop-filter: blur(14px); box-shadow: 0 30px 70px -40px var(--accent); display: flex; flex-direction: column; gap: 0.7rem; }
-.eg-card-ic { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 16px; color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); }
-.eg-badge { position: absolute; top: 1.2rem; right: 1.2rem; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 99px; color: var(--accent); border: 1px solid var(--accent); }
-.eg-card h3 { font-family: var(--display); font-size: 1.45rem; line-height: 1.1; letter-spacing: 0.04em; text-transform: uppercase; }
-.eg-card p { color: var(--mute); font-size: 0.9rem; line-height: 1.55; }
-.eg-card ul { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.4rem; }
-.eg-card li { position: relative; padding: 0.55rem 0.8rem 0.55rem 2rem; border-radius: 10px; font-size: 0.86rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); }
-.eg-card li::before { content: ""; position: absolute; left: 0.8rem; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-.eg-card .eg-link { margin-top: auto; padding-top: 0.6rem; }
-
-/* ═══════════════ SCENE · NEWS ═══════════════ */
-.eg-filters, .eg-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1.2rem 0 1.4rem; }
-.eg-filters button, .eg-tabs button { padding: 0.5rem 1.05rem; border-radius: 99px; font-family: var(--display); font-weight: 600; font-size: 0.9rem; letter-spacing: 0.1em; text-transform: uppercase; border: 1px solid var(--line); color: var(--mute); transition: 0.25s; --accent: var(--cyan); }
-.eg-filters button:hover, .eg-tabs button:hover { color: #fff; border-color: var(--accent); }
-.eg-filters button.is-on, .eg-tabs button.is-on { color: #02050d; background: var(--accent); border-color: var(--accent); box-shadow: 0 0 24px -4px var(--accent); }
-.eg-news-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(1rem, 3vw, 2.4rem); align-items: stretch; perspective: 1400px; }
-.eg-feature-wrap { min-height: 19rem; display: flex; }
-.eg-feature { position: relative; flex: 1; padding: 2rem; border-radius: 22px; overflow: hidden; background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 16%, transparent), rgba(5, 14, 36, 0.85) 60%); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); box-shadow: 0 30px 80px -40px var(--accent); display: flex; flex-direction: column; gap: 0.8rem; }
-.eg-feature img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.28; z-index: -1; }
-.eg-feature-top { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
-.eg-feature-top time { font-family: var(--display); letter-spacing: 0.16em; color: var(--mute); font-size: 0.85rem; text-transform: uppercase; }
-.eg-tag { padding: 0.25rem 0.75rem; border-radius: 99px; font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: #02050d; background: var(--accent); }
-.eg-feature h3 { font-family: var(--display); font-size: clamp(1.5rem, 2.8vw, 2.4rem); line-height: 1.08; }
-.eg-feature p { color: var(--mute); line-height: 1.65; font-size: 0.98rem; }
-.eg-empty { color: var(--mute); align-self: center; }
-.eg-news-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: min(52vh, 26rem); overflow-y: auto; padding-right: 0.3rem; scrollbar-width: thin; scrollbar-color: var(--blue) transparent; }
-.eg-news-list button { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 0.15rem; padding: 0.8rem 1rem; border-radius: 12px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-left: 3px solid transparent; transition: 0.3s; }
-.eg-news-list button:hover { background: rgba(255, 255, 255, 0.07); transform: translateX(6px); }
-.eg-news-list button.is-on { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); transform: translateX(10px); }
-.eg-news-list time { font-family: var(--display); font-size: 0.75rem; letter-spacing: 0.16em; color: var(--accent); text-transform: uppercase; }
-.eg-news-list b { font-weight: 600; font-size: 0.92rem; line-height: 1.35; }
-
-/* ═══════════════ SCENE · MEDIA ═══════════════ */
-.eg-media-stage { min-height: 18rem; }
-.eg-media-gallery { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: clamp(5.2rem, 13vh, 8.4rem); grid-auto-flow: dense; gap: 0.7rem; }
-.eg-tile { position: relative; overflow: hidden; border-radius: 14px; border: 1px solid var(--line); text-align: left; transition: transform 0.35s, box-shadow 0.35s, border-color 0.35s; }
-.eg-tile.wide { grid-column: span 2; } .eg-tile.tall { grid-row: span 2; } .eg-tile.big { grid-column: span 2; grid-row: span 2; }
-.eg-tile:hover { transform: scale(1.03); border-color: var(--cyan); box-shadow: 0 20px 50px -20px var(--blue); z-index: 2; }
-.eg-tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s; }
-.eg-tile:hover img { transform: scale(1.1); }
-.eg-tile-art { position: absolute; inset: 0; display: block; background: radial-gradient(circle at 30% 20%, hsl(var(--h) 90% 55% / 0.55), transparent 60%), linear-gradient(135deg, hsl(var(--h) 80% 18%), #040b1e); }
-.eg-tile-art::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, transparent 0 14px, rgba(255, 255, 255, 0.04) 14px 15px); animation: eg-slide 6s linear infinite; }
-@keyframes eg-slide { to { background-position: 60px 0; } }
-.eg-tile-art.big { position: relative; width: min(80vw, 900px); aspect-ratio: 16/9; border-radius: 14px; }
-.eg-tile-cap { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 0.4rem; padding: 1.4rem 0.8rem 0.6rem; font-size: 0.78rem; background: linear-gradient(transparent, rgba(0, 0, 0, 0.75)); }
-.eg-media-press, .eg-media-docs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
-.eg-media-docs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.eg-press, .eg-doc { height: 100%; padding: 1.5rem; border-radius: 18px; background: var(--glass); border: 1px solid var(--line); backdrop-filter: blur(12px); display: flex; flex-direction: column; gap: 0.55rem; --accent: var(--cyan); }
-.eg-press > .eg-icon { color: var(--cyan); }
-.eg-press small { color: var(--mute); letter-spacing: 0.1em; text-transform: uppercase; font-size: 0.72rem; }
-.eg-press h3, .eg-doc h3 { font-family: var(--display); font-size: 1.35rem; line-height: 1.15; }
-.eg-doc p { color: var(--mute); font-size: 0.88rem; }
-.eg-doc-type { align-self: flex-start; padding: 0.25rem 0.7rem; border-radius: 8px; font-family: var(--display); font-weight: 700; letter-spacing: 0.14em; background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.5); }
-.eg-soon { margin-top: auto; font-style: normal; font-size: 0.75rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mute); }
-
-.eg-lightbox { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(1, 4, 12, 0.88); backdrop-filter: blur(10px); }
-.eg-lightbox figure { position: relative; margin: 0; max-width: 92vw; }
-.eg-lightbox img, .eg-lightbox video { max-width: 92vw; max-height: 78vh; border-radius: 14px; border: 1px solid var(--line); box-shadow: 0 40px 120px -30px var(--blue); }
-.eg-lightbox figcaption { margin-top: 0.8rem; text-align: center; color: var(--mute); }
-.eg-x { position: absolute; right: -0.6rem; top: -1.2rem; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--blue); }
-
-/* ═══════════════ SCENE · COLLABORATE ═══════════════ */
-.eg-collab { text-align: center; display: flex; flex-direction: column; align-items: center; }
-.eg-collab-title { font-size: clamp(2.4rem, 8vw, 6.6rem); }
-.eg-collab .eg-lead { margin-inline: auto; }
-.eg-channels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(0.8rem, 2vw, 1.4rem); margin-top: clamp(1.4rem, 4vh, 2.4rem); width: 100%; text-align: left; }
-.eg-channel-wrap { height: 100%; }
-.eg-channel { display: flex; flex-direction: column; gap: 0.5rem; height: 100%; padding: 1.5rem; border-radius: 18px; color: var(--accent); background: var(--glass); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); backdrop-filter: blur(12px); transition: box-shadow 0.3s, background 0.3s; }
-.eg-channel:hover { background: color-mix(in srgb, var(--accent) 12%, rgba(5, 14, 36, 0.8)); box-shadow: 0 24px 60px -24px var(--accent); }
-.eg-channel h3 { font-family: var(--display); font-size: 1.6rem; letter-spacing: 0.08em; text-transform: uppercase; }
-.eg-channel p { color: var(--mute); font-size: 0.9rem; line-height: 1.5; }
-.eg-channel .eg-link { margin-top: auto; padding-top: 0.5rem; }
-.eg-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: clamp(1.4rem, 4vh, 2.4rem); }
-.eg-foot { margin-top: 1.6rem; max-width: 60ch; color: var(--mute); font-style: italic; font-size: 0.9rem; }
-.eg-pulse { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; }
-.eg-pulse i { position: absolute; left: 50%; top: 50%; width: 120vmin; height: 120vmin; margin: -60vmin; border-radius: 50%; border: 1px solid rgba(63, 160, 255, 0.5); transform: scale(0); animation: eg-pulse 7s ease-out infinite; }
-.eg-pulse i:nth-child(2) { animation-delay: 2.3s; } .eg-pulse i:nth-child(3) { animation-delay: 4.6s; }
-@keyframes eg-pulse { 0% { transform: scale(0); opacity: 0.9; } 100% { transform: scale(1); opacity: 0; } }
-
-/* ═══════════════ RESPONSIVE ═══════════════ */
-@media (max-width: 1000px) {
-  .eg-split, .eg-news-grid { grid-template-columns: 1fr; }
-  .eg-orbit { width: min(100%, 520px); }
-  .eg-pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .eg-pillar { min-height: 11rem; }
-  .eg-cards, .eg-channels, .eg-media-press { grid-template-columns: 1fr; }
-  .eg-media-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .eg-ghost { opacity: 0.5; }
+@media (max-width: 900px) {
+    .ng-head { display: block; }
+    .ng-head .ng-lede { margin-top: 14px; }
+    .ng-cta-in { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+    .ng-glance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ng-gl:nth-child(odd) { padding-left: 0; border-left: 0; }
+    .ng-gl:nth-child(odd)::before { left: 0; }
+    .ng-gl:nth-child(n + 3) { border-top: 1px solid rgba(255, 255, 255, .14); }
+    .ng-gl:nth-child(n + 3)::before { top: -1px; }
+    .ng-gl strong { font-size: clamp(1.8rem, 9vw, 2.8rem); }
+    .ng-gl-note { display: none; }
+    .ng-mosaic { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: clamp(120px, 34vw, 190px); }
 }
 @media (max-width: 640px) {
-  .eg-hint { display: none; }
-  .eg-counter { left: 50%; right: auto; transform: translateX(-50%); bottom: 4.6rem; }
-  .eg-scene-inner { padding-bottom: 8rem; }
-  .eg-media-docs { grid-template-columns: 1fr; }
-  .eg-node { width: 24%; padding: 0.5rem 0.2rem; }
-  .eg-node .eg-icon { width: 18px; height: 18px; }
-  .eg-stat { border-left: 0; }
-}
-@media (max-height: 640px) and (min-width: 1001px) {
-  .eg-title { font-size: clamp(2rem, 4vw, 3.2rem); }
-  .eg-lead { margin-top: 0.5rem; }
+    .ng { font-size: 16px; }
+    .ng-hero { padding-top: calc(var(--ng-nav) + 36px); }
+    .ng-hero-cta .ng-btn { flex: 1 1 100%; justify-content: flex-start; }
+    .ng-cta-link { border-radius: 28px; }
+    .ng-tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gut)); padding-inline: var(--gut); }
+    .ng-tabs::-webkit-scrollbar { display: none; }
+    .ng-tabs button { flex: none; }
 }
 
-/* ═══════════════ ACCESSIBILITY ═══════════════ */
+/* ==========================================================================
+   REDUCED MOTION: nothing moves, everything stays visible and usable
+========================================================================== */
 @media (prefers-reduced-motion: reduce) {
-  .eg-root *, .eg-root *::before, .eg-root *::after { animation-duration: 0.001s !important; animation-iteration-count: 1 !important; transition-duration: 0.001s !important; }
+    .ng *, .ng *::before, .ng *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; transition-delay: 0s !important; }
+    .ng-rv, .ng-pop, .ng-eyebrow, .ng-hero-lede, .ng-hero-cta, .ng-glance { opacity: 1 !important; transform: none !important; }
+    .ng-ln > span { transform: none !important; }
 }
-.eg-root button:focus-visible, .eg-root a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }

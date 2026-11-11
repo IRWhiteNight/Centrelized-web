@@ -1,347 +1,438 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@inertiajs/react";
+import { useFacilitiesContent, imgUrl } from "../../data/COEUAS-data/facilitiesContent";
+import { BASE } from "../../data/COEUAS-data/siteMapCOEUAS";
 import "../../../css/COE-UAS-css/facilities.css";
 
-/* Same idea as siteMapCOEUAS.js: the COE-UAS site lives under /coeuas.
-   If you prefer, replace this with: import { u } from "./siteMapCOEUAS"; */
-const u = (path = "/") => "/coeuas" + (path === "/" ? "" : path);
-
-/* All class names here start with "fac-" on purpose: Inertia keeps the CSS of pages you
-   visited earlier (home.css, about.css ...) loaded, and their generic names such as
-   .slide, .rv, .btn, .stats or .cta would otherwise leak into this page. */
-
 /* ------------------------------------------------------------------
-   CONTENT: everything an admin would edit. Structure follows the
-   Facilities & Services branch of the COE-UAS site map.
-   TODO: replace the short descriptions with verified details.
+   Facilities.jsx is layout and motion only.
+   All text, links, images and numbers come from facilitiesContent.js
+   (later: the admin CMS). Pass a `content` prop to preview changes.
+   The top navigation bar comes from COEUAsWebsiteLayout.
+   Every class starts with "fx-" so no other page's CSS can leak in.
 ------------------------------------------------------------------- */
-const SLIDES = [
-  { id: "intro", label: "Overview" },
-  { id: "facilities", label: "Facilities & equipment" },
-  { id: "sandbox", label: "Airspace Sandbox" },
-  { id: "services", label: "Technical services" },
-  { id: "solutions", label: "Industry solutions" },
-  { id: "training", label: "Training" },
-  { id: "enquire", label: "Enquire" },
-];
 
-const FACILITIES = [
-  { title: "Laboratories and workshops", text: "Benches and tooling for building, tuning and repairing unmanned aircraft and their electronics." },
-  { title: "Aircraft and research platforms", text: "Fixed-wing, multirotor and hybrid airframes developed and flown by the Centre." },
-  { title: "Testing sites and flight facilities", text: "Runways, test ranges and controlled airspace where systems are proven in real conditions." },
-  { title: "Facility development and upgrade projects", text: "New buildings, runway upgrades and equipment programmes that extend what the Centre can test." },
-];
+const to = (h = "/") =>
+  h === "/" ? BASE : h.startsWith("/") && !h.startsWith(BASE + "/") && h !== BASE ? BASE + h : h;
 
-const SANDBOX_PARTS = ["Vertiport", "Test flight corridor", "Drone hub", "Research and maintenance facility", "Flight simulator", "Radar, communication and UTM system"];
+const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const pad = (n) => String(n + 1).padStart(2, "0");
+const D = (i) => ({ "--d": i * 90 });
+const DS = (i) => ({ "--d": Math.min(i, 12) * 55 });
 
-const SERVICES = [
-  { title: "Design, manufacturing and assembly", text: "From concept airframe to a flying prototype." },
-  { title: "Systems integration and testing", text: "Payloads, autopilots and links joined up and verified." },
-  { title: "Maintenance, repair and upgrading", text: "Keep fleets flying and bring older platforms up to date." },
-  { title: "Aerial operations and data processing", text: "We fly the mission, then turn the data into answers." },
-];
+/* section types this page knows how to draw (see facilitiesContent.js) */
+const TYPES = ["cards", "programme", "steps", "tiles", "list", "cta"];
 
-const SOLUTIONS = [
-  "Surveying, mapping and photogrammetry",
-  "Stockpile and volumetric measurement",
-  "Heritage documentation and inspection",
-  "Security, surveillance and monitoring",
-  "Cargo and goods transportation",
-  "Agriculture, spraying and crop monitoring",
-  "Autonomous systems, AI and computer vision",
-];
+const ICON = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2" /><path d="m21 16-5-5-8 8" /></svg>
+);
 
-const TRAINING = [
-  { title: "Drone operation and technical courses", text: "Hands-on courses for new and experienced operators." },
-  { title: "Industry and agency training", text: "Programmes shaped around a team’s own missions." },
-  { title: "Community and outreach programmes", text: "Open days and school sessions that bring people closer to the technology." },
-  { title: "Training calendar and enquiries", text: "See what is running next and ask about places.", href: u("/facilities/training/calendar") },
-];
+const Arrow = () => (
+  <svg className="fx-arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
-const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
-
-/* Counts up once its slide becomes active */
-function CountUp({ to, run }) {
-  const [n, setN] = useState(0);
+/* adds .in to every .fx-rv once it scrolls into view (re-runs when the content changes) */
+function useReveal(rootRef, dep) {
   useEffect(() => {
-    if (!run) return setN(0);
-    let raf, start;
-    const tick = (t) => {
-      start ??= t;
-      const p = Math.min((t - start) / 1200, 1);
-      setN(Math.round(to * (1 - Math.pow(1 - p, 3))));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [run, to]);
-  return <>{n}</>;
+    const nodes = rootRef.current ? rootRef.current.querySelectorAll(".fx-rv:not(.in)") : [];
+    if (reduced() || !("IntersectionObserver" in window)) {
+      nodes.forEach((n) => n.classList.add("in"));
+      return undefined;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+    nodes.forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, [rootRef, dep]);
 }
 
-export default function Facilities() {
-  const [index, setIndex] = useState(0);
-  const [dir, setDir] = useState(1);
-  const [wipe, setWipe] = useState(0);
-  const [open, setOpen] = useState(0);
-  const stageRef = useRef(null);
-  const lock = useRef(false);
-  const indexRef = useRef(0);
-  const touchY = useRef(null);
+/* number that counts up the first time it is seen */
+function Counter({ value, delay = 0 }) {
+  const ref = useRef(null);
+  const [v, setV] = useState(reduced() ? value : 0);
+  useEffect(() => {
+    if (reduced()) { setV(value); return undefined; }
+    const el = ref.current;
+    let raf = 0, timer = 0;
+    const run = () => {
+      const t0 = performance.now();
+      const tick = (t) => {
+        const p = Math.min(1, (t - t0) / 1300);
+        setV(Math.round(value * (p === 1 ? 1 : 1 - Math.pow(2, -10 * p))));
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    };
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { io.disconnect(); timer = setTimeout(run, delay); }
+    }, { threshold: 0.4 });
+    io.observe(el);
+    return () => { io.disconnect(); clearTimeout(timer); cancelAnimationFrame(raf); };
+  }, [value, delay]);
+  return <span ref={ref}>{v}</span>;
+}
 
-  const go = useCallback((target) => {
-    const next = clamp(target, 0, SLIDES.length - 1);
-    if (next === indexRef.current || lock.current) return;
-    lock.current = true;
-    setDir(next > indexRef.current ? 1 : -1);
-    indexRef.current = next;
-    setIndex(next);
-    setWipe((w) => w + 1);
-    setTimeout(() => (lock.current = false), 950);
+/* One image slot: the picture when it exists, otherwise a placeholder. */
+function Media({ src: file, alt = "", hints, className = "" }) {
+  const src = imgUrl(file);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  const live = !!src && !failed;
+  return (
+    <div className={`fx-media ${className} ${live ? "is-live" : "is-empty"}`}>
+      {live ? (
+        <img src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} />
+      ) : (
+        <div className={`fx-ph ${hints ? "" : "quiet"}`}>
+          <span className="fx-ph-ic">{ICON}</span>
+          {hints && <b>Photo slot</b>}
+          {hints && file && <code>{file}</code>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Head({ n, s, stack }) {
+  return (
+    <header className={"fx-head" + (stack ? " fx-head--stack" : "")}>
+      <p className="fx-kicker fx-rv"><span>{pad(n)}</span>{s.eyebrow || s.label}</p>
+      <h2 className="fx-h fx-rv" style={D(1)}>{s.title}</h2>
+      {s.text && <p className="fx-lede fx-rv" style={D(2)}>{s.text}</p>}
+    </header>
+  );
+}
+
+/* a link when the item has an href, plain information when it has not */
+function Card({ item, className, style, children }) {
+  const props = { className, style, id: item.anchor || undefined };
+  return item.href
+    ? <Link href={to(item.href)} {...props}>{children}</Link>
+    : <div {...props}>{children}</div>;
+}
+
+/* ==========================================================================
+   PAGE
+========================================================================== */
+
+export default function Facilities({ content: override }) {
+  const { content: c } = useFacilitiesContent(override);
+  const rootRef = useRef(null);
+
+  const hints = c.settings ? c.settings.showSlotHints !== false : true;
+  const sections = useMemo(() => c.sections.filter((s) => s.visible !== false && TYPES.includes(s.type)), [c.sections]);
+  const navList = useMemo(() => sections.filter((s) => s.nav !== false && s.type !== "cta"), [sections]);
+  const navKey = navList.map((s) => s.id).join();
+  const [active, setActive] = useState(navList[0] ? navList[0].id : "");
+
+  const itemTotal = sections.reduce((t, s) => t + (s.items ? s.items.length : 0), 0);
+  useReveal(rootRef, sections.map((s) => s.id).join() + "|" + itemTotal);
+
+  /* scroll: progress bar, hero parallax, active menu item */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    const heroEl = root.querySelector(".fx-hero");
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const y = window.scrollY;
+      const h = root.scrollHeight - window.innerHeight;
+      if (y < 1100 && heroEl) heroEl.style.setProperty("--sy", `${y}`);
+      root.style.setProperty("--progress", h > 0 ? Math.min(1, Math.max(0, y / h)).toFixed(4) : 0);
+      const line = window.innerHeight * 0.35;
+      let cur = navList[0] ? navList[0].id : "";
+      navList.forEach((s) => {
+        const el = document.getElementById(s.id);
+        if (el && el.getBoundingClientRect().top <= line) cur = s.id;
+      });
+      setActive(cur);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navKey]);
+
+  /* open the page already scrolled to #anchor (navbar chips link to /coeuas/facilities#laboratories ...) */
+  useEffect(() => {
+    const jump = () => {
+      const id = decodeURIComponent(window.location.hash.slice(1));
+      const el = id && document.getElementById(id);
+      if (el) el.scrollIntoView({ block: "start" });
+    };
+    const t = setTimeout(jump, 150);
+    window.addEventListener("hashchange", jump);
+    return () => { clearTimeout(t); window.removeEventListener("hashchange", jump); };
   }, []);
 
-  /* A slide taller than the screen (small phones) scrolls inside itself first. */
-  const canScrollInside = (down) => {
-    const el = stageRef.current?.querySelector('[data-state="active"]');
-    if (!el || el.scrollHeight <= el.clientHeight + 2) return false;
-    return down ? el.scrollTop + el.clientHeight < el.scrollHeight - 2 : el.scrollTop > 2;
-  };
-
+  /* keep the active menu item visible on small screens */
   useEffect(() => {
-    const stage = stageRef.current;
-    const html = document.documentElement;
-    const prev = html.style.overflow;
-    html.style.overflow = "hidden";
+    const root = rootRef.current;
+    if (!root) return;
+    const a = root.querySelector(".fx-subnav a.is-active");
+    const box = root.querySelector(".fx-subnav-scroll");
+    if (a && box) box.scrollTo({ left: a.offsetLeft - box.clientWidth / 2 + a.clientWidth / 2, behavior: "smooth" });
+  }, [active]);
 
-    const onWheel = (e) => {
-      if (Math.abs(e.deltaY) < 24) return;
-      if (canScrollInside(e.deltaY > 0)) return;
-      e.preventDefault();
-      go(indexRef.current + (e.deltaY > 0 ? 1 : -1));
-    };
-    const onKey = (e) => {
-      const tag = e.target.tagName;
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return;
-      const k = e.key;
-      if (["ArrowDown", "ArrowRight", "PageDown"].includes(k) || (k === " " && !e.shiftKey)) go(indexRef.current + 1);
-      else if (["ArrowUp", "ArrowLeft", "PageUp"].includes(k) || (k === " " && e.shiftKey)) go(indexRef.current - 1);
-      else if (k === "Home") go(0);
-      else if (k === "End") go(SLIDES.length - 1);
-      else return;
-      e.preventDefault();
-    };
-    const onTouchStart = (e) => (touchY.current = e.touches[0].clientY);
-    const onTouchEnd = (e) => {
-      if (touchY.current == null) return;
-      const dy = touchY.current - e.changedTouches[0].clientY;
-      touchY.current = null;
-      if (Math.abs(dy) < 60 || canScrollInside(dy > 0)) return;
-      go(indexRef.current + (dy > 0 ? 1 : -1));
-    };
+  const goTo = useCallback((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
+    if (window.history && window.history.replaceState) window.history.replaceState(null, "", "#" + id);
+  }, []);
 
-    stage.addEventListener("wheel", onWheel, { passive: false });
-    stage.addEventListener("touchstart", onTouchStart, { passive: true });
-    stage.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("keydown", onKey);
-    return () => {
-      html.style.overflow = prev;
-      stage.removeEventListener("wheel", onWheel);
-      stage.removeEventListener("touchstart", onTouchStart);
-      stage.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [go]);
+  /* pointer effects: magnetic buttons + hero glow */
+  const onMove = useCallback((e) => {
+    const t = e.target;
+    if (!t.closest || reduced()) return;
+    const mag = t.closest(".fx-mag");
+    if (mag) {
+      const r = mag.getBoundingClientRect();
+      mag.style.setProperty("--tx", `${((e.clientX - (r.left + r.width / 2)) * 0.22).toFixed(1)}px`);
+      mag.style.setProperty("--ty", `${((e.clientY - (r.top + r.height / 2)) * 0.3).toFixed(1)}px`);
+    }
+  }, []);
+  const onOut = useCallback((e) => {
+    const t = e.target.closest && e.target.closest(".fx-mag");
+    if (t && !t.contains(e.relatedTarget)) ["--tx", "--ty"].forEach((p) => t.style.removeProperty(p));
+  }, []);
 
-  /* Cursor parallax for the background glow */
-  const onMove = (e) => {
-    const r = stageRef.current.getBoundingClientRect();
-    stageRef.current.style.setProperty("--mx", ((e.clientX - r.left) / r.width - 0.5).toFixed(3));
-    stageRef.current.style.setProperty("--my", ((e.clientY - r.top) / r.height - 0.5).toFixed(3));
+  /* numbers in the hero: `of` counts the items of that section, so they never go out of date */
+  const countOf = (id) => {
+    const s = c.sections.find((x) => x.id === id);
+    return s && s.items ? s.items.length : 0;
   };
-  const spot = (e) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    e.currentTarget.style.setProperty("--x", e.clientX - r.left + "px");
-    e.currentTarget.style.setProperty("--y", e.clientY - r.top + "px");
-    e.currentTarget.style.setProperty("--rx", (((e.clientY - r.top) / r.height - 0.5) * -8).toFixed(2) + "deg");
-    e.currentTarget.style.setProperty("--ry", (((e.clientX - r.left) / r.width - 0.5) * 8).toFixed(2) + "deg");
+  const stats = (c.hero.stats || []).map((s) => ({ ...s, n: s.of ? countOf(s.of) : s.value || 0 }));
+
+  /* ---------- the section types ---------- */
+  const renderSection = (s, n) => {
+    const items = s.items || [];
+    switch (s.type) {
+      /* facility cards: picture, tag, title, text, optional spec chips */
+      case "cards":
+        return (
+          <div className="fx-wrap">
+            <Head n={n} s={s} />
+            <div className="fx-cards">
+              {items.map((it, i) => (
+                <article className="fx-card fx-rv" id={it.anchor || undefined} style={DS(i)} key={it.id || it.title}>
+                  <Media src={it.image} alt={it.title} hints={hints} className="fx-photo" />
+                  <div className="fx-card-body">
+                    {it.tag && <span className="fx-tag">{it.tag}</span>}
+                    <h3>{it.title}</h3>
+                    <p>{it.text}</p>
+                    {it.specs && it.specs.length > 0 && (
+                      <ul className="fx-specs">{it.specs.map((x) => <li key={x}>{x}</li>)}</ul>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        );
+
+      /* one featured programme: key facts, picture, and what it contains */
+      case "programme":
+        return (
+          <div className="fx-wrap">
+            <Head n={n} s={s} />
+            <div className="fx-prog">
+              <div className="fx-prog-info fx-rv">
+                <dl className="fx-facts">
+                  {(s.facts || []).map((f) => (
+                    <div key={f.label}><dt>{f.label}</dt><dd>{f.value}</dd></div>
+                  ))}
+                </dl>
+                {s.link && <Link href={to(s.link.href)} className="fx-btn fx-mag">{s.link.label}<Arrow /></Link>}
+              </div>
+              <Media src={s.image} alt={s.title} hints={hints} className="fx-photo fx-photo--wide fx-rv" />
+            </div>
+            {items.length > 0 && (
+              <>
+                {s.partsTitle && <h3 className="fx-sub fx-rv">{s.partsTitle}</h3>}
+                <ul className="fx-parts">
+                  {items.map((p, i) => (
+                    <li className="fx-rv" style={DS(i)} id={p.anchor || undefined} key={p.id || p.title}>
+                      <b>{p.title}</b>
+                      {p.text && <small>{p.text}</small>}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        );
+
+      /* numbered stages (only for content that really is a sequence) */
+      case "steps":
+        return (
+          <div className="fx-wrap">
+            <Head n={n} s={s} />
+            <ol className="fx-steps">
+              {items.map((it, i) => (
+                <li className="fx-step fx-rv" id={it.anchor || undefined} style={D(i)} key={it.id || it.title}>
+                  <span className="fx-step-n">{i + 1}</span>
+                  <h3>{it.title}</h3>
+                  <p>{it.text}</p>
+                  {it.points && it.points.length > 0 && (
+                    <ul className="fx-points">{it.points.map((x) => <li key={x}>{x}</li>)}</ul>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        );
+
+      /* grid of short cards, each one a link when it has an href */
+      case "tiles":
+        return (
+          <div className="fx-wrap">
+            <Head n={n} s={s} />
+            <div className="fx-tiles">
+              {items.map((it, i) => (
+                <Card item={it} className={"fx-tile fx-rv" + (it.href ? " is-link" : "")} style={DS(i)} key={it.id || it.title}>
+                  <h3>{it.title}</h3>
+                  {it.text && <p>{it.text}</p>}
+                  {it.href && <span className="fx-more">{it.cta || "Learn more"}<Arrow /></span>}
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+
+      /* heading on the left, stacked rows on the right */
+      case "list":
+        return (
+          <div className="fx-wrap fx-split">
+            <Head n={n} s={s} stack />
+            <div className="fx-rows">
+              {items.map((it, i) => (
+                <Card item={it} className={"fx-row fx-rv" + (it.href ? " is-link" : "")} style={D(i)} key={it.id || it.title}>
+                  <span className="fx-row-t"><b>{it.title}</b>{it.text && <small>{it.text}</small>}</span>
+                  {it.href && <span className="fx-more">{it.cta || "Open"}<Arrow /></span>}
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+
+      case "cta":
+        return (
+          <div className="fx-wrap">
+            <div className="fx-cta-in">
+              <div>
+                <h2 className="fx-h fx-rv">{s.title}</h2>
+                {s.text && <p className="fx-lede fx-rv" style={D(1)}>{s.text}</p>}
+                {s.footer && <p className="fx-foot fx-rv" style={D(2)}>{s.footer}</p>}
+              </div>
+              <div className="fx-cta-links fx-rv" style={D(2)}>
+                {items.map((it, i) => (
+                  <Link href={to(it.href)} className="fx-cta-link fx-mag" key={it.id || it.title}>
+                    <span className="fx-cta-n">{pad(i)}</span>
+                    <span className="fx-cta-t"><b>{it.title}</b>{it.text && <small>{it.text}</small>}</span>
+                    <Arrow />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
-  const state = (i) => (i === index ? "active" : i < index ? "before" : "after");
-  const on = (id) => SLIDES[index].id === id;
+  const h = c.hero;
+  const heroImg = imgUrl(h.image);
+  const [heroFail, setHeroFail] = useState(false);
+  const heroLines = Array.isArray(h.headline) ? h.headline : [h.headline];
 
   return (
-    <main className="fac" ref={stageRef} onPointerMove={onMove} aria-label="Facilities and services">
-      {/* background */}
-      <div className="fac-bg" aria-hidden="true">
-        <span className="fac-grid" />
-        <span className="fac-orb fac-orb--a" />
-        <span className="fac-orb fac-orb--b" />
-        <span className="fac-scan" />
-      </div>
+    <div className="fx" ref={rootRef} onMouseMove={onMove} onMouseOut={onOut}>
 
-      <div className="fac-progress" aria-hidden="true">
-        <span style={{ transform: `scaleX(${(index + 1) / SLIDES.length})` }} />
-      </div>
+      {/* ===================== HERO ===================== */}
+      <section className="fx-hero" id="overview">
+        {heroImg && !heroFail && (
+          <div className="fx-hero-media" aria-hidden="true"><img src={heroImg} alt="" loading="eager" decoding="async" onError={() => setHeroFail(true)} /></div>
+        )}
+        <div className="fx-grid-bg" aria-hidden="true" />
 
-      {/* slide counter */}
-      <div className="fac-count" aria-live="polite">
-        <span key={index} className="fac-count__n">{String(index + 1).padStart(2, "0")}</span>
-        <span className="fac-count__t">/ {String(SLIDES.length).padStart(2, "0")}</span>
-        <span className="fac-count__label">{SLIDES[index].label}</span>
-      </div>
-
-      {/* dot rail */}
-      <nav className="fac-rail" aria-label="Sections">
-        {SLIDES.map((s, i) => (
-          <button key={s.id} className={i === index ? "is-on" : ""} onClick={() => go(i)} aria-label={s.label} aria-current={i === index}>
-            <span className="fac-rail__label">{s.label}</span>
-            <span className="fac-rail__dot" />
-          </button>
-        ))}
-      </nav>
-
-      {/* curtain that sweeps across on every change */}
-      {wipe > 0 && <div key={wipe} className={"fac-wipe " + (dir > 0 ? "is-down" : "is-up")} aria-hidden="true" />}
-
-      {/* ---------- 0. OVERVIEW ---------- */}
-      <section className="fac-slide fac-slide--intro" data-state={state(0)} inert={index !== 0 ? "" : undefined}>
-        <div className="fac-slide__in">
-          <p className="fac-rv" style={{ "--d": 0 }}>Facilities & Services</p>
-          <h1 className="fac-title">
-            {"Where unmanned flight gets built, tested and proven.".split(" ").map((w, i) => (
-              <span key={i} className="fac-word"><span style={{ "--d": i }}>{w}&nbsp;</span></span>
+        <div className="fx-wrap fx-hero-copy">
+          {h.eyebrow && <p className="fx-eyebrow"><i />{h.eyebrow}</p>}
+          <h1 className="fx-title" aria-label={heroLines.join(" ")}>
+            {heroLines.map((l, i) => (
+              <span className="fx-ln" key={l}><span className={l === h.highlight ? "fx-hl" : ""} style={{ "--i": i }}>{l}</span></span>
             ))}
           </h1>
-          <p className="fac-lead fac-rv" style={{ "--d": 6 }}>Workshops, aircraft, flight sites and people, all in one place, open to industry, agencies and students.</p>
-          <ul className="fac-stats fac-rv" style={{ "--d": 8 }}>
-            <li><b><CountUp to={FACILITIES.length} run={on("intro")} /></b><span>facility types</span></li>
-            <li><b><CountUp to={SERVICES.length} run={on("intro")} /></b><span>technical services</span></li>
-            <li><b><CountUp to={SOLUTIONS.length} run={on("intro")} /></b><span>industry solutions</span></li>
-            <li><b><CountUp to={TRAINING.length} run={on("intro")} /></b><span>training tracks</span></li>
-          </ul>
-          <button className="fac-hint fac-rv" style={{ "--d": 10 }} onClick={() => go(1)}>
-            <span className="fac-hint__mouse"><i /></span>Scroll, swipe or press the down arrow
-          </button>
-        </div>
-        <svg className="fac-radar" viewBox="0 0 400 400" aria-hidden="true">
-          {[60, 110, 160, 195].map((r) => <circle key={r} cx="200" cy="200" r={r} />)}
-          <path d="M200 5V395M5 200H395" />
-          <g className="fac-radar__sweep"><path d="M200 200 L200 5 A195 195 0 0 1 338 62 Z" /></g>
-          <circle className="fac-blip fac-b1" cx="272" cy="120" r="5" />
-          <circle className="fac-blip fac-b2" cx="140" cy="250" r="5" />
-          <circle className="fac-blip fac-b3" cx="250" cy="290" r="5" />
-        </svg>
-      </section>
-
-      {/* ---------- 1. FACILITIES & EQUIPMENT ---------- */}
-      <section className="fac-slide" data-state={state(1)} inert={index !== 1 ? "" : undefined}>
-        <div className="fac-slide__in fac-slide__in--wide">
-          <h2 className="fac-rv" style={{ "--d": 0 }}>Facilities and equipment</h2>
-          <p className="fac-lead fac-rv" style={{ "--d": 1 }}>Hover or tap a panel to open it.</p>
-          <div className="fac-panels fac-rv" style={{ "--d": 2 }}>
-            {FACILITIES.map((f, i) => (
-              <article key={f.title} className={"fac-panel" + (open === i ? " is-open" : "")} tabIndex={0}
-                onMouseEnter={() => setOpen(i)} onFocus={() => setOpen(i)} onClick={() => setOpen(i)}>
-                <span className="fac-panel__bar" />
-                <h3>{f.title}</h3>
-                <p>{f.text}</p>
-              </article>
-            ))}
+          <p className="fx-hero-lede">{h.lead}</p>
+          <div className="fx-hero-cta">
+            {h.primary && <button className="fx-btn fx-mag" onClick={() => goTo(h.primary.target)}>{h.primary.label}<Arrow /></button>}
+            {h.secondary && <Link className="fx-btn fx-btn--ghost fx-mag" href={to(h.secondary.href)}>{h.secondary.label}<Arrow /></Link>}
           </div>
         </div>
-      </section>
 
-      {/* ---------- 2. AIRSPACE SANDBOX ---------- */}
-      <section className="fac-slide" data-state={state(2)} inert={index !== 2 ? "" : undefined}>
-        <div className="fac-slide__in fac-slide__in--split">
-          <div>
-            <h2 className="fac-rv" style={{ "--d": 0 }}>The Perlis Airspace Sandbox</h2>
-            <p className="fac-lead fac-rv" style={{ "--d": 1 }}>A dedicated low-altitude test site at Sungai Batu Pahat, with a functional mock-up aerodrome. Corridors run east to the Timah Tasoh Dam and west over Kuala Perlis towards Langkawi.</p>
-            <ul className="fac-chips fac-rv" style={{ "--d": 2 }}>
-              {SANDBOX_PARTS.map((p) => <li key={p}>{p}</li>)}
-            </ul>
-            <Link href={u("/research")} className="fac-btn fac-rv" style={{ "--d": 3 }}>See the programme</Link>
+        {stats.length > 0 && (
+          <div className="fx-wrap fx-glance">
+            <div className="fx-glance-bar">
+              <span>At a glance</span>
+              {h.caption && <span><b>{h.caption.place}</b> &middot; {h.caption.note}</span>}
+            </div>
+            <div className="fx-glance-grid">
+              {stats.map((s, i) => (
+                <div className="fx-gl" key={s.label}>
+                  <strong><Counter value={s.n} delay={900 + i * 100} /></strong>
+                  <span className="fx-gl-label">{s.label}</span>
+                  {s.note && <p className="fx-gl-note">{s.note}</p>}
+                </div>
+              ))}
+            </div>
           </div>
-          <svg className="fac-map fac-rv" style={{ "--d": 2 }} viewBox="0 0 800 460" role="img" aria-label="Flight corridors from the Sandbox to Timah Tasoh Dam and Langkawi">
-            <path id="route-east" className="fac-route" d="M400 330 C470 300 560 260 640 190" />
-            <ellipse className="fac-route" cx="670" cy="150" rx="70" ry="42" />
-            <path id="route-west" className="fac-route fac-route--w" d="M400 330 C320 360 230 340 170 290 S70 160 110 80" />
-            <circle className="fac-pulse" cx="400" cy="330" r="10" />
-            <circle className="fac-node" cx="400" cy="330" r="7" />
-            <circle className="fac-node" cx="640" cy="190" r="5" />
-            <circle className="fac-node" cx="110" cy="80" r="5" />
-            <text x="414" y="368">Sandbox, Sungai Batu Pahat</text>
-            <text x="590" y="92">Timah Tasoh Dam</text>
-            <text x="126" y="72">Langkawi</text>
-            <text x="150" y="330">Kuala Perlis</text>
-            <circle r="5" className="fac-flyer"><animateMotion dur="7s" repeatCount="indefinite"><mpath href="#route-east" /></animateMotion></circle>
-            <circle r="5" className="fac-flyer"><animateMotion dur="9s" repeatCount="indefinite"><mpath href="#route-west" /></animateMotion></circle>
-          </svg>
-        </div>
+        )}
       </section>
 
-      {/* ---------- 3. TECHNICAL SERVICES (a real sequence) ---------- */}
-      <section className="fac-slide" data-state={state(3)} inert={index !== 3 ? "" : undefined}>
-        <div className="fac-slide__in fac-slide__in--wide">
-          <h2 className="fac-rv" style={{ "--d": 0 }}>Engineering and technical services</h2>
-          <p className="fac-lead fac-rv" style={{ "--d": 1 }}>One project, four hand-offs, one team.</p>
-          <ol className="fac-flow">
-            {SERVICES.map((s, i) => (
-              <li key={s.title} className="fac-rv" style={{ "--d": 2 + i }}>
-                <span className="fac-flow__n">{i + 1}</span>
-                <h3>{s.title}</h3>
-                <p>{s.text}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* ---------- 4. INDUSTRY SOLUTIONS ---------- */}
-      <section className="fac-slide" data-state={state(4)} inert={index !== 4 ? "" : undefined}>
-        <div className="fac-slide__in fac-slide__in--wide">
-          <h2 className="fac-rv" style={{ "--d": 0 }}>Industry solutions and case studies</h2>
-          <div className="fac-tiles">
-            {SOLUTIONS.map((s, i) => (
-              <Link key={s} href={u("/facilities/solutions")} className="fac-tile fac-rv" style={{ "--d": 1 + i * 0.6 }} onPointerMove={spot}>
-                <span>{s}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ---------- 5. TRAINING ---------- */}
-      <section className="fac-slide" data-state={state(5)} inert={index !== 5 ? "" : undefined}>
-        <div className="fac-slide__in fac-slide__in--split">
-          <div>
-            <h2 className="fac-rv" style={{ "--d": 0 }}>Training and professional development</h2>
-            <p className="fac-lead fac-rv" style={{ "--d": 1 }}>Skilled, certified people are what keep the sky safe.</p>
-          </div>
-          <ul className="fac-stack">
-            {TRAINING.map((t, i) => {
-              const body = (<><h3>{t.title}</h3><p>{t.text}</p></>);
-              return (
-                <li key={t.title} className="fac-rv" style={{ "--d": 1 + i }}>
-                  {t.href ? <Link href={t.href}>{body}</Link> : <div>{body}</div>}
+      {/* ===================== STICKY MENU ===================== */}
+      {navList.length > 0 && (
+        <nav className="fx-subnav" aria-label="Facilities sections">
+          <div className="fx-wrap fx-subnav-scroll">
+            <ul>
+              {navList.map((s) => (
+                <li key={s.id}>
+                  <a
+                    href={`#${s.id}`}
+                    className={active === s.id ? "is-active" : ""}
+                    aria-current={active === s.id ? "true" : undefined}
+                    onClick={(e) => { e.preventDefault(); goTo(s.id); }}
+                  >{s.label || s.title}</a>
                 </li>
-              );
-            })}
-          </ul>
-        </div>
-      </section>
-
-      {/* ---------- 6. ENQUIRE ---------- */}
-      <section className="fac-slide fac-slide--end" data-state={state(6)} inert={index !== 6 ? "" : undefined}>
-        <div className="fac-slide__in">
-          <h2 className="fac-title fac-title--end fac-rv" style={{ "--d": 0 }}>Have a project in mind?</h2>
-          <p className="fac-lead fac-rv" style={{ "--d": 1 }}>Tell us what you want to build, test or learn.</p>
-          <div className="fac-cta fac-rv" style={{ "--d": 2 }}>
-            <Link href={u("/contact")} className="fac-btn">Send a training or services enquiry</Link>
-            <button className="fac-btn fac-btn--ghost" onClick={() => go(0)}>Back to the start</button>
+              ))}
+            </ul>
           </div>
-          <p className="fac-foot fac-rv" style={{ "--d": 3 }}>© 2026 COE-UAS</p>
-        </div>
-      </section>
-    </main>
+          <div className="fx-progress" aria-hidden="true"><span /></div>
+        </nav>
+      )}
+
+      {/* ===================== SECTIONS ===================== */}
+      {sections.map((s) => {
+        const idx = Math.max(0, navList.findIndex((x) => x.id === s.id));
+        return (
+          <section key={s.id} id={s.id} className={`fx-sec fx-${s.tone || "dark"} fx-sec-${s.type}`}>
+            {renderSection(s, idx)}
+          </section>
+        );
+      })}
+    </div>
   );
 }

@@ -15,6 +15,12 @@ import { MAIN_NAV, CONTACT_LINK } from "./siteMapCOEUAS";
    To add more media to a gallery, add another entry to that array.
    To hide the placeholder hints before launch, set SHOW_SLOT_HINTS = false.
 
+   PREVIEW IMAGES
+   While USE_PREVIEW_IMAGES is true, every slot that has an entry in PREVIEW
+   below shows an image from the internet, so you can see the finished layout.
+   These are stand-ins only. When your own photos are ready, put them in
+   public/images/coe-uas/ and set USE_PREVIEW_IMAGES = false.
+
    LATER (admin CMS): set HOME_CONTENT_URL to your API endpoint.
    The API only needs to return the parts that changed; anything it
    leaves out falls back to the defaults below. Arrays (items, stats,
@@ -23,12 +29,83 @@ import { MAIN_NAV, CONTACT_LINK } from "./siteMapCOEUAS";
 ------------------------------------------------------------------- */
 export const HOME_CONTENT_URL = null; // e.g. "/api/pages/home"
 export const SHOW_SLOT_HINTS = true;
+export const USE_PREVIEW_IMAGES = true; // false = use only your own files
 
 const IMG = "/images/coe-uas/"; // files in public/images/coe-uas/
 const VID = "/videos/coe-uas/"; // files in public/videos/coe-uas/
 
-const image = (file, note, alt = "") => ({ type: "image", src: IMG + file, alt, note });
-const video = (file, poster, note) => ({ type: "video", src: VID + file, poster: poster ? IMG + poster : undefined, note });
+/* ---------- preview images (stand-ins from the internet) ----------
+   key   = the file name used in the slot below
+   value = a search word (a photo of that subject), or a full image URL.
+   Change a word to get a different kind of photo. */
+const PREVIEW = {
+  /* hero */
+  "hero/1.jpg": "drone",
+  "hero/2.jpg": "engineer",
+  "hero/3.jpg": "airfield",
+
+  /* capabilities */
+  "capabilities/surveying.jpg": "survey",
+  "capabilities/agriculture.jpg": "farm",
+  "capabilities/security.jpg": "cctv",
+  "capabilities/cargo.jpg": "logistics",
+  "capabilities/autonomous-ai.jpg": "robot",
+  "capabilities/heritage.jpg": "temple",
+
+  /* featured */
+  "perlis-airspace-sandbox.jpg": "drone",
+  "featured/1.jpg": "aircraft",
+  "featured/2.jpg": "controlroom",
+  "featured/3.jpg": "circuit",
+
+  /* members (portraits) */
+  "members/1.jpg": "https://randomuser.me/api/portraits/men/32.jpg",
+  "members/2.jpg": "https://randomuser.me/api/portraits/women/44.jpg",
+  "members/3.jpg": "https://randomuser.me/api/portraits/men/75.jpg",
+  "members/4.jpg": "https://randomuser.me/api/portraits/women/68.jpg",
+
+  /* highlights */
+  "highlights/1.jpg": "award",
+  "highlights/2.jpg": "laboratory",
+  "highlights/3.jpg": "field",
+
+  /* news */
+  "news/1.jpg": "airport",
+  "news/2.jpg": "delegation",
+  "news/3.jpg": "exhibition",
+
+  /* partners (logo cards) */
+  "partners/1.png": "https://placehold.co/480x200/ffffff/0a4dff/png?text=University+Networks",
+  "partners/2.png": "https://placehold.co/480x200/ffffff/0a4dff/png?text=Government+Agencies",
+  "partners/3.png": "https://placehold.co/480x200/ffffff/0a4dff/png?text=Industry+Partners",
+  "partners/4.png": "https://placehold.co/480x200/ffffff/0a4dff/png?text=International",
+  "partners/5.png": "https://placehold.co/480x200/ffffff/0a4dff/png?text=Consortia",
+  "partners/6.png": "https://placehold.co/480x200/ffffff/0a4dff/png?text=Research+Institutions",
+
+  /* join us */
+  "cta/research.jpg": "science",
+  "cta/people.jpg": "team",
+  "cta/collaborate.jpg": "meeting",
+};
+
+/* same file name always gives the same photo (no random change on refresh) */
+const hash = (s) => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7) % 1000;
+const preview = (file) => {
+  if (!USE_PREVIEW_IMAGES) return null;
+  const v = PREVIEW[file];
+  if (!v) return null;
+  return v.startsWith("http") ? v : `https://loremflickr.com/1200/800/${v}?lock=${hash(file)}`;
+};
+
+const image = (file, note, alt = "") => ({ type: "image", src: preview(file) || IMG + file, alt, note });
+
+/* A video slot. In preview mode, a slot with no video file yet shows its poster
+   as a preview image instead, so the layout is not empty. */
+const video = (file, poster, note) => {
+  const p = poster && preview(poster);
+  if (p) return { type: "image", src: p, alt: "", note };
+  return { type: "video", src: VID + file, poster: poster ? IMG + poster : undefined, note };
+};
 
 export const defaultHomeContent = {
   /* Order and visibility of sections. Reorder or hide here.

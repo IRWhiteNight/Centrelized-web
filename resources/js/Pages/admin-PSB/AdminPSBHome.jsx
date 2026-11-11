@@ -1,9 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { router, usePage } from "@inertiajs/react";
-import "../../../css/admin-PSB-css/admin-home.css";
+import "../../../css/admin-PSB-css/admin-opportunities.css"; // shared theme (po-* classes)
+import "../../../css/admin-PSB-css/admin-home.css"; // Home-only extras
 
 /* ====================================================================
    PSB ADMIN → HOME PAGE EDITOR            /admin/psb/home/*
+
+   Same look, layout and live preview as the Opportunities editor.
 
    Site map (PSB workspace → "Home Page"), one editor for all six modules:
      1  Main banner and slogan                 → page_sections (banner)
@@ -12,9 +15,10 @@ import "../../../css/admin-PSB-css/admin-home.css";
      4  Featured programmes (pin / order)      → featured_items + psb_programmes
      5  Latest news and upcoming events (pin)  → featured_items + posts + events
      6  Partners preview and CTA buttons       → partners (is_featured) + page_sections (cta)
-   Common screens from the document: list, create / edit, preview, publish / unpublish,
-   schedule, reorder (drag), delete to Trash, History tab (audit_logs for this record).
-   Media is always chosen from media_assets (never stored inside the content).
+
+   LIVE PREVIEW: the panel on the right has two views
+     • Draft preview  - the public page built from what is on screen (unsaved edits too)
+     • Live site      - the real public Home page (/) in a frame; reloads after publishing
 
    SAMPLE DATA: the page works today (changes stay on screen only). Return an Inertia prop
    named `home` and it switches to LIVE mode:
@@ -26,8 +30,8 @@ import "../../../css/admin-PSB-css/admin-home.css";
            'content' => [...],    // same shape as `sampleContent` below
            'meta'    => [...],    // status, publishedAt, scheduledAt, hasUnpublishedChanges, updatedBy, updatedAt
            'catalog' => ['programmes' => [], 'news' => [], 'events' => [], 'partners' => [], 'media' => []],
-           'history' => [...],    // audit_logs rows for the pages / page_sections records
-           'previewUrl' => 'https://...',   // optional signed preview link of the public Home page
+           'history' => [...],    // audit_logs rows
+           'liveUrl' => '/',      // optional, public Home page address (previewUrl also accepted)
        ],
    ]);
 
@@ -44,6 +48,7 @@ const ENDPOINTS = {
     unpublish: `${BASE}/home/unpublish`, // POST
     upload: `${BASE}/media-library/upload`, // POST  multipart { file }
 };
+const DEFAULT_LIVE_URL = "/";
 const MANAGE = {
     programmes: `${BASE}/opportunities/programmes`,
     news: `${BASE}/media-centre/news`,
@@ -262,8 +267,8 @@ function timeAgo(iso) {
 
 const initialsOf = (name) => (name || "?").split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 
-/* "Low-altitude *airspace*" → plain text for lists / counters */
-const plain = (t = "") => t.replace(/\*/g, "");
+/* "Low-altitude *airspace*" → highlighted words */
+const Hl = ({ text = "" }) => text.split("*").map((x, i) => (i % 2 ? <em key={i}>{x}</em> : x));
 
 /* drawn thumbnail for a media asset (real files would use their own URL) */
 function thumbOf(item) {
@@ -374,8 +379,9 @@ function Icon({ name, size = 18 }) {
         search: (<><circle cx="11" cy="11" r="6.5" /><path d="m20 20-4-4" /></>),
         image: (<><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></>),
         external: <path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5" />,
-        history: (<><path d="M3 12a9 9 0 1 0 3-6.7" /><path d="M3 4v5h5M12 8v4l3 2" /></>),
         unlink: (<><path d="M9 15 15 9" /><path d="M11 6l1.5-1.5a4 4 0 0 1 5.7 5.7L16.7 11.7M13 18l-1.5 1.5a4 4 0 0 1-5.7-5.7L7.3 12.3" /><path d="M3 3l18 18" /></>),
+        refresh: (<><path d="M21 12a9 9 0 1 1-3-6.7" /><polyline points="21 3 21 9 15 9" /></>),
+        panel: (<><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M14 4v16" /></>),
     };
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -388,7 +394,7 @@ function Icon({ name, size = 18 }) {
 
 function Toggle({ checked, onChange, label }) {
     return (
-        <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`ph-toggle ${checked ? "is-on" : ""}`} onClick={() => onChange(!checked)}>
+        <button type="button" role="switch" aria-checked={checked} aria-label={label} className={`po-toggle ${checked ? "is-on" : ""}`} onClick={() => onChange(!checked)}>
             <span />
         </button>
     );
@@ -398,34 +404,34 @@ function Toggle({ checked, onChange, label }) {
 function Field({ label, hint, value, onChange, errorKey, max, rows, placeholder, className = "", type = "text" }) {
     const { errors } = useEd();
     const error = errors[errorKey];
-    const id = `ph-${errorKey}`;
+    const id = `po-${errorKey}`;
     const length = (value || "").length;
 
     return (
-        <div className={`ph-field ${error ? "has-error" : ""} ${className}`}>
-            <div className="ph-field-top">
+        <div className={`po-field ${error ? "has-error" : ""} ${className}`}>
+            <div className="po-field-top">
                 <label htmlFor={id}>{label}</label>
-                {max && <span className={`ph-count ${length > max ? "is-over" : ""}`}>{length}/{max}</span>}
+                {max && <span className={`po-count ${length > max ? "is-over" : ""}`}>{length}/{max}</span>}
             </div>
             {rows ? (
-                <textarea id={id} className="ph-input ph-textarea" rows={rows} value={value || ""} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+                <textarea id={id} className="po-input po-textarea" rows={rows} value={value || ""} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
             ) : (
-                <input id={id} type={type} className="ph-input" value={value || ""} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
+                <input id={id} type={type} className="po-input" value={value || ""} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} />
             )}
-            {hint && !error && <p className="ph-hint">{hint}</p>}
-            {error && <p className="ph-error" role="alert"><Icon name="alert" size={13} /> {error}</p>}
+            {hint && !error && <p className="po-hint">{hint}</p>}
+            {error && <p className="po-error" role="alert"><Icon name="alert" size={13} /> {error}</p>}
         </div>
     );
 }
 
 function ErrorLine({ errorKey }) {
     const { errors } = useEd();
-    return errors[errorKey] ? <p className="ph-error" role="alert"><Icon name="alert" size={13} /> {errors[errorKey]}</p> : null;
+    return errors[errorKey] ? <p className="po-error" role="alert"><Icon name="alert" size={13} /> {errors[errorKey]}</p> : null;
 }
 
 function BlockHead({ title, text, aside }) {
     return (
-        <div className="ph-block-head">
+        <div className="po-block-head">
             <div>
                 <h3>{title}</h3>
                 {text && <p>{text}</p>}
@@ -471,24 +477,24 @@ function Orderable({ items, onMove, onRemove, removeKind = "delete", nameOf, chi
     const { askDelete } = useEd();
     const drag = useDrag(onMove);
 
-    if (!items.length) return <p className="ph-empty">{empty}</p>;
+    if (!items.length) return <p className="po-empty">{empty}</p>;
 
     return (
-        <ul className="ph-list">
+        <ul className="po-list">
             {items.map((item, i) => (
-                <li key={item.id} className={`ph-item ${drag.over === i ? "is-over" : ""}`} {...drag.rowProps(i)}>
-                    <button type="button" className="ph-handle" aria-label={`Drag ${nameOf(item)} to reorder`} title="Drag to reorder" {...drag.handleProps(i)}>
+                <li key={item.id} className={`po-item ${drag.over === i ? "is-over" : ""}`} {...drag.rowProps(i)}>
+                    <button type="button" className="po-handle" aria-label={`Drag ${nameOf(item)} to reorder`} title="Drag to reorder" {...drag.handleProps(i)}>
                         <Icon name="grip" size={16} />
                     </button>
-                    <span className="ph-item-no">{i + 1}</span>
-                    <div className="ph-item-body">{children(item, i)}</div>
-                    <div className="ph-item-tools">
-                        <button type="button" className="ph-iconbtn" aria-label="Move up" title="Move up" disabled={i === 0} onClick={() => onMove(i, i - 1)}><Icon name="up" size={15} /></button>
-                        <button type="button" className="ph-iconbtn" aria-label="Move down" title="Move down" disabled={i === items.length - 1} onClick={() => onMove(i, i + 1)}><Icon name="down" size={15} /></button>
+                    <span className="po-item-no">{i + 1}</span>
+                    <div className="po-item-body">{children(item, i)}</div>
+                    <div className="po-item-tools">
+                        <button type="button" className="po-iconbtn" aria-label="Move up" title="Move up" disabled={i === 0} onClick={() => onMove(i, i - 1)}><Icon name="up" size={15} /></button>
+                        <button type="button" className="po-iconbtn" aria-label="Move down" title="Move down" disabled={i === items.length - 1} onClick={() => onMove(i, i + 1)}><Icon name="down" size={15} /></button>
                         {removeKind === "delete" ? (
-                            <button type="button" className="ph-iconbtn is-danger" aria-label={`Delete ${nameOf(item)}`} title="Delete (moves to Trash)" onClick={() => askDelete({ what: nameOf(item), onConfirm: () => onRemove(i) })}><Icon name="trash" size={15} /></button>
+                            <button type="button" className="po-iconbtn is-danger" aria-label={`Delete ${nameOf(item)}`} title="Delete (moves to Trash)" onClick={() => askDelete({ what: nameOf(item), onConfirm: () => onRemove(i) })}><Icon name="trash" size={15} /></button>
                         ) : (
-                            <button type="button" className="ph-iconbtn" aria-label={`Unpin ${nameOf(item)}`} title="Unpin from the Home page" onClick={() => onRemove(i)}><Icon name="unlink" size={15} /></button>
+                            <button type="button" className="po-iconbtn" aria-label={`Unpin ${nameOf(item)}`} title="Unpin from the Home page" onClick={() => onRemove(i)}><Icon name="unlink" size={15} /></button>
                         )}
                     </div>
                 </li>
@@ -499,7 +505,7 @@ function Orderable({ items, onMove, onRemove, removeKind = "delete", nameOf, chi
 
 function AddButton({ onClick, children, disabled }) {
     return (
-        <button type="button" className="ph-add" onClick={onClick} disabled={disabled}>
+        <button type="button" className="po-add" onClick={onClick} disabled={disabled}>
             <Icon name="plus" size={15} /> {children}
         </button>
     );
@@ -521,22 +527,18 @@ function MediaField({ label, hint, mediaId, onChange, accept = "any", errorKey }
     const needsAlt = asset && asset.type === "image" && !asset.alt;
 
     return (
-        <div className="ph-field">
-            <div className="ph-field-top"><label>{label}</label></div>
-            <div className="ph-media">
-                <span className="ph-media-thumb">
+        <div className="po-field">
+            <div className="po-field-top"><span className="po-label">{label}</span></div>
+            <div className="po-media">
+                <span className="po-media-thumb">
                     {asset ? <img src={thumbOf(asset)} alt="" /> : <Icon name="image" size={22} />}
                 </span>
-                <div className="ph-media-text">
+                <div className="po-media-text">
                     {asset ? (
                         <>
                             <strong>{asset.name}</strong>
                             <small>{asset.type === "video" ? "Video" : "Image"} · {asset.size}</small>
-                            {needsAlt ? (
-                                <small className="ph-media-warn"><Icon name="alert" size={12} /> No alt text. Add it in the Media Library.</small>
-                            ) : (
-                                <small title={asset.alt}>Alt text: {asset.alt || "not needed for video"}</small>
-                            )}
+                            {needsAlt && <small className="po-media-warn"><Icon name="alert" size={12} /> No alt text. Add it in the Media Library.</small>}
                         </>
                     ) : (
                         <>
@@ -545,12 +547,12 @@ function MediaField({ label, hint, mediaId, onChange, accept = "any", errorKey }
                         </>
                     )}
                 </div>
-                <div className="ph-media-actions">
-                    <button type="button" className="ph-btn-small" onClick={() => pickMedia({ accept, selected: mediaId, onPick: onChange })}>{asset ? "Change" : "Choose"}</button>
-                    {asset && <button type="button" className="ph-btn-small is-quiet" onClick={() => onChange(null)}>Remove</button>}
+                <div className="po-media-actions">
+                    <button type="button" className="po-btn-small" onClick={() => pickMedia({ accept, selected: mediaId, onPick: onChange })}>{asset ? "Change" : "Choose"}</button>
+                    {asset && <button type="button" className="po-btn-small is-quiet" onClick={() => onChange(null)}>Remove</button>}
                 </div>
             </div>
-            {hint && <p className="ph-hint">{hint}</p>}
+            {hint && <p className="po-hint">{hint}</p>}
             {errorKey && <ErrorLine errorKey={errorKey} />}
         </div>
     );
@@ -569,44 +571,45 @@ function MediaPicker({ state, media, onClose, onUpload }) {
 
     const list = media.filter((m) => {
         if (type !== "all" && m.type !== type) return false;
-        return !query.trim() || m.name.toLowerCase().includes(query.trim().toLowerCase()) || (m.alt || "").toLowerCase().includes(query.trim().toLowerCase());
+        const q = query.trim().toLowerCase();
+        return !q || m.name.toLowerCase().includes(q) || (m.alt || "").toLowerCase().includes(q);
     });
 
     return (
-        <div className="ph-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="ph-dialog ph-picker" role="dialog" aria-modal="true" aria-labelledby="ph-picker-title">
-                <header className="ph-dialog-head">
+        <div className="po-overlay is-top" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="po-dialog po-picker" role="dialog" aria-modal="true" aria-labelledby="po-picker-title">
+                <header className="po-dialog-head">
                     <div>
-                        <h2 id="ph-picker-title">Media Library</h2>
+                        <h2 id="po-picker-title">Media Library</h2>
                         <p>Choose a file for this section. Files are managed in the Media Library.</p>
                     </div>
-                    <button type="button" className="ph-iconbtn" aria-label="Close" onClick={onClose}><Icon name="close" size={18} /></button>
+                    <button type="button" className="po-iconbtn" aria-label="Close" onClick={onClose}><Icon name="close" size={18} /></button>
                 </header>
 
-                <div className="ph-picker-tools">
-                    <label className="ph-search">
+                <div className="po-picker-tools" style={{ paddingTop: 16 }}>
+                    <label className="po-search">
                         <Icon name="search" size={16} />
                         <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by file name or alt text" aria-label="Search media" />
                     </label>
-                    <select className="ph-input ph-select" value={type} onChange={(e) => setType(e.target.value)} aria-label="File type">
+                    <select className="po-input po-select" value={type} onChange={(e) => setType(e.target.value)} aria-label="File type">
                         <option value="all">All files</option>
                         <option value="image">Images</option>
                         <option value="video">Video</option>
                     </select>
-                    <button type="button" className="ph-btn-small" onClick={() => fileRef.current?.click()}><Icon name="upload" size={14} /> Upload</button>
+                    <button type="button" className="po-btn-small" onClick={() => fileRef.current?.click()}><Icon name="upload" size={14} /> Upload</button>
                     <input ref={fileRef} type="file" hidden accept="image/*,video/*" onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
                 </div>
 
-                <div className="ph-media-grid">
-                    {list.length === 0 && <p className="ph-empty">No files match. Try another search or upload a new file.</p>}
+                <div className="po-media-grid">
+                    {list.length === 0 && <p className="po-empty">No files match. Try another search or upload a new file.</p>}
                     {list.map((m) => (
-                        <button key={m.id} type="button" className={`ph-media-card ${state.selected === m.id ? "is-selected" : ""}`} onClick={() => { state.onPick(m.id); onClose(); }}>
+                        <button key={m.id} type="button" className={`po-media-card ${state.selected === m.id ? "is-selected" : ""}`} onClick={() => { state.onPick(m.id); onClose(); }}>
                             <img src={thumbOf(m)} alt="" />
-                            <span className="ph-media-card-text">
+                            <span className="po-media-card-text">
                                 <strong>{m.name}</strong>
                                 <small>{m.type === "video" ? "Video" : "Image"} · {m.size}</small>
                             </span>
-                            {state.selected === m.id && <span className="ph-media-check"><Icon name="check" size={14} /></span>}
+                            {state.selected === m.id && <span className="po-media-check"><Icon name="check" size={14} /></span>}
                         </button>
                     ))}
                 </div>
@@ -642,14 +645,14 @@ function PinList({ title, hint, catalog, pinnedIds, onChange, limit, manage, man
     const hidden = pinned.filter((p) => !isPublic(p));
 
     const meta = (item) => (item.type ? PARTNER_TYPE[item.type] : [item.area, item.note].filter(Boolean).join(" · ") || item.note);
-    const pill = (item) => (item.status ? <span className={`ph-pill is-${STATUS_PILL[item.status]?.tone || "info"}`}>{STATUS_PILL[item.status]?.label || item.status}</span> : null);
+    const pill = (item) => (item.status ? <span className={`po-pill is-${STATUS_PILL[item.status]?.tone || "info"}`}>{STATUS_PILL[item.status]?.label || item.status}</span> : null);
 
     return (
-        <div className="ph-pin">
+        <div className="po-pin">
             <BlockHead
                 title={title}
                 text={hint}
-                aside={<span className={`ph-limit ${full ? "is-full" : ""}`}>{pinned.length} of {limit} {limit === 1 ? noun : `${noun}s`}</span>}
+                aside={<span className={`po-limit ${full ? "is-full" : ""}`}>{pinned.length} of {limit} {limit === 1 ? noun : `${noun}s`}</span>}
             />
 
             <Orderable
@@ -661,8 +664,8 @@ function PinList({ title, hint, catalog, pinnedIds, onChange, limit, manage, man
                 empty={`Nothing pinned yet. Pin a ${noun} from the list below.`}
             >
                 {(item) => (
-                    <div className="ph-pin-row">
-                        <div className="ph-pin-text"><strong>{item.title}</strong><small>{meta(item)}</small></div>
+                    <div className="po-pin-row">
+                        <div className="po-pin-text"><strong>{item.title}</strong><small>{meta(item)}</small></div>
                         {pill(item)}
                     </div>
                 )}
@@ -670,25 +673,25 @@ function PinList({ title, hint, catalog, pinnedIds, onChange, limit, manage, man
             <ErrorLine errorKey={errorKey} />
 
             {hidden.length > 0 && (
-                <p className="ph-warn"><Icon name="alert" size={15} /> {hidden.length} pinned {hidden.length === 1 ? "item is" : "items are"} not public yet ({hidden.map((h) => h.title).join(", ")}). Visitors will not see {hidden.length === 1 ? "it" : "them"} until published.</p>
+                <p className="po-warn"><Icon name="alert" size={15} /> {hidden.length} pinned {hidden.length === 1 ? "item is" : "items are"} not public yet ({hidden.map((h) => h.title).join(", ")}). Visitors will not see {hidden.length === 1 ? "it" : "them"} until published.</p>
             )}
 
-            <div className="ph-available">
-                <div className="ph-available-head">
+            <div className="po-available">
+                <div className="po-available-head">
                     <h4>Available {noun}s</h4>
-                    <a href={manage} className="ph-link">{manageLabel} <Icon name="external" size={12} /></a>
+                    <a href={manage} className="po-link">{manageLabel} <Icon name="external" size={12} /></a>
                 </div>
-                <label className="ph-search">
+                <label className="po-search">
                     <Icon name="search" size={16} />
                     <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Search ${noun}s`} aria-label={`Search ${noun}s`} />
                 </label>
-                <ul className="ph-available-list">
-                    {available.length === 0 && <li className="ph-empty">{query ? "No matches." : `Every ${noun} is already pinned.`}</li>}
+                <ul className="po-available-list">
+                    {available.length === 0 && <li className="po-empty">{query ? "No matches." : `Every ${noun} is already pinned.`}</li>}
                     {available.map((item) => (
                         <li key={item.id}>
-                            <div className="ph-pin-text"><strong>{item.title}</strong><small>{meta(item)}</small></div>
+                            <div className="po-pin-text"><strong>{item.title}</strong><small>{meta(item)}</small></div>
                             {pill(item)}
-                            <button type="button" className="ph-btn-small" disabled={full} title={full ? `The Home page shows up to ${limit}` : "Pin to the Home page"} onClick={() => onChange([...pinnedIds, item.id])}>
+                            <button type="button" className="po-btn-small" disabled={full} title={full ? `The Home page shows up to ${limit}` : "Pin to the Home page"} onClick={() => onChange([...pinnedIds, item.id])}>
                                 <Icon name="pin" size={13} /> Pin
                             </button>
                         </li>
@@ -701,7 +704,7 @@ function PinList({ title, hint, catalog, pinnedIds, onChange, limit, manage, man
 
 function ModeSwitch({ value, onChange, options, label }) {
     return (
-        <div className="ph-mode" role="radiogroup" aria-label={label}>
+        <div className="po-mode" role="radiogroup" aria-label={label}>
             {options.map((o) => (
                 <button key={o.value} type="button" role="radio" aria-checked={value === o.value} className={value === o.value ? "is-on" : ""} onClick={() => onChange(o.value)}>
                     <strong>{o.label}</strong>
@@ -722,13 +725,13 @@ function SectionHead({ section, number }) {
     const visible = form[section].visible;
 
     return (
-        <header className="ph-card-head">
+        <header className="po-card-head">
             <div>
-                <span className="ph-card-no">Section {number + 1} of {SECTIONS.length}</span>
+                <span className="po-card-no">Section {number + 1} of {SECTIONS.length}</span>
                 <h2>{def.label}</h2>
                 <p>{def.hint}. Changes go live when you publish.</p>
             </div>
-            <label className="ph-visible">
+            <label className="po-visible">
                 <span>{visible ? "Shown on Home page" : "Hidden from Home page"}</span>
                 <Toggle checked={visible} label={`Show ${def.label} on the Home page`} onChange={(v) => edit((d) => { d[section].visible = v; })} />
             </label>
@@ -741,41 +744,42 @@ function BannerEditor() {
     const { form, edit } = useEd();
     const b = form.banner;
     const set = (patch) => edit((d) => Object.assign(d.banner, patch));
+    const stat = (id, patch) => edit((d) => Object.assign(d.banner.stats.find((x) => x.id === id), patch));
 
     return (
-        <section className="ph-card" aria-labelledby="ph-sec-banner">
+        <section className="po-card">
             <SectionHead section="banner" number={0} />
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Slogan and headline" text="The first words on the page." />
                 <Field label="Slogan" errorKey="banner.slogan" value={b.slogan} max={120} onChange={(v) => set({ slogan: v })} hint="Small line above the headline, for example the project name and tagline." />
                 <Field label="Headline" errorKey="banner.headline" value={b.headline} max={120} onChange={(v) => set({ headline: v })} hint="Put *asterisks* around the words that should be highlighted in yellow." />
                 <Field label="Supporting text" errorKey="banner.intro" value={b.intro} max={280} rows={3} onChange={(v) => set({ intro: v })} />
             </div>
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Buttons" text="Two buttons under the supporting text." />
-                <div className="ph-grid-2">
-                    <div className="ph-subcard">
-                        <span className="ph-subcard-tag">Main button</span>
+                <div className="po-grid-2">
+                    <div className="po-subcard">
+                        <span className="po-subcard-tag">Main button</span>
                         <Field label="Text" errorKey="banner.primaryCta.label" value={b.primaryCta.label} max={30} onChange={(v) => edit((d) => { d.banner.primaryCta.label = v; })} />
                         <Field label="Link" errorKey="banner.primaryCta.url" value={b.primaryCta.url} placeholder="/apply-to-participate" onChange={(v) => edit((d) => { d.banner.primaryCta.url = v; })} />
                     </div>
-                    <div className="ph-subcard">
-                        <span className="ph-subcard-tag">Second button</span>
+                    <div className="po-subcard">
+                        <span className="po-subcard-tag">Second button</span>
                         <Field label="Text" errorKey="banner.secondaryCta.label" value={b.secondaryCta.label} max={30} onChange={(v) => edit((d) => { d.banner.secondaryCta.label = v; })} />
                         <Field label="Link" errorKey="banner.secondaryCta.url" value={b.secondaryCta.url} placeholder="#subscribe" onChange={(v) => edit((d) => { d.banner.secondaryCta.url = v; })} />
                     </div>
                 </div>
             </div>
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Background" text="A short looping video or a photo behind the banner." />
                 <MediaField label="Background file" accept="any" mediaId={b.mediaId} onChange={(id) => set({ mediaId: id })} hint="Use a muted loop under 20 MB. Photos work if no video is set." />
             </div>
 
-            <div className="ph-block">
-                <BlockHead title="Key figures" text="Short numbers shown under the buttons." aside={<span className="ph-limit">{b.stats.length} of {LIMITS.stats}</span>} />
+            <div className="po-block">
+                <BlockHead title="Key figures" text="Short numbers shown under the buttons." aside={<span className="po-limit">{b.stats.length} of {LIMITS.stats}</span>} />
                 <Orderable
                     items={b.stats}
                     nameOf={(s) => s.value || "figure"}
@@ -784,9 +788,9 @@ function BannerEditor() {
                     empty="No key figures yet."
                 >
                     {(s) => (
-                        <div className="ph-row-fields">
-                            <Field label="Figure" className="is-narrow" errorKey={`banner.stats.${s.id}.value`} value={s.value} max={10} onChange={(v) => edit((d) => { d.banner.stats.find((x) => x.id === s.id).value = v; })} />
-                            <Field label="Description" errorKey={`banner.stats.${s.id}.label`} value={s.label} max={80} onChange={(v) => edit((d) => { d.banner.stats.find((x) => x.id === s.id).label = v; })} />
+                        <div className="po-row-fields">
+                            <Field label="Figure" className="is-narrow" errorKey={`banner.stats.${s.id}.value`} value={s.value} max={10} onChange={(v) => stat(s.id, { value: v })} />
+                            <Field label="Description" errorKey={`banner.stats.${s.id}.label`} value={s.label} max={80} onChange={(v) => stat(s.id, { label: v })} />
                         </div>
                     )}
                 </Orderable>
@@ -804,17 +808,17 @@ function IntroEditor() {
     const y = form.intro.why;
     const setWhat = (fn) => edit((d) => fn(d.intro.what));
     const setWhy = (fn) => edit((d) => fn(d.intro.why));
+    const upd = (fn, list, id, patch) => fn((x) => Object.assign(x[list].find((q) => q.id === id), patch));
 
     return (
-        <section className="ph-card">
+        <section className="po-card">
             <SectionHead section="intro" number={1} />
 
-            {/* WHAT IS THE SANDBOX */}
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="What is the sandbox?" text="Definition, purpose and location." />
                 <Field label="Heading" errorKey="intro.what.title" value={w.title} max={80} onChange={(v) => setWhat((x) => { x.title = v; })} hint="Put *asterisks* around highlighted words." />
 
-                <h4 className="ph-sub">Rows</h4>
+                <h4 className="po-sub">Rows</h4>
                 <Orderable
                     items={w.rows}
                     nameOf={(r) => r.label || "row"}
@@ -823,9 +827,9 @@ function IntroEditor() {
                     empty="No rows yet."
                 >
                     {(r) => (
-                        <div className="ph-stack">
-                            <Field label="Label" className="is-narrow" errorKey={`intro.what.rows.${r.id}.label`} value={r.label} max={40} onChange={(v) => setWhat((x) => { x.rows.find((q) => q.id === r.id).label = v; })} />
-                            <Field label="Text" errorKey={`intro.what.rows.${r.id}.text`} value={r.text} max={400} rows={3} onChange={(v) => setWhat((x) => { x.rows.find((q) => q.id === r.id).text = v; })} />
+                        <div className="po-stack">
+                            <Field label="Label" className="is-narrow" errorKey={`intro.what.rows.${r.id}.label`} value={r.label} max={40} onChange={(v) => upd(setWhat, "rows", r.id, { label: v })} />
+                            <Field label="Text" errorKey={`intro.what.rows.${r.id}.text`} value={r.text} max={400} rows={3} onChange={(v) => upd(setWhat, "rows", r.id, { text: v })} />
                         </div>
                     )}
                 </Orderable>
@@ -835,13 +839,12 @@ function IntroEditor() {
                 <MediaField label="Picture" accept="image" mediaId={w.mediaId} onChange={(id) => setWhat((x) => { x.mediaId = id; })} />
             </div>
 
-            {/* WHY IT MATTERS */}
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Why it matters" text="The problem, then the market case." />
                 <Field label="Short line above the heading" errorKey="intro.why.kicker" value={y.kicker} max={120} onChange={(v) => setWhy((x) => { x.kicker = v; })} />
                 <Field label="Heading" errorKey="intro.why.title" value={y.title} max={100} onChange={(v) => setWhy((x) => { x.title = v; })} />
 
-                <h4 className="ph-sub">The gaps today</h4>
+                <h4 className="po-sub">The gaps today</h4>
                 <Orderable
                     items={y.gaps}
                     nameOf={(g) => g.title || "gap"}
@@ -850,15 +853,15 @@ function IntroEditor() {
                     empty="No gaps listed."
                 >
                     {(g) => (
-                        <div className="ph-stack">
-                            <Field label="Title" errorKey={`intro.why.gaps.${g.id}.title`} value={g.title} max={80} onChange={(v) => setWhy((x) => { x.gaps.find((q) => q.id === g.id).title = v; })} />
-                            <Field label="Text" errorKey={`intro.why.gaps.${g.id}.text`} value={g.text} max={160} onChange={(v) => setWhy((x) => { x.gaps.find((q) => q.id === g.id).text = v; })} />
+                        <div className="po-stack">
+                            <Field label="Title" errorKey={`intro.why.gaps.${g.id}.title`} value={g.title} max={80} onChange={(v) => upd(setWhy, "gaps", g.id, { title: v })} />
+                            <Field label="Text" errorKey={`intro.why.gaps.${g.id}.text`} value={g.text} max={160} onChange={(v) => upd(setWhy, "gaps", g.id, { text: v })} />
                         </div>
                     )}
                 </Orderable>
                 <AddButton disabled={y.gaps.length >= LIMITS.gaps} onClick={() => setWhy((x) => { x.gaps.push({ id: uid(), title: "", text: "" }); })}>Add gap</AddButton>
 
-                <h4 className="ph-sub">Market figures</h4>
+                <h4 className="po-sub">Market figures</h4>
                 <Orderable
                     items={y.market}
                     nameOf={(m) => m.value || "figure"}
@@ -867,9 +870,9 @@ function IntroEditor() {
                     empty="No market figures."
                 >
                     {(m) => (
-                        <div className="ph-row-fields">
-                            <Field label="Figure" className="is-narrow" errorKey={`intro.why.market.${m.id}.value`} value={m.value} max={12} onChange={(v) => setWhy((x) => { x.market.find((q) => q.id === m.id).value = v; })} />
-                            <Field label="Description" errorKey={`intro.why.market.${m.id}.label`} value={m.label} max={100} onChange={(v) => setWhy((x) => { x.market.find((q) => q.id === m.id).label = v; })} />
+                        <div className="po-row-fields">
+                            <Field label="Figure" className="is-narrow" errorKey={`intro.why.market.${m.id}.value`} value={m.value} max={12} onChange={(v) => upd(setWhy, "market", m.id, { value: v })} />
+                            <Field label="Description" errorKey={`intro.why.market.${m.id}.label`} value={m.label} max={100} onChange={(v) => upd(setWhy, "market", m.id, { label: v })} />
                         </div>
                     )}
                 </Orderable>
@@ -887,19 +890,20 @@ function ParticipantsEditor() {
     const { form, edit } = useEd();
     const p = form.participants;
     const set = (fn) => edit((d) => fn(d.participants));
+    const upd = (list, id, patch) => set((x) => Object.assign(x[list].find((q) => q.id === id), patch));
 
     return (
-        <section className="ph-card">
+        <section className="po-card">
             <SectionHead section="participants" number={2} />
 
-            <div className="ph-block">
-                <BlockHead title="Heading" />
+            <div className="po-block">
+                <BlockHead title="Heading and introduction" />
                 <Field label="Heading" errorKey="participants.title" value={p.title} max={80} onChange={(v) => set((x) => { x.title = v; })} hint="Put *asterisks* around highlighted words." />
                 <Field label="Short introduction" errorKey="participants.intro" value={p.intro} max={240} rows={2} onChange={(v) => set((x) => { x.intro = v; })} />
             </div>
 
-            <div className="ph-block">
-                <BlockHead title="Who can take part" text="One row per type of participant." aside={<span className="ph-limit">{p.items.length} of {LIMITS.participants}</span>} />
+            <div className="po-block">
+                <BlockHead title="Who can take part" text="One row per type of participant." aside={<span className="po-limit">{p.items.length} of {LIMITS.participants}</span>} />
                 <Orderable
                     items={p.items}
                     nameOf={(i) => i.title || "participant"}
@@ -908,9 +912,9 @@ function ParticipantsEditor() {
                     empty="No participant types yet."
                 >
                     {(item) => (
-                        <div className="ph-stack">
-                            <Field label="Participant" errorKey={`participants.items.${item.id}.title`} value={item.title} max={80} onChange={(v) => set((x) => { x.items.find((q) => q.id === item.id).title = v; })} />
-                            <Field label="What they can do" errorKey={`participants.items.${item.id}.text`} value={item.text} max={160} onChange={(v) => set((x) => { x.items.find((q) => q.id === item.id).text = v; })} />
+                        <div className="po-stack">
+                            <Field label="Participant" errorKey={`participants.items.${item.id}.title`} value={item.title} max={80} onChange={(v) => upd("items", item.id, { title: v })} />
+                            <Field label="What they can do" errorKey={`participants.items.${item.id}.text`} value={item.text} max={160} onChange={(v) => upd("items", item.id, { text: v })} />
                         </div>
                     )}
                 </Orderable>
@@ -918,8 +922,8 @@ function ParticipantsEditor() {
                 <AddButton disabled={p.items.length >= LIMITS.participants} onClick={() => set((x) => { x.items.push({ id: uid(), title: "", text: "" }); })}>Add participant type</AddButton>
             </div>
 
-            <div className="ph-block">
-                <BlockHead title="Ways to participate" text="Short tags shown under the list." aside={<span className="ph-limit">{p.ways.length} of {LIMITS.ways}</span>} />
+            <div className="po-block">
+                <BlockHead title="Ways to participate" text="Short tags shown under the list." aside={<span className="po-limit">{p.ways.length} of {LIMITS.ways}</span>} />
                 <Orderable
                     items={p.ways}
                     nameOf={(w) => w.label || "tag"}
@@ -927,12 +931,12 @@ function ParticipantsEditor() {
                     onRemove={(i) => set((x) => { x.ways.splice(i, 1); })}
                     empty="No tags yet."
                 >
-                    {(w) => <Field label="Tag" errorKey={`participants.ways.${w.id}.label`} value={w.label} max={40} onChange={(v) => set((x) => { x.ways.find((q) => q.id === w.id).label = v; })} />}
+                    {(w) => <Field label="Tag" errorKey={`participants.ways.${w.id}.label`} value={w.label} max={40} onChange={(v) => upd("ways", w.id, { label: v })} />}
                 </Orderable>
                 <AddButton disabled={p.ways.length >= LIMITS.ways} onClick={() => set((x) => { x.ways.push({ id: uid(), label: "" }); })}>Add tag</AddButton>
             </div>
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Picture" />
                 <MediaField label="Picture" accept="image" mediaId={p.mediaId} onChange={(id) => set((x) => { x.mediaId = id; })} />
             </div>
@@ -947,19 +951,19 @@ function ProgrammesEditor() {
     const set = (patch) => edit((d) => Object.assign(d.programmes, patch));
 
     return (
-        <section className="ph-card">
+        <section className="po-card">
             <SectionHead section="programmes" number={3} />
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Heading and button" />
                 <Field label="Heading" errorKey="programmes.title" value={g.title} max={80} onChange={(v) => set({ title: v })} hint="Put *asterisks* around highlighted words." />
-                <div className="ph-grid-2">
+                <div className="po-grid-2">
                     <Field label="Button text" errorKey="programmes.ctaLabel" value={g.ctaLabel} max={30} onChange={(v) => set({ ctaLabel: v })} />
                     <Field label="Button link" errorKey="programmes.ctaUrl" value={g.ctaUrl} placeholder="/apply-to-participate" onChange={(v) => set({ ctaUrl: v })} />
                 </div>
             </div>
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Which programmes appear" text="The Home page shows up to four cards." />
                 <ModeSwitch
                     label="Programme selection"
@@ -984,7 +988,7 @@ function ProgrammesEditor() {
                         errorKey="programmes.pinned"
                     />
                 ) : (
-                    <p className="ph-callout"><Icon name="check" size={15} /> The newest open and upcoming programmes appear automatically. Create or close programmes under <a href={MANAGE.programmes}>Open Programmes and Calls</a>.</p>
+                    <p className="po-callout"><Icon name="check" size={15} /> <span>The newest open and upcoming programmes appear automatically. Create or close programmes under <a href={MANAGE.programmes}>Open Programmes and Calls</a>.</span></p>
                 )}
             </div>
         </section>
@@ -998,10 +1002,10 @@ function NewsEventsEditor() {
     const set = (patch) => edit((d) => Object.assign(d.newsEvents, patch));
 
     return (
-        <section className="ph-card">
+        <section className="po-card">
             <SectionHead section="newsEvents" number={4} />
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Latest news" text="Project updates shown on the left." />
                 <Field label="Heading" errorKey="newsEvents.title" value={n.title} max={80} onChange={(v) => set({ title: v })} hint="Put *asterisks* around highlighted words." />
                 <ModeSwitch
@@ -1027,11 +1031,11 @@ function NewsEventsEditor() {
                         errorKey="newsEvents.pinnedNews"
                     />
                 ) : (
-                    <p className="ph-callout"><Icon name="check" size={15} /> The three newest published news items appear automatically.</p>
+                    <p className="po-callout"><Icon name="check" size={15} /> <span>The three newest published news items appear automatically.</span></p>
                 )}
             </div>
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Upcoming events" text="Dates and activities shown on the right." />
                 <Field label="Heading" errorKey="newsEvents.eventsTitle" value={n.eventsTitle} max={80} onChange={(v) => set({ eventsTitle: v })} />
                 <ModeSwitch
@@ -1057,7 +1061,7 @@ function NewsEventsEditor() {
                         errorKey="newsEvents.pinnedEvents"
                     />
                 ) : (
-                    <p className="ph-callout"><Icon name="check" size={15} /> The next three published events appear automatically, soonest first.</p>
+                    <p className="po-callout"><Icon name="check" size={15} /> <span>The next three published events appear automatically, soonest first.</span></p>
                 )}
             </div>
         </section>
@@ -1071,16 +1075,16 @@ function PartnersEditor() {
     const set = (fn) => edit((d) => fn(d.partners));
 
     return (
-        <section className="ph-card">
+        <section className="po-card">
             <SectionHead section="partners" number={5} />
 
-            <div className="ph-block">
-                <BlockHead title="Heading" />
+            <div className="po-block">
+                <BlockHead title="Heading and introduction" />
                 <Field label="Heading" errorKey="partners.title" value={r.title} max={80} onChange={(v) => set((x) => { x.title = v; })} hint="Put *asterisks* around highlighted words." />
                 <Field label="Short introduction" errorKey="partners.intro" value={r.intro} max={240} rows={2} onChange={(v) => set((x) => { x.intro = v; })} />
             </div>
 
-            <div className="ph-block">
+            <div className="po-block">
                 <PinList
                     title="Featured partners"
                     hint="Logos come from each partner’s record. Drag to set the order."
@@ -1095,20 +1099,20 @@ function PartnersEditor() {
                 />
             </div>
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Apply to Participate" text="The main call to action at the end of the page." />
                 <Field label="Heading" errorKey="partners.applyCta.title" value={r.applyCta.title} max={80} onChange={(v) => set((x) => { x.applyCta.title = v; })} hint="Put *asterisks* around highlighted words." />
-                <div className="ph-grid-2">
+                <div className="po-grid-2">
                     <Field label="Button text" errorKey="partners.applyCta.label" value={r.applyCta.label} max={30} onChange={(v) => set((x) => { x.applyCta.label = v; })} />
                     <Field label="Button link" errorKey="partners.applyCta.url" value={r.applyCta.url} placeholder="/apply-to-participate" onChange={(v) => set((x) => { x.applyCta.url = v; })} />
                 </div>
             </div>
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Subscribe for Updates" text="The sign-up box. Subscribers appear under Subscribers in the menu." />
                 <Field label="Heading" errorKey="partners.subscribe.title" value={r.subscribe.title} max={60} onChange={(v) => set((x) => { x.subscribe.title = v; })} />
                 <Field label="Text" errorKey="partners.subscribe.text" value={r.subscribe.text} max={200} rows={2} onChange={(v) => set((x) => { x.subscribe.text = v; })} />
-                <div className="ph-grid-2">
+                <div className="po-grid-2">
                     <Field label="Email box hint" errorKey="partners.subscribe.placeholder" value={r.subscribe.placeholder} max={40} onChange={(v) => set((x) => { x.subscribe.placeholder = v; })} />
                     <Field label="Button text" errorKey="partners.subscribe.buttonLabel" value={r.subscribe.buttonLabel} max={24} onChange={(v) => set((x) => { x.subscribe.buttonLabel = v; })} />
                 </div>
@@ -1119,7 +1123,7 @@ function PartnersEditor() {
 }
 
 /* ====================================================================
-   PAGE SETTINGS (SEO), HISTORY, PREVIEW
+   PAGE SETTINGS (SEO), HISTORY
 ==================================================================== */
 
 function SeoPanel({ meta }) {
@@ -1128,37 +1132,37 @@ function SeoPanel({ meta }) {
     const set = (patch) => edit((d) => Object.assign(d.seo, patch));
 
     return (
-        <section className="ph-card">
-            <header className="ph-card-head">
+        <section className="po-card">
+            <header className="po-card-head">
                 <div>
-                    <span className="ph-card-no">Page settings</span>
+                    <span className="po-card-no">Page settings</span>
                     <h2>Search and sharing</h2>
                     <p>How the Home page looks in Google results and when someone shares the link.</p>
                 </div>
             </header>
 
-            <div className="ph-block">
-                <div className="ph-field">
-                    <div className="ph-field-top"><label>Page address</label></div>
-                    <div className="ph-readonly">/ <span className="ph-pill is-info">home</span> <small>The Home page address cannot be changed.</small></div>
+            <div className="po-block">
+                <div className="po-field">
+                    <div className="po-field-top"><span className="po-label">Page address</span></div>
+                    <div className="po-readonly">/ <span className="po-pill is-info">home</span> <small>The Home page address cannot be changed.</small></div>
                 </div>
                 <Field label="Page title" errorKey="seo.title" value={s.title} max={70} onChange={(v) => set({ title: v })} hint="Shown in the browser tab and search results." />
                 <Field label="Search description" errorKey="seo.description" value={s.description} max={160} rows={3} onChange={(v) => set({ description: v })} />
                 <MediaField label="Share image" accept="image" mediaId={s.mediaId} onChange={(id) => set({ mediaId: id })} hint="Shown when the link is shared on social media or chat." />
             </div>
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Search result preview" />
-                <div className="ph-serp">
+                <div className="po-serp">
                     <span>perlis-sandbox.my</span>
                     <strong>{s.title || "Page title"}</strong>
                     <p>{s.description || "Search description"}</p>
                 </div>
             </div>
 
-            <div className="ph-block">
+            <div className="po-block">
                 <BlockHead title="Publishing" />
-                <dl className="ph-facts">
+                <dl className="po-facts">
                     <div><dt>Status</dt><dd>{meta.status === "published" ? "Published" : meta.status === "scheduled" ? "Scheduled" : "Draft"}</dd></div>
                     <div><dt>Published</dt><dd>{meta.publishedAt ? formatDate(meta.publishedAt) : "Not yet"}</dd></div>
                     <div><dt>Scheduled for</dt><dd>{meta.scheduledAt ? formatDate(meta.scheduledAt) : "None"}</dd></div>
@@ -1169,47 +1173,43 @@ function SeoPanel({ meta }) {
     );
 }
 
-const ACTION_PILL = { CREATE: "warn", UPDATE: "info", PUBLISH: "dark", UNPUBLISH: "off", DELETE: "danger", RESTORE: "ok" };
+const ACTION_PILL = { CREATE: "warn", UPDATE: "info", PUBLISH: "ok", UNPUBLISH: "off", DELETE: "danger", RESTORE: "ok" };
 const ACTION_LABEL = { CREATE: "Created", UPDATE: "Updated", PUBLISH: "Published", UNPUBLISH: "Unpublished", DELETE: "Deleted", RESTORE: "Restored" };
 
 function HistoryPanel({ history }) {
     const [open, setOpen] = useState(null);
 
     return (
-        <section className="ph-card">
-            <header className="ph-card-head">
+        <section className="po-card">
+            <header className="po-card-head">
                 <div>
-                    <span className="ph-card-no">History</span>
+                    <span className="po-card-no">History</span>
                     <h2>Who changed the Home page</h2>
                     <p>Every add, update, publish and delete is recorded. Entries cannot be edited.</p>
                 </div>
             </header>
 
             {history.length === 0 ? (
-                <p className="ph-empty">No history yet.</p>
+                <p className="po-empty">No history yet.</p>
             ) : (
-                <ul className="ph-history">
+                <ul className="po-history">
                     {history.map((h) => {
                         const isOpen = open === h.id;
                         return (
                             <li key={h.id}>
-                                <button type="button" className="ph-hist-row" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : h.id)} disabled={!h.changes?.length}>
-                                    <span className="ph-avatar">{initialsOf(h.user)}</span>
-                                    <span className="ph-hist-text">
+                                <button type="button" className="po-hist-row" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : h.id)} disabled={!h.changes?.length}>
+                                    <span className="po-avatar">{initialsOf(h.user)}</span>
+                                    <span className="po-hist-text">
                                         <strong>{h.user}</strong>
                                         <small>{ACTION_LABEL[h.action] || h.action} <b>{h.label}</b></small>
                                     </span>
-                                    <span className={`ph-pill is-${ACTION_PILL[h.action] || "info"}`}>{ACTION_LABEL[h.action] || h.action}</span>
-                                    <span className="ph-hist-time" title={formatDate(h.at)}>{timeAgo(h.at)}</span>
+                                    <span className={`po-pill is-${ACTION_PILL[h.action] || "info"}`}>{ACTION_LABEL[h.action] || h.action}</span>
+                                    <span className="po-hist-time" title={formatDate(h.at)}>{timeAgo(h.at)}</span>
                                 </button>
                                 {isOpen && h.changes?.length > 0 && (
-                                    <div className="ph-diff">
+                                    <div className="po-diff">
                                         {h.changes.map((c, i) => (
-                                            <div key={i}>
-                                                <span>{c.field}</span>
-                                                <del>{c.from}</del>
-                                                <ins>{c.to}</ins>
-                                            </div>
+                                            <div key={i}><span>{c.field}</span><del>{c.from}</del><ins>{c.to}</ins></div>
                                         ))}
                                     </div>
                                 )}
@@ -1222,116 +1222,164 @@ function HistoryPanel({ history }) {
     );
 }
 
-/* A simplified picture of the public Home page, built from the unsaved form */
-function PreviewModal({ form, catalog, media, onClose, previewUrl }) {
-    const [device, setDevice] = useState("desktop");
+/* ====================================================================
+   LIVE PREVIEW PANEL  (draft preview + the real public page)
+==================================================================== */
+
+function DraftPreview({ form, catalog, media, activeKey }) {
+    const ref = useRef(null);
+
     useEffect(() => {
-        const onKey = (e) => e.key === "Escape" && onClose();
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [onClose]);
+        const box = ref.current;
+        if (!box) return;
+        const target = box.querySelector(`[data-sec="${activeKey}"]`);
+        if (target) box.scrollTo({ top: Math.max(0, target.offsetTop - 12), behavior: "smooth" });
+    }, [activeKey]);
 
     const mediaOf = (id) => media.find((m) => m.id === id);
-    const hl = (t = "") => t.split("*").map((x, i) => (i % 2 ? <em key={i}>{x}</em> : x));
     const by = (list, ids) => ids.map((id) => list.find((c) => c.id === id)).filter(Boolean);
     const pub = (list) => list.filter(isPublic);
+    const cls = (key, extra = "") => `po-pv-sec ${extra} ${activeKey === key ? "is-active" : ""}`;
+    const hidden = (label) => <div className="po-pv-hidden">{label} is hidden from the Home page</div>;
+    const head = (title, intro) => (
+        <header className="po-pv-head">
+            <h2><Hl text={title} /></h2>
+            {intro && <p>{intro}</p>}
+        </header>
+    );
 
     const programmes = form.programmes.mode === "pinned" ? pub(by(catalog.programmes, form.programmes.pinned)) : catalog.programmes.filter((p) => ["open", "upcoming"].includes(p.status));
     const news = form.newsEvents.newsMode === "pinned" ? pub(by(catalog.news, form.newsEvents.pinnedNews)) : catalog.news.filter((n) => n.status === "published");
     const events = form.newsEvents.eventsMode === "pinned" ? pub(by(catalog.events, form.newsEvents.pinnedEvents)) : catalog.events.filter((n) => n.status === "published");
     const partners = by(catalog.partners, form.partners.featured);
-    const hiddenBlock = (label) => <div className="ph-pv-hidden">{label} is hidden from the Home page</div>;
 
     const b = form.banner;
     const bg = mediaOf(b.mediaId);
+    const { what, why } = form.intro;
 
     return (
-        <div className="ph-overlay is-wide" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="ph-dialog ph-preview" role="dialog" aria-modal="true" aria-labelledby="ph-preview-title">
-                <header className="ph-dialog-head">
-                    <div>
-                        <h2 id="ph-preview-title">Preview of the Home page</h2>
-                        <p>Built from what you see on screen, including unsaved changes. Layout is simplified.</p>
-                    </div>
-                    <div className="ph-preview-tools">
-                        <div className="ph-seg" role="group" aria-label="Device">
-                            <button type="button" className={device === "desktop" ? "is-on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
-                            <button type="button" className={device === "mobile" ? "is-on" : ""} onClick={() => setDevice("mobile")}>Mobile</button>
-                        </div>
-                        {previewUrl && <a className="ph-btn-small" href={previewUrl} target="_blank" rel="noreferrer">Open saved preview <Icon name="external" size={12} /></a>}
-                        <button type="button" className="ph-iconbtn" aria-label="Close preview" onClick={onClose}><Icon name="close" size={18} /></button>
-                    </div>
-                </header>
+        <div className="po-pv-scroll" ref={ref}>
+            <div className="po-pv">
+                {/* 1 banner */}
+                <section data-sec="banner" className={cls("banner", "po-pv-banner")} style={b.visible && bg ? { backgroundImage: `linear-gradient(180deg, rgba(11,26,40,.6), rgba(11,26,40,.92)), url("${thumbOf(bg)}")` } : undefined}>
+                    {b.visible ? (
+                        <>
+                            <p className="po-pv-slogan">{b.slogan}</p>
+                            <h1><Hl text={b.headline} /></h1>
+                            <p className="po-pv-lede">{b.intro}</p>
+                            <div className="po-pv-btns" style={{ marginTop: 20 }}><span>{b.primaryCta.label}</span><span className="is-ghost">{b.secondaryCta.label}</span></div>
+                            <div className="po-pv-stats">{b.stats.map((s) => <div key={s.id}><strong>{s.value}</strong><span>{s.label}</span></div>)}</div>
+                        </>
+                    ) : hidden("Main banner")}
+                </section>
 
-                <div className={`ph-pv-frame is-${device}`}>
-                    <div className="ph-pv">
-                        {b.visible ? (
-                            <section className="ph-pv-banner" style={bg ? { backgroundImage: `linear-gradient(180deg, rgba(11,26,40,.6), rgba(11,26,40,.92)), url("${thumbOf(bg)}")` } : undefined}>
-                                <p className="ph-pv-slogan">{b.slogan}</p>
-                                <h1>{hl(b.headline)}</h1>
-                                <p className="ph-pv-lede">{b.intro}</p>
-                                <div className="ph-pv-btns"><span className="is-primary">{b.primaryCta.label}</span><span>{b.secondaryCta.label}</span></div>
-                                <div className="ph-pv-stats">{b.stats.map((s) => <div key={s.id}><strong>{s.value}</strong><span>{s.label}</span></div>)}</div>
-                            </section>
-                        ) : hiddenBlock("Main banner")}
+                {/* 2 intro */}
+                <section data-sec="intro" className={cls("intro", "is-dark")}>
+                    {form.intro.visible ? (
+                        <>
+                            {head(what.title)}
+                            <div className="po-pv-rows">{what.rows.map((r) => <div className="po-pv-row" key={r.id}><small>{r.label}</small><p>{r.text}</p></div>)}</div>
+                            <small className="po-pv-kicker">{why.kicker}</small>
+                            <h3 className="po-pv-sub"><Hl text={why.title} /></h3>
+                            <div className="po-pv-cards">{why.gaps.map((g) => <article key={g.id}><strong>{g.title}</strong><p>{g.text}</p></article>)}</div>
+                            <div className="po-pv-stats">{why.market.map((m) => <div key={m.id}><strong>{m.value}</strong><span>{m.label}</span></div>)}</div>
+                            {why.source && <small className="po-pv-source">{why.source}</small>}
+                        </>
+                    ) : hidden("What is the sandbox? / Why it matters")}
+                </section>
 
-                        {form.intro.visible ? (
-                            <section className="ph-pv-dark">
-                                <h2>{hl(form.intro.what.title)}</h2>
-                                {form.intro.what.rows.map((r) => <div className="ph-pv-row" key={r.id}><small>{r.label}</small><p>{r.text}</p></div>)}
-                                <small className="ph-pv-kicker">{form.intro.why.kicker}</small>
-                                <h2>{hl(form.intro.why.title)}</h2>
-                                {form.intro.why.gaps.map((g) => <div className="ph-pv-row" key={g.id}><strong>{g.title}</strong><p>{g.text}</p></div>)}
-                                <div className="ph-pv-stats is-light">{form.intro.why.market.map((m) => <div key={m.id}><strong>{m.value}</strong><span>{m.label}</span></div>)}</div>
-                                <small>{form.intro.why.source}</small>
-                            </section>
-                        ) : hiddenBlock("What is the sandbox? / Why it matters")}
+                {/* 3 participants */}
+                <section data-sec="participants" className={cls("participants")}>
+                    {form.participants.visible ? (
+                        <>
+                            {head(form.participants.title, form.participants.intro)}
+                            <div className="po-pv-cards">{form.participants.items.map((p) => <article key={p.id}><strong>{p.title || "Untitled"}</strong><p>{p.text}</p></article>)}</div>
+                            <div className="po-pv-chips">{form.participants.ways.map((w) => <span key={w.id}>{w.label}</span>)}</div>
+                        </>
+                    ) : hidden("Who should participate?")}
+                </section>
 
-                        {form.participants.visible ? (
-                            <section className="ph-pv-yellow">
-                                <h2>{hl(form.participants.title)}</h2>
-                                <p>{form.participants.intro}</p>
-                                {form.participants.items.map((p) => <div className="ph-pv-row" key={p.id}><strong>{p.title}</strong><p>{p.text}</p></div>)}
-                                <div className="ph-pv-chips">{form.participants.ways.map((w) => <span key={w.id}>{w.label}</span>)}</div>
-                            </section>
-                        ) : hiddenBlock("Who should participate?")}
+                {/* 4 programmes */}
+                <section data-sec="programmes" className={cls("programmes", "is-dark")}>
+                    {form.programmes.visible ? (
+                        <>
+                            {head(form.programmes.title)}
+                            {programmes.length === 0 && <p className="po-pv-none">No public programmes to show yet.</p>}
+                            <div className="po-pv-cards">{programmes.slice(0, LIMITS.programmes).map((p, i) => <article key={p.id}><b>{String(i + 1).padStart(2, "0")}</b><strong>{p.title}</strong><small>{p.area}</small></article>)}</div>
+                            <div className="po-pv-btns" style={{ marginTop: 20 }}><span>{form.programmes.ctaLabel}</span></div>
+                        </>
+                    ) : hidden("Featured programmes")}
+                </section>
 
-                        {form.programmes.visible ? (
-                            <section className="ph-pv-dark">
-                                <h2>{hl(form.programmes.title)}</h2>
-                                <div className="ph-pv-cards">{programmes.slice(0, LIMITS.programmes).map((p, i) => <div key={p.id}><b>{String(i + 1).padStart(2, "0")}</b><strong>{p.title}</strong><small>{p.area}</small></div>)}</div>
-                                {programmes.length === 0 && <p className="ph-pv-none">No public programmes to show yet.</p>}
-                                <div className="ph-pv-btns"><span className="is-primary">{form.programmes.ctaLabel}</span></div>
-                            </section>
-                        ) : hiddenBlock("Featured programmes")}
+                {/* 5 news + events */}
+                <section data-sec="newsEvents" className={cls("newsEvents")}>
+                    {form.newsEvents.visible ? (
+                        <>
+                            {head(form.newsEvents.title)}
+                            {news.length === 0 && <p className="po-pv-none">No public news to show yet.</p>}
+                            <div className="po-pv-rows">{news.slice(0, LIMITS.news).map((n) => <div className="po-pv-row" key={n.id}><small>{n.note}</small><strong>{n.title}</strong></div>)}</div>
+                            <h3 className="po-pv-sub"><Hl text={form.newsEvents.eventsTitle} /></h3>
+                            {events.length === 0 && <p className="po-pv-none">No public events to show yet.</p>}
+                            <div className="po-pv-rows">{events.slice(0, LIMITS.events).map((n) => <div className="po-pv-row" key={n.id}><small>{n.note}</small><strong>{n.title}</strong></div>)}</div>
+                        </>
+                    ) : hidden("Latest news and upcoming events")}
+                </section>
 
-                        {form.newsEvents.visible ? (
-                            <section className="ph-pv-paper">
-                                <h2>{hl(form.newsEvents.title)}</h2>
-                                {news.slice(0, LIMITS.news).map((n) => <div className="ph-pv-row" key={n.id}><small>{n.note}</small><strong>{n.title}</strong></div>)}
-                                {news.length === 0 && <p className="ph-pv-none">No public news to show yet.</p>}
-                                <h2>{hl(form.newsEvents.eventsTitle)}</h2>
-                                {events.slice(0, LIMITS.events).map((n) => <div className="ph-pv-row" key={n.id}><small>{n.note}</small><strong>{n.title}</strong></div>)}
-                                {events.length === 0 && <p className="ph-pv-none">No public events to show yet.</p>}
-                            </section>
-                        ) : hiddenBlock("Latest news and upcoming events")}
-
-                        {form.partners.visible ? (
-                            <section className="ph-pv-paper is-last">
-                                <h2>{hl(form.partners.title)}</h2>
-                                <p>{form.partners.intro}</p>
-                                <div className="ph-pv-logos">{partners.map((p) => <span key={p.id}>{p.title}</span>)}</div>
-                                <h2>{hl(form.partners.applyCta.title)}</h2>
-                                <div className="ph-pv-btns"><span className="is-primary is-ink">{form.partners.applyCta.label}</span></div>
-                                <strong>{form.partners.subscribe.title}</strong>
-                                <p>{form.partners.subscribe.text}</p>
-                                <div className="ph-pv-form"><span>{form.partners.subscribe.placeholder}</span><b>{form.partners.subscribe.buttonLabel}</b></div>
-                            </section>
-                        ) : hiddenBlock("Partners preview and CTA buttons")}
-                    </div>
-                </div>
+                {/* 6 partners + CTA */}
+                <section data-sec="partners" className={cls("partners", "is-dark")}>
+                    {form.partners.visible ? (
+                        <>
+                            {head(form.partners.title, form.partners.intro)}
+                            <div className="po-pv-logos">{partners.map((p) => <span key={p.id}>{p.title}</span>)}</div>
+                            <h3 className="po-pv-sub"><Hl text={form.partners.applyCta.title} /></h3>
+                            <div className="po-pv-btns" style={{ marginTop: 14 }}><span>{form.partners.applyCta.label}</span></div>
+                            <h3 className="po-pv-sub">{form.partners.subscribe.title}</h3>
+                            <p className="po-pv-text">{form.partners.subscribe.text}</p>
+                            <div className="po-pv-form"><span>{form.partners.subscribe.placeholder}</span><b>{form.partners.subscribe.buttonLabel}</b></div>
+                        </>
+                    ) : hidden("Partners preview and CTA buttons")}
+                </section>
             </div>
         </div>
+    );
+}
+
+function LivePanel({ form, catalog, media, activeKey, liveUrl, reloadKey, onReload, onClose, status }) {
+    const [view, setView] = useState("draft"); // draft | live
+    const [device, setDevice] = useState("desktop");
+
+    return (
+        <aside className="po-preview" aria-label="Live preview">
+            <header className="po-preview-head">
+                <div className="po-seg" role="tablist" aria-label="Preview type">
+                    <button type="button" role="tab" aria-selected={view === "draft"} className={view === "draft" ? "is-on" : ""} onClick={() => setView("draft")}>Draft preview</button>
+                    <button type="button" role="tab" aria-selected={view === "live"} className={view === "live" ? "is-on" : ""} onClick={() => setView("live")}>Live site</button>
+                </div>
+                <div className="po-preview-tools">
+                    <div className="po-seg is-small" role="group" aria-label="Device">
+                        <button type="button" className={device === "desktop" ? "is-on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
+                        <button type="button" className={device === "mobile" ? "is-on" : ""} onClick={() => setDevice("mobile")}>Mobile</button>
+                    </div>
+                    {view === "live" && <button type="button" className="po-iconbtn" aria-label="Reload live page" title="Reload live page" onClick={onReload}><Icon name="refresh" size={16} /></button>}
+                    <a className="po-iconbtn" href={liveUrl} target="_blank" rel="noreferrer" aria-label="Open live page in a new tab" title="Open live page in a new tab"><Icon name="external" size={16} /></a>
+                    <button type="button" className="po-iconbtn" aria-label="Hide preview" title="Hide preview" onClick={onClose}><Icon name="close" size={16} /></button>
+                </div>
+            </header>
+
+            <p className="po-preview-note">
+                {view === "draft"
+                    ? "Built from what you see on screen, including unsaved edits. Layout is simplified."
+                    : status === "published" ? "The real public page, as visitors see it now. It updates after you publish." : "The real public page. It will not show your changes until you publish."}
+            </p>
+
+            <div className={`po-preview-frame is-${device}`}>
+                {view === "draft" ? (
+                    <DraftPreview form={form} catalog={catalog} media={media} activeKey={activeKey} />
+                ) : (
+                    <iframe key={reloadKey} className="po-iframe" src={liveUrl} title="Live Home page" loading="lazy" />
+                )}
+            </div>
+        </aside>
     );
 }
 
@@ -1342,6 +1390,7 @@ function PreviewModal({ form, catalog, media, onClose, previewUrl }) {
 export default function AdminPSBHome() {
     const { props, url } = usePage();
     const live = Boolean(props.home?.content);
+    const liveUrl = props.home?.liveUrl || props.home?.previewUrl || DEFAULT_LIVE_URL;
 
     const seed = useRef(
         live
@@ -1364,11 +1413,12 @@ export default function AdminPSBHome() {
         const i = SECTIONS.findIndex((s) => s.route === wanted);
         return i >= 0 ? i : 0;
     });
+    const [showPreview, setShowPreview] = useState(true);
+    const [reloadKey, setReloadKey] = useState(0);
     const [submitted, setSubmitted] = useState(false);
     const [busy, setBusy] = useState(false);
     const [dialog, setDialog] = useState(null); // { type: publish | schedule | unpublish | delete, ... }
     const [picker, setPicker] = useState(null);
-    const [preview, setPreview] = useState(false);
     const [menu, setMenu] = useState(false);
     const [toast, setToast] = useState(null);
     const [scheduleAt, setScheduleAt] = useState("");
@@ -1387,15 +1437,14 @@ export default function AdminPSBHome() {
     const changedKeys = useMemo(() => [...SECTIONS.map((s) => s.key), "seo"].filter((k) => !sameJson(form[k], saved[k])), [form, saved]);
     const changedLabels = changedKeys.map((k) => (k === "seo" ? "Page settings" : SECTIONS.find((s) => s.key === k).label));
     const unpublished = dirty || meta.hasUnpublishedChanges;
+    const activeKey = SECTIONS[active].key;
 
-    /* toast auto-hide */
     useEffect(() => {
         if (!toast) return undefined;
         const t = setTimeout(() => setToast(null), 5000);
         return () => clearTimeout(t);
     }, [toast]);
 
-    /* close the "More" menu */
     useEffect(() => {
         const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenu(false); };
         document.addEventListener("mousedown", close);
@@ -1419,9 +1468,7 @@ export default function AdminPSBHome() {
 
     const addHistory = (action, label, changes = []) =>
         setLocalHistory((h) => [{ id: Date.now(), user: "You", action, label, at: new Date().toISOString(), changes }, ...h]);
-
     const diffs = () => changedLabels.map((l) => ({ field: l, from: "Previous version", to: "Updated" }));
-
     const finishBusy = () => { setBusy(false); busyRef.current = false; };
 
     const jumpToFirstError = () => {
@@ -1430,7 +1477,7 @@ export default function AdminPSBHome() {
         const key = sectionOfKey(first);
         if (key === "seo") setTab("seo");
         else { setTab("content"); setActive(SECTIONS.findIndex((s) => s.key === key)); }
-        setTimeout(() => document.querySelector(".ph-field.has-error")?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+        setTimeout(() => document.querySelector(".po-editor .po-field.has-error")?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
     };
 
     /* ---- actions ---- */
@@ -1479,6 +1526,7 @@ export default function AdminPSBHome() {
             if (!live) addHistory(type === "unpublish" ? "UNPUBLISH" : "PUBLISH", "Home Page", type === "unpublish" ? [] : diffs());
             setDialog(null);
             setSubmitted(false);
+            setReloadKey((k) => k + 1);
             setToast({ tone: "ok", text: type === "publish" ? "Published. Visitors now see these changes." : type === "schedule" ? `Scheduled for ${formatDate(at)}.` : "Unpublished. The Home page is no longer public." });
             finishBusy();
         };
@@ -1524,31 +1572,29 @@ export default function AdminPSBHome() {
 
     return (
         <Ctx.Provider value={ctx}>
-            <div className="psb-home">
-                <div className="ph-heading">
+            <div className="po psb-home">
+                <div className="po-heading">
                     <div>
                         <h1>Home Page</h1>
                         <p>Create, update and remove everything visitors see on the Perlis Airspace Sandbox home page.</p>
-                        <div className="ph-status">
-                            <span className={`ph-pill is-${statusTone}`}>{statusText}</span>
-                            {unpublished && meta.status !== "draft" && <span className="ph-pill is-warn">{dirty ? "Unsaved changes" : "Changes not published yet"}</span>}
+                        <div className="po-status">
+                            <span className={`po-pill is-${statusTone}`}>{statusText}</span>
+                            {unpublished && meta.status !== "draft" && <span className="po-pill is-warn">{dirty ? "Unsaved changes" : "Changes not published yet"}</span>}
                             {meta.updatedAt && <small>Last edited {timeAgo(meta.updatedAt)} by {meta.updatedBy}</small>}
                         </div>
                     </div>
 
-                    <div className="ph-actions">
-                        <button type="button" className="ph-btn-outline" onClick={() => setPreview(true)}><Icon name="eye" size={16} /> Preview</button>
-                        <button type="button" className="ph-btn-outline" onClick={saveDraft} disabled={!dirty || busy}><Icon name="save" size={16} /> {busy && !dialog ? "Saving..." : "Save draft"}</button>
-                        <button type="button" className="ph-btn-dark" onClick={() => startAction("publish")} disabled={busy || (!unpublished && meta.status === "published")}>
-                            <span className="ph-btn-icon"><Icon name="upload" size={16} /></span> Publish
-                        </button>
-                        <div className="ph-more" ref={menuRef}>
-                            <button type="button" className="ph-iconbtn is-round" aria-label="More publishing options" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((v) => !v)}><Icon name="more" size={18} /></button>
+                    <div className="po-actions">
+                        <button type="button" className={`po-btn-outline ${showPreview ? "is-on" : ""}`} onClick={() => setShowPreview((v) => !v)} aria-pressed={showPreview}><Icon name="panel" size={16} /> {showPreview ? "Hide preview" : "Show preview"}</button>
+                        <button type="button" className="po-btn-outline" onClick={saveDraft} disabled={!dirty || busy}><Icon name="save" size={16} /> {busy && !dialog ? "Saving..." : "Save draft"}</button>
+                        <button type="button" className="po-btn-yellow" onClick={() => startAction("publish")} disabled={busy || (!unpublished && meta.status === "published")}><Icon name="upload" size={16} /> Publish</button>
+                        <div className="po-more" ref={menuRef}>
+                            <button type="button" className="po-iconbtn is-round" aria-label="More publishing options" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((v) => !v)}><Icon name="more" size={18} /></button>
                             {menu && (
-                                <div className="ph-menu" role="menu">
+                                <div className="po-menu" role="menu">
                                     <button type="button" role="menuitem" onClick={() => startAction("schedule")}><Icon name="clock" size={16} /> Schedule publication</button>
                                     <button type="button" role="menuitem" disabled={meta.status === "draft"} onClick={() => startAction("unpublish")}><Icon name="unlink" size={16} /> Unpublish page</button>
-                                    {props.home?.previewUrl && <a role="menuitem" href={props.home.previewUrl} target="_blank" rel="noreferrer"><Icon name="external" size={16} /> Open saved preview</a>}
+                                    <a role="menuitem" href={liveUrl} target="_blank" rel="noreferrer"><Icon name="external" size={16} /> Open live page</a>
                                 </div>
                             )}
                         </div>
@@ -1556,98 +1602,96 @@ export default function AdminPSBHome() {
                 </div>
 
                 {!live && (
-                    <p className="ph-note"><Icon name="alert" size={16} /><span>Sample data. Every control works, but nothing is stored until your controller sends the <b>home</b> prop.</span></p>
+                    <p className="po-note"><Icon name="alert" size={16} /><span>Sample data. Every control works, but nothing is stored until your controller sends the <b>home</b> prop.</span></p>
                 )}
 
-                <div className="ph-tabs" role="tablist" aria-label="Home page editor">
+                <div className="po-tabs" role="tablist" aria-label="Home page editor">
                     {[["content", "Content"], ["seo", "Page settings"], ["history", "History"]].map(([key, label]) => (
                         <button key={key} type="button" role="tab" aria-selected={tab === key} className={tab === key ? "is-active" : ""} onClick={() => setTab(key)}>
                             {label}
-                            {key === "seo" && errorCountFor("seo") > 0 && <span className="ph-badge-error">{errorCountFor("seo")}</span>}
-                            {key === "history" && <span className="ph-badge">{history.length}</span>}
+                            {key === "seo" && errorCountFor("seo") > 0 && <span className="po-badge-error">{errorCountFor("seo")}</span>}
+                            {key === "history" && <span className="po-badge">{history.length}</span>}
                         </button>
                     ))}
                 </div>
 
                 {tab === "content" && (
-                    <div className="ph-layout">
-                        <nav className="ph-rail" aria-label="Home page sections">
-                            <ol>
-                                {SECTIONS.map((s, i) => {
-                                    const errs = errorCountFor(s.key);
-                                    const visible = form[s.key].visible;
-                                    return (
-                                        <li key={s.key}>
-                                            <button type="button" className={`ph-rail-item ${active === i ? "is-active" : ""}`} aria-current={active === i ? "true" : undefined} onClick={() => setActive(i)}>
-                                                <span className="ph-rail-no">{i + 1}</span>
-                                                <span className="ph-rail-text">
-                                                    <strong>{s.label}</strong>
-                                                    <small>{visible ? s.hint : "Hidden from the page"}</small>
-                                                </span>
-                                                {errs > 0 ? <span className="ph-badge-error" title={`${errs} to fix`}>{errs}</span> : changedKeys.includes(s.key) ? <span className="ph-dot" title="Edited" /> : null}
-                                            </button>
-                                        </li>
-                                    );
-                                })}
-                            </ol>
+                    <>
+                        <nav className="po-sections" aria-label="Home page sections">
+                            {SECTIONS.map((s, i) => {
+                                const errs = errorCountFor(s.key);
+                                return (
+                                    <button key={s.key} type="button" className={`po-section-pill ${active === i ? "is-active" : ""}`} aria-current={active === i ? "true" : undefined} onClick={() => setActive(i)}>
+                                        <span className="po-section-no">{i + 1}</span>
+                                        <span className="po-section-text"><strong>{s.label}</strong><small>{form[s.key].visible ? s.hint : "Hidden from page"}</small></span>
+                                        {errs > 0 ? <span className="po-badge-error" title={`${errs} to fix`}>{errs}</span> : changedKeys.includes(s.key) ? <span className="po-dot" title="Edited" /> : null}
+                                    </button>
+                                );
+                            })}
                         </nav>
-                        <div className="ph-panel"><Editor /></div>
-                    </div>
+
+                        <div className={`po-split ${showPreview ? "has-preview" : ""}`}>
+                            <div className="po-editor"><Editor /></div>
+                            {showPreview && (
+                                <LivePanel form={form} catalog={catalog} media={catalog.media} activeKey={activeKey} liveUrl={liveUrl} reloadKey={reloadKey} onReload={() => setReloadKey((k) => k + 1)} onClose={() => setShowPreview(false)} status={meta.status} />
+                            )}
+                        </div>
+                    </>
                 )}
                 {tab === "seo" && <SeoPanel meta={meta} />}
                 {tab === "history" && <HistoryPanel history={history} />}
 
                 {dirty && (
-                    <div className="ph-savebar" role="region" aria-label="Unsaved changes">
-                        <span className="ph-savebar-text"><i /> {changedLabels.length} section{changedLabels.length === 1 ? "" : "s"} edited, not saved</span>
+                    <div className="po-savebar" role="region" aria-label="Unsaved changes">
+                        <span className="po-savebar-text"><i /> {changedLabels.length} section{changedLabels.length === 1 ? "" : "s"} edited, not saved</span>
                         <div>
-                            <button type="button" className="ph-btn-ghost" onClick={() => { setForm(clone(saved)); setSubmitted(false); setToast({ tone: "info", text: "Changes discarded." }); }} disabled={busy}>Discard</button>
-                            <button type="button" className="ph-btn-yellow" onClick={saveDraft} disabled={busy}>{busy ? "Saving..." : "Save draft"}</button>
+                            <button type="button" className="po-btn-ghost" onClick={() => { setForm(clone(saved)); setSubmitted(false); setToast({ tone: "info", text: "Changes discarded." }); }} disabled={busy}>Discard</button>
+                            <button type="button" className="po-btn-yellow" onClick={saveDraft} disabled={busy}>{busy ? "Saving..." : "Save draft"}</button>
                         </div>
                     </div>
                 )}
 
                 {/* dialogs */}
                 {dialog?.type === "delete" && (
-                    <div className="ph-overlay" onMouseDown={(e) => e.target === e.currentTarget && setDialog(null)}>
-                        <div className="ph-dialog ph-small" role="alertdialog" aria-modal="true" aria-labelledby="ph-del-title">
-                            <span className="ph-dialog-icon is-danger"><Icon name="trash" size={22} /></span>
-                            <h2 id="ph-del-title">Delete “{dialog.what}”?</h2>
+                    <div className="po-overlay" onMouseDown={(e) => e.target === e.currentTarget && setDialog(null)}>
+                        <div className="po-dialog po-small" role="alertdialog" aria-modal="true" aria-labelledby="po-del-title">
+                            <span className="po-dialog-icon is-danger"><Icon name="trash" size={22} /></span>
+                            <h2 id="po-del-title">Delete “{dialog.what}”?</h2>
                             <p>It moves to Content Trash, where only the Super Admin can restore or purge it. It disappears from the Home page when you publish.</p>
-                            <div className="ph-dialog-actions">
-                                <button type="button" className="ph-btn-outline" onClick={() => setDialog(null)} autoFocus>Keep it</button>
-                                <button type="button" className="ph-btn-danger" onClick={confirmDelete}><Icon name="trash" size={15} /> Move to Trash</button>
+                            <div className="po-dialog-actions">
+                                <button type="button" className="po-btn-outline" onClick={() => setDialog(null)} autoFocus>Keep it</button>
+                                <button type="button" className="po-btn-danger" onClick={confirmDelete}><Icon name="trash" size={15} /> Move to Trash</button>
                             </div>
                         </div>
                     </div>
                 )}
 
                 {["publish", "schedule", "unpublish"].includes(dialog?.type) && (
-                    <div className="ph-overlay" onMouseDown={(e) => e.target === e.currentTarget && !busy && setDialog(null)}>
-                        <div className="ph-dialog ph-small" role="alertdialog" aria-modal="true" aria-labelledby="ph-act-title">
-                            <span className={`ph-dialog-icon ${dialog.type === "unpublish" ? "is-danger" : ""}`}><Icon name={dialog.type === "schedule" ? "clock" : dialog.type === "unpublish" ? "unlink" : "upload"} size={22} /></span>
-                            <h2 id="ph-act-title">{dialog.type === "publish" ? "Publish the Home page?" : dialog.type === "schedule" ? "Schedule publication" : "Unpublish the Home page?"}</h2>
+                    <div className="po-overlay" onMouseDown={(e) => e.target === e.currentTarget && !busy && setDialog(null)}>
+                        <div className="po-dialog po-small" role="alertdialog" aria-modal="true" aria-labelledby="po-act-title">
+                            <span className={`po-dialog-icon ${dialog.type === "unpublish" ? "is-danger" : ""}`}><Icon name={dialog.type === "schedule" ? "clock" : dialog.type === "unpublish" ? "unlink" : "upload"} size={22} /></span>
+                            <h2 id="po-act-title">{dialog.type === "publish" ? "Publish the Home page?" : dialog.type === "schedule" ? "Schedule publication" : "Unpublish the Home page?"}</h2>
                             {dialog.type === "unpublish" ? (
                                 <p>Visitors will no longer see the Home page until you publish it again. Nothing is deleted.</p>
                             ) : (
                                 <>
                                     <p>{dialog.type === "publish" ? "Visitors will see your changes straight away." : "Your changes go live automatically at the time you choose."}</p>
                                     {changedLabels.length > 0 ? (
-                                        <ul className="ph-dialog-list">{changedLabels.map((l) => <li key={l}><Icon name="check" size={14} /> {l}</li>)}</ul>
+                                        <ul className="po-dialog-list">{changedLabels.map((l) => <li key={l}><Icon name="check" size={14} /> {l}</li>)}</ul>
                                     ) : (
-                                        <p className="ph-hint">No new edits. This publishes the last saved draft.</p>
+                                        <p className="po-hint">No new edits. This publishes the last saved draft.</p>
                                     )}
                                 </>
                             )}
                             {dialog.type === "schedule" && (
-                                <label className="ph-field">
-                                    <span className="ph-field-top"><span>Publish on</span></span>
-                                    <input type="datetime-local" className="ph-input" value={scheduleAt} min={new Date(Date.now() - new Date().getTimezoneOffset() * MIN).toISOString().slice(0, 16)} onChange={(e) => setScheduleAt(e.target.value)} />
+                                <label className="po-field">
+                                    <span className="po-field-top"><span className="po-label">Publish on</span></span>
+                                    <input type="datetime-local" className="po-input" value={scheduleAt} min={new Date(Date.now() - new Date().getTimezoneOffset() * MIN).toISOString().slice(0, 16)} onChange={(e) => setScheduleAt(e.target.value)} />
                                 </label>
                             )}
-                            <div className="ph-dialog-actions">
-                                <button type="button" className="ph-btn-outline" onClick={() => setDialog(null)} disabled={busy}>Cancel</button>
-                                <button type="button" className={dialog.type === "unpublish" ? "ph-btn-danger" : "ph-btn-dark"} onClick={confirmAction} disabled={busy}>
+                            <div className="po-dialog-actions">
+                                <button type="button" className="po-btn-outline" onClick={() => setDialog(null)} disabled={busy}>Cancel</button>
+                                <button type="button" className={dialog.type === "unpublish" ? "po-btn-danger" : "po-btn-yellow"} onClick={confirmAction} disabled={busy}>
                                     {busy ? "Working..." : dialog.type === "publish" ? "Publish now" : dialog.type === "schedule" ? "Schedule" : "Unpublish"}
                                 </button>
                             </div>
@@ -1656,10 +1700,9 @@ export default function AdminPSBHome() {
                 )}
 
                 {picker && <MediaPicker state={picker} media={catalog.media} onClose={() => setPicker(null)} onUpload={uploadMedia} />}
-                {preview && <PreviewModal form={form} catalog={catalog} media={catalog.media} previewUrl={props.home?.previewUrl} onClose={() => setPreview(false)} />}
 
                 {toast && (
-                    <div className={`ph-toast is-${toast.tone}`} role="status">
+                    <div className={`po-toast is-${toast.tone}`} role="status">
                         <Icon name={toast.tone === "error" ? "alert" : "check"} size={16} />
                         <span>{toast.text}</span>
                         <button type="button" aria-label="Dismiss" onClick={() => setToast(null)}><Icon name="close" size={14} /></button>

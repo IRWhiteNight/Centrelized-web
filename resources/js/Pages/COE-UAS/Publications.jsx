@@ -1,357 +1,632 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@inertiajs/react";
-import { BASE } from "../../Components/COEUAS-Components/siteMapCOEUAS";
-import "../../../css/COE-UAS-css/pulicatios.css";
+import { usePublicationsContent } from "../../data/COEUAS-data/publicationsContent";
+import { BASE } from "../../data/COEUAS-data/siteMapCOEUAS";
+import "../../../css/COE-UAS-css/publications.css";
 
 /* ------------------------------------------------------------------
-   Publications & Impact: a slide deck, not a scrolling page.
-   Wheel, swipe, arrow keys, the dots and the buttons all move between
-   slides. Left and right arrows change the year on the "By year" slide.
-   All copy and numbers sit in the DATA block below, ready to be fed
-   from the admin CMS (publications | authors | import | citations | highlights).
-   Everything marked SAMPLE is placeholder data. Replace before launch.
+   Publications.jsx is layout and motion only.
+   All text, numbers and records come from publicationsContent.js
+   (later: the admin CMS). Pass a `content` prop to preview changes.
+   Section ids match the site map anchors, so the navbar links work:
+   #publications  #citations  #highlights  #archive
+   plus the chip anchors: #journal-articles #conference-papers
+   #books-chapters #other-publications #citation-indicators
+   #citation-members
+   The top navigation bar comes from COEUAsWebsiteLayout.
 ------------------------------------------------------------------- */
 
-const to = (h = "/") => (h === "/" ? BASE : h.startsWith("/") && !h.startsWith(BASE + "/") && h !== BASE ? BASE + h : h);
+const to = (h = "/") =>
+  h === "/" ? BASE : h.startsWith("/") && !h.startsWith(BASE + "/") && h !== BASE ? BASE + h : h;
+
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const D = (i) => ({ "--d": i * 90 });
+const num = (n) => Number(n || 0).toLocaleString();
 
-/* ----------------------------- DATA ----------------------------- */
-const SLIDES = ["Overview", "Output", "Browse", "Impact", "By year", "Continue"];
+const Arrow = () => (
+  <svg className="pu-arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
-const TYPES = [ // SAMPLE counts
-  { id: "journal", label: "Journal articles", count: 142, text: "Peer-reviewed articles on aerial systems, autonomy, sensing and their applications." },
-  { id: "conference", label: "Conference papers", count: 74, text: "Papers presented and published in conference proceedings." },
-  { id: "book", label: "Books and chapters", count: 21, text: "Books, book chapters and edited volumes written by Centre members." },
-  { id: "other", label: "Reports and other works", count: 18, text: "Technical reports, editorial works and other publications." },
-];
+const SearchIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+);
 
-const PUBS = [ // SAMPLE entries
-  { id: 1, type: "journal", year: 2025, cites: 18, title: "Trajectory planning for fixed-wing UAS in restricted airspace" },
-  { id: 2, type: "journal", year: 2024, cites: 41, title: "Vision-based landing on a moving platform" },
-  { id: 3, type: "journal", year: 2022, cites: 87, title: "Multispectral crop stress mapping from low-altitude flights" },
-  { id: 4, type: "conference", year: 2023, cites: 22, title: "Battery endurance modelling for multirotor cargo missions" },
-  { id: 5, type: "conference", year: 2021, cites: 64, title: "A detect-and-avoid architecture for small unmanned aircraft" },
-  { id: 6, type: "journal", year: 2020, cites: 73, title: "Photogrammetric documentation of heritage structures" },
-  { id: 7, type: "book", year: 2019, cites: 31, title: "Safe integration of drones into low-level airspace" },
-  { id: 8, type: "book", year: 2018, cites: 56, title: "Unmanned Aerial Systems: A Practitioner Guide" },
-  { id: 9, type: "other", year: 2026, cites: 2, title: "Trial design report for the Perlis Airspace Sandbox" },
-  { id: 10, type: "conference", year: 2022, cites: 38, title: "Edge inference for onboard object detection" },
-  { id: 11, type: "other", year: 2024, cites: 12, title: "Regulatory sandboxes for emerging aviation technology" },
-  { id: 12, type: "journal", year: 2017, cites: 129, title: "Wind disturbance rejection in quadrotor control" },
-].map((p) => ({ ...p, authors: "Author A, Author B, Author C", venue: "Venue name" }));
-
-const PUBS_BY_YEAR = [6, 9, 12, 14, 16, 18, 20, 22, 24, 26, 27, 28, 20, 13]; // SAMPLE, 2013 to 2026
-const CITES_BY_YEAR = [20, 60, 130, 210, 320, 430, 540, 640, 740, 820, 880, 860, 700, 360]; // SAMPLE
-const YEARS = PUBS_BY_YEAR.map((pubs, n) => ({ year: 2013 + n, pubs, cites: CITES_BY_YEAR[n] }));
-const TOTAL_PUBS = PUBS_BY_YEAR.reduce((a, b) => a + b, 0);
-const TOTAL_CITES = CITES_BY_YEAR.reduce((a, b) => a + b, 0);
-const H_INDEX = 38; // SAMPLE
-const SOURCE = "Source: Scopus. Last updated 1 November 2026."; // SAMPLE
-
-const NEXT = [
-  { t: "Research and innovation", d: "Projects, grants and programmes behind the papers.", h: "/research" },
-  { t: "People", d: "The researchers and fellows who wrote them.", h: "/people" },
-  { t: "Engagement", d: "Collaborations, news and activities.", h: "/engagement" },
-];
-
-/* --------------------------- PIECES ----------------------------- */
-function Count({ to: target, on, suffix = "" }) {
-  const [v, setV] = useState(0);
+/* adds .in to every .pu-rv once it scrolls into view */
+function useReveal(rootRef, dep) {
   useEffect(() => {
-    if (!on) { setV(0); return; }
-    if (reduced()) { setV(target); return; }
-    let raf, s;
-    const tick = (t) => {
-      s = s || t;
-      const p = Math.min((t - s) / 1500, 1);
-      setV(Math.round(target * (1 - Math.pow(1 - p, 4))));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    const t0 = setTimeout(() => (raf = requestAnimationFrame(tick)), 600);
-    return () => { clearTimeout(t0); cancelAnimationFrame(raf); };
-  }, [on, target]);
-  return <>{v.toLocaleString()}{suffix}</>;
+    const nodes = rootRef.current ? rootRef.current.querySelectorAll(".pu-rv:not(.in)") : [];
+    if (reduced() || !("IntersectionObserver" in window)) {
+      nodes.forEach((n) => n.classList.add("in"));
+      return undefined;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+    nodes.forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, [rootRef, dep]);
 }
 
-/* Drifting network of papers that lean toward the pointer and link up. */
-function Constellation({ on }) {
+/* number that counts up the first time it is seen */
+function Counter({ value, delay = 0 }) {
   const ref = useRef(null);
-  const live = useRef(on);
-  live.current = on;
+  const [v, setV] = useState(reduced() ? value : 0);
   useEffect(() => {
-    const c = ref.current, x = c.getContext("2d"), dpr = Math.min(window.devicePixelRatio || 1, 2);
-    let w, h, raf;
-    const m = { x: -999, y: -999 };
-    const size = () => { w = c.clientWidth; h = c.clientHeight; c.width = w * dpr; c.height = h * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0); };
-    size();
-    const P = Array.from({ length: w < 700 ? 34 : 72 }, () => ({ x: Math.random() * w, y: Math.random() * h, vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35, r: 1 + Math.random() * 1.8 }));
-    const still = reduced();
-    const draw = () => {
-      if (live.current || still) {
-        x.clearRect(0, 0, w, h);
-        P.forEach((p) => {
-          if (!still) {
-            const dx = m.x - p.x, dy = m.y - p.y, d = Math.hypot(dx, dy);
-            if (d < 220) { p.x += dx * 0.0016; p.y += dy * 0.0016; }
-            p.x += p.vx; p.y += p.vy;
-            if (p.x < 0 || p.x > w) p.vx *= -1;
-            if (p.y < 0 || p.y > h) p.vy *= -1;
-          }
-        });
-        for (let i = 0; i < P.length; i++) {
-          for (let j = i + 1; j < P.length; j++) {
-            const d = Math.hypot(P[i].x - P[j].x, P[i].y - P[j].y);
-            if (d < 130) { x.strokeStyle = `rgba(41,151,255,${(1 - d / 130) * 0.32})`; x.beginPath(); x.moveTo(P[i].x, P[i].y); x.lineTo(P[j].x, P[j].y); x.stroke(); }
-          }
-          const dm = Math.hypot(P[i].x - m.x, P[i].y - m.y);
-          if (dm < 190) { x.strokeStyle = `rgba(143,208,255,${(1 - dm / 190) * 0.7})`; x.beginPath(); x.moveTo(P[i].x, P[i].y); x.lineTo(m.x, m.y); x.stroke(); }
-        }
-        P.forEach((p) => { x.shadowColor = "#2997ff"; x.shadowBlur = 14; x.fillStyle = "#8fd0ff"; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill(); });
-        x.shadowBlur = 0;
-      }
-      if (!still) raf = requestAnimationFrame(draw);
+    if (reduced()) { setV(value); return undefined; }
+    const el = ref.current;
+    let raf = 0, timer = 0;
+    const run = () => {
+      const t0 = performance.now();
+      const tick = (t) => {
+        const p = Math.min(1, (t - t0) / 1500);
+        setV(Math.round(value * (p === 1 ? 1 : 1 - Math.pow(2, -10 * p))));
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
     };
-    const move = (e) => { const r = c.getBoundingClientRect(); m.x = e.clientX - r.left; m.y = e.clientY - r.top; };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("resize", size);
-    draw();
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("mousemove", move); window.removeEventListener("resize", size); };
-  }, []);
-  return <canvas ref={ref} className="pb-net" aria-hidden="true" />;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { io.disconnect(); timer = setTimeout(run, delay); }
+    }, { threshold: 0.4 });
+    io.observe(el);
+    return () => { io.disconnect(); clearTimeout(timer); cancelAnimationFrame(raf); };
+  }, [value, delay]);
+  return <span ref={ref}>{v.toLocaleString()}</span>;
 }
 
-const d = (n, base = 0) => ({ "--d": `${base + n * 0.09}s` });
+function Head({ label, title, lede }) {
+  return (
+    <header className="pu-head">
+      <p className="pu-kicker pu-rv"><span>{label}</span></p>
+      <h2 className="pu-h pu-rv" style={D(1)}>{title}</h2>
+      {lede && <p className="pu-lede pu-rv" style={D(2)}>{lede}</p>}
+    </header>
+  );
+}
 
-/* ---------------------------- PAGE ------------------------------ */
-export default function Publications() {
-  const [idx, setIdx] = useState(0);
-  const [prev, setPrev] = useState(null);
-  const [dir, setDir] = useState(1);
-  const [tick, setTick] = useState(0);
-  const [open, setOpen] = useState(0);
+/* ==========================================================================
+   PAGE
+========================================================================== */
+
+export default function Publications({ content: override }) {
+  const { content: c } = usePublicationsContent(override);
+  const rootRef = useRef(null);
+
+  const types = c.types || [];
+  const statuses = c.statuses || [];
+  const groups = c.groups || [];
+  const members = c.members || [];
+  const pubs = c.publications || [];
+  const yearly = c.yearly || [];
+  const highlights = c.highlights || [];
+  const st = c.settings || {};
+  const pageSize = st.pageSize || 8;
+  const archiveSize = st.archivePageSize || 12;
+
+  const typeOf = useMemo(() => Object.fromEntries(types.map((t) => [t.id, t])), [types]);
+  const statusOf = useMemo(() => Object.fromEntries(statuses.map((s) => [s.id, s])), [statuses]);
+  const groupOf = useMemo(() => Object.fromEntries(groups.map((g) => [g.id, g])), [groups]);
+  const memberOf = useMemo(() => Object.fromEntries(members.map((m) => [m.id, m])), [members]);
+
+  /* sections that can be drawn, in the order set in publicationsContent.js */
+  const list = c.sections.filter((s) => s.visible);
+  const heroSec = list.find((s) => s.id === "hero");
+  const rest = list.filter((s) => s.id !== "hero");
+  const navList = rest.filter((s) => s.nav);
+  const navKey = navList.map((s) => s.id).join();
+  const [active, setActive] = useState(navList[0] ? navList[0].id : "");
+
+  /* ---------- state ---------- */
   const [filter, setFilter] = useState("all");
-  const [sort, setSort] = useState("new");
   const [q, setQ] = useState("");
-  const [yi, setYi] = useState(YEARS.length - 1);
-  const idxRef = useRef(0);
-  const lock = useRef(false);
-  const yiRef = useRef(yi);
-  yiRef.current = yi;
-  const root = useRef(null);
+  const [sort, setSort] = useState("new");
+  const [limit, setLimit] = useState(pageSize);
 
-  const go = useCallback((n) => {
-    n = Math.max(0, Math.min(SLIDES.length - 1, n));
-    if (n === idxRef.current || lock.current) return;
-    lock.current = true;
-    setDir(n > idxRef.current ? 1 : -1);
-    setPrev(idxRef.current);
-    idxRef.current = n;
-    setIdx(n);
-    setTick((t) => t + 1);
-    setTimeout(() => { lock.current = false; setPrev(null); }, reduced() ? 50 : 1100);
+  const [metric, setMetric] = useState("cites");
+  const [cy, setCy] = useState(yearly.length ? yearly[yearly.length - 1].year : 0);
+  const [msort, setMsort] = useState("citations");
+
+  const yearsDesc = useMemo(() => yearly.map((y) => y.year).sort((a, b) => b - a), [yearly]);
+  const firstWith = (highlights.slice().sort((a, b) => b.year - a.year)[0] || {}).year;
+  const [hy, setHy] = useState(firstWith || yearsDesc[0]);
+
+  const [af, setAf] = useState({ year: "all", member: "all", group: "all", status: "all", q: "" });
+  const [alimit, setAlimit] = useState(archiveSize);
+
+  useReveal(rootRef, list.map((s) => s.id).join() + "|" + pubs.length);
+
+  /* ---------- scroll: progress bar, hero parallax, active menu item ---------- */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    const heroEl = root.querySelector(".pu-hero");
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const y = window.scrollY;
+      const h = root.scrollHeight - window.innerHeight;
+      if (y < 1100 && heroEl) heroEl.style.setProperty("--sy", `${y}`);
+      root.style.setProperty("--progress", h > 0 ? Math.min(1, Math.max(0, y / h)).toFixed(4) : 0);
+      const line = window.innerHeight * 0.35;
+      let cur = navList[0] ? navList[0].id : "";
+      navList.forEach((s) => {
+        const el = document.getElementById(s.id);
+        if (el && el.getBoundingClientRect().top <= line) cur = s.id;
+      });
+      setActive(cur);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navKey]);
+
+  /* keep the active menu item visible on small screens */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const a = root.querySelector(".pu-subnav a.is-active");
+    const box = root.querySelector(".pu-subnav-scroll");
+    if (a && box) box.scrollTo({ left: a.offsetLeft - box.clientWidth / 2 + a.clientWidth / 2, behavior: "smooth" });
+  }, [active]);
+
+  const goTo = useCallback((id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
   }, []);
 
+  /* navbar links such as #journal-articles open the list already filtered */
   useEffect(() => {
-    const el = root.current;
-    const canScroll = (t, down) => {
-      const sc = t.closest && t.closest("[data-scroll]");
-      if (!sc || sc.scrollHeight <= sc.clientHeight + 1) return false;
-      return down ? sc.scrollTop + sc.clientHeight < sc.scrollHeight - 1 : sc.scrollTop > 0;
+    const apply = () => {
+      const id = decodeURIComponent(window.location.hash.slice(1));
+      if (!id) return;
+      const t = types.find((x) => x.chip === id);
+      if (t) { setFilter(t.id); setQ(""); setLimit(pageSize); setTimeout(() => goTo("publications"), 50); }
+      else setTimeout(() => goTo(id), 50);
     };
-    let last = 0, ty = 0;
-    const wheel = (e) => {
-      const now = performance.now();
-      if (Math.abs(e.deltaY) < 12 || canScroll(e.target, e.deltaY > 0)) return;
-      if (lock.current || now - last < 160) { last = now; return; }
-      last = now;
-      go(idxRef.current + (e.deltaY > 0 ? 1 : -1));
-    };
-    const ts = (e) => { ty = e.touches[0].clientY; };
-    const te = (e) => {
-      const dy = ty - e.changedTouches[0].clientY;
-      if (Math.abs(dy) > 50 && !canScroll(e.target, dy > 0)) go(idxRef.current + (dy > 0 ? 1 : -1));
-    };
-    const key = (e) => {
-      if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
-      const k = e.key;
-      if (k === "ArrowDown" || k === "PageDown" || (k === " " && e.target.tagName !== "BUTTON")) { e.preventDefault(); go(idxRef.current + 1); }
-      else if (k === "ArrowUp" || k === "PageUp") { e.preventDefault(); go(idxRef.current - 1); }
-      else if (k === "Home") go(0);
-      else if (k === "End") go(SLIDES.length - 1);
-      else if (idxRef.current === 4 && k === "ArrowRight") setYi((i) => Math.min(YEARS.length - 1, i + 1));
-      else if (idxRef.current === 4 && k === "ArrowLeft") setYi((i) => Math.max(0, i - 1));
-    };
-    el.addEventListener("wheel", wheel, { passive: true });
-    el.addEventListener("touchstart", ts, { passive: true });
-    el.addEventListener("touchend", te, { passive: true });
-    window.addEventListener("keydown", key);
-    return () => { el.removeEventListener("wheel", wheel); el.removeEventListener("touchstart", ts); el.removeEventListener("touchend", te); window.removeEventListener("keydown", key); };
-  }, [go]);
+    const t0 = setTimeout(apply, 120);
+    window.addEventListener("hashchange", apply);
+    return () => { clearTimeout(t0); window.removeEventListener("hashchange", apply); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const list = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return PUBS.filter((p) => (filter === "all" || p.type === filter) && (!s || p.title.toLowerCase().includes(s)))
-      .sort((a, b) => (sort === "new" ? b.year - a.year : b.cites - a.cites));
-  }, [filter, sort, q]);
+  /* pointer effects: magnetic buttons, hero glow */
+  const onMove = useCallback((e) => {
+    const t = e.target;
+    if (!t.closest || reduced()) return;
+    const mag = t.closest(".pu-mag");
+    if (mag) {
+      const r = mag.getBoundingClientRect();
+      mag.style.setProperty("--tx", `${((e.clientX - (r.left + r.width / 2)) * 0.22).toFixed(1)}px`);
+      mag.style.setProperty("--ty", `${((e.clientY - (r.top + r.height / 2)) * 0.3).toFixed(1)}px`);
+    }
+  }, []);
+  const onOut = useCallback((e) => {
+    const t = e.target.closest && e.target.closest(".pu-mag");
+    if (t && !t.contains(e.relatedTarget)) ["--tx", "--ty"].forEach((p) => t.style.removeProperty(p));
+  }, []);
 
-  const cum = useMemo(() => { let t = 0; return CITES_BY_YEAR.map((c) => (t += c)); }, []);
-  const pts = cum.map((v, n) => [20 + (n / (cum.length - 1)) * 560, 210 - (v / cum[cum.length - 1]) * 180]);
-  const line = pts.map((p, n) => `${n ? "L" : "M"}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
-  const maxPubs = Math.max(...PUBS_BY_YEAR);
-  const Y = YEARS[yi];
-  const cls = (i) => `pb-slide pb-s${i}${idx === i ? " active" : ""}${prev === i ? " leaving" : ""}`;
-  const typeLabel = (id) => TYPES.find((t) => t.id === id).label;
+  /* ---------- derived data ---------- */
+  const typeCounts = useMemo(() => {
+    const m = {};
+    pubs.forEach((p) => { m[p.type] = (m[p.type] || 0) + 1; });
+    return m;
+  }, [pubs]);
 
-  return (
-    <main className="pb" ref={root} data-dir={dir}>
-      <div className="pb-bar" style={{ transform: `scaleX(${idx / (SLIDES.length - 1)})` }} aria-hidden="true" />
-      {tick > 0 && <div key={tick} className={`pb-sweep ${dir > 0 ? "up" : "down"}`} aria-hidden="true" />}
+  const shown = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    return pubs
+      .filter((p) => (filter === "all" || p.type === filter) && (!t || `${p.title} ${(p.authors || []).join(" ")} ${p.venue}`.toLowerCase().includes(t)))
+      .sort((a, b) => (sort === "new" ? b.year - a.year || b.cites - a.cites : b.cites - a.cites || b.year - a.year));
+  }, [pubs, filter, q, sort]);
+  const filtered = filter !== "all" || q.trim() !== "";
+  const clearPubs = () => { setFilter("all"); setQ(""); setLimit(pageSize); };
 
-      <ol className="pb-dots" aria-label="Slides">
-        {SLIDES.map((s, i) => (
-          <li key={s}><button className={i === idx ? "act" : ""} onClick={() => go(i)} aria-label={s} aria-current={i === idx}><span>{s}</span></button></li>
-        ))}
-      </ol>
-      <div className="pb-count" aria-live="polite"><b>{String(idx + 1).padStart(2, "0")}</b> / {String(SLIDES.length).padStart(2, "0")}</div>
-      {idx < SLIDES.length - 1 && <button className="pb-next" onClick={() => go(idx + 1)} aria-label="Next slide"><span /></button>}
+  const archive = useMemo(() => {
+    const t = af.q.trim().toLowerCase();
+    return pubs
+      .filter((p) => (af.year === "all" || p.year === Number(af.year))
+        && (af.member === "all" || (p.members || []).includes(af.member))
+        && (af.group === "all" || p.group === af.group)
+        && (af.status === "all" || p.status === af.status)
+        && (!t || `${p.title} ${(p.authors || []).join(" ")} ${p.venue}`.toLowerCase().includes(t)))
+      .sort((a, b) => b.year - a.year || a.title.localeCompare(b.title));
+  }, [pubs, af]);
+  const archFiltered = Object.entries(af).some(([k, v]) => (k === "q" ? v.trim() !== "" : v !== "all"));
+  const setA = (k, v) => { setAf((s) => ({ ...s, [k]: v })); setAlimit(archiveSize); };
+  const clearArchive = () => { setAf({ year: "all", member: "all", group: "all", status: "all", q: "" }); setAlimit(archiveSize); };
 
-      {/* 1. OVERVIEW */}
-      <section className={cls(0)} aria-label="Overview">
-        <Constellation on={idx === 0} />
-        <div className="pb-in">
-          <p className="pb-eye pb-rv">Publications and impact</p>
-          <h1 aria-label="Thirteen years of research, in print.">
-            {"Thirteen years of research, in print.".split(" ").map((w, n) => (
-              <span className="pb-w" key={n}><b style={{ "--d": `${0.55 + n * 0.08}s` }}>{w}</b></span>
-            ))}
-          </h1>
-          <p className="pb-lead pb-rv" style={{ "--d": "1.1s" }}>Articles, papers, books and reports from the Centre, with the citations that show where they landed.</p>
-          <div className="pb-row pb-rv" style={{ "--d": "1.25s" }}>
-            <button className="pb-btn" onClick={() => go(2)}>Browse publications</button>
-            <button className="pb-btn ghost" onClick={() => go(3)}>See research impact</button>
-          </div>
-          <p className="pb-hint pb-rv" style={{ "--d": "1.5s" }}>Scroll, swipe or use the arrow keys to move between slides.</p>
+  const sortedMembers = useMemo(() => {
+    const k = msort === "pubs" ? "pubs" : msort === "hIndex" ? "hIndex" : "citations";
+    return members.slice().sort((a, b) => b[k] - a[k]);
+  }, [members, msort]);
+  const maxMember = Math.max(1, ...members.map((m) => m.citations));
+
+  const maxMetric = Math.max(1, ...yearly.map((y) => y[metric]));
+  const sel = yearly.find((y) => y.year === cy) || yearly[yearly.length - 1] || { year: "", pubs: 0, cites: 0 };
+  const hl = highlights.find((h) => h.year === hy);
+
+  /* ---------- small renderers ---------- */
+  const renderPub = (p, i) => (
+    <article className="pu-pub pu-pop" style={DS(Math.min(i, 10))} key={p.id}>
+      <span className="pu-yr">{p.year}</span>
+      <div className="pu-pub-main">
+        <h3>{p.url ? <a href={p.url} target="_blank" rel="noopener noreferrer">{p.title}</a> : p.title}</h3>
+        <p>{(p.authors || []).join(", ")}. {p.venue}.</p>
+        <div className="pu-meta">
+          <span className="pu-tag">{(typeOf[p.type] || {}).label || p.type}</span>
+          {p.status && p.status !== "published" && <span className="pu-tag pu-tag--s">{(statusOf[p.status] || {}).label || p.status}</span>}
         </div>
-      </section>
+      </div>
+      <span className="pu-cite"><b>{num(p.cites)}</b>citations</span>
+    </article>
+  );
 
-      {/* 2. OUTPUT TYPES */}
-      <section className={cls(1)} aria-label="Types of output">
-        <div className="pb-in">
-          <h2 className="pb-rv">Four kinds of output.</h2>
-          <div className="pb-acc pb-rv" style={{ "--d": ".1s" }}>
-            {TYPES.map((t, n) => (
-              <div key={t.id} tabIndex={0} className={`pb-ac${open === n ? " open" : ""}`} style={{ "--i": n }} onMouseEnter={() => setOpen(n)} onFocus={() => setOpen(n)}>
-                <span className="pb-ac-name">{t.label}</span>
-                <strong className="pb-ac-num"><Count to={t.count} on={idx === 1} /></strong>
-                <div className="pb-ac-body">
-                  <h3>{t.label}</h3>
-                  <p>{t.text}</p>
-                  <button className="pb-link" onClick={() => { setFilter(t.id); go(2); }}>View these publications</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+  /* ---------- the sections ---------- */
+  const SECTIONS = {
+    publications: () => {
+      const t = c.texts.publications;
+      return (
+        <div className="pu-wrap">
+          <Head label={t.label || "Publications"} title={t.title} lede={t.text} />
 
-      {/* 3. BROWSE */}
-      <section className={cls(2)} aria-label="Browse publications">
-        <div className="pb-in pb-browse">
-          <div className="pb-side">
-            <h2 className="pb-rv">Find a publication.</h2>
-            <input className="pb-search pb-rv" style={{ "--d": ".1s" }} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by title" aria-label="Search by title" />
-            <div className="pb-chips pb-rv" style={{ "--d": ".2s" }}>
-              {[{ id: "all", label: "All" }, ...TYPES].map((t) => (
-                <button key={t.id} className={filter === t.id ? "act" : ""} onClick={() => setFilter(t.id)}>{t.label}</button>
-              ))}
-            </div>
-            <div className="pb-chips pb-rv" style={{ "--d": ".3s" }}>
-              <button className={sort === "new" ? "act" : ""} onClick={() => setSort("new")}>Newest first</button>
-              <button className={sort === "cited" ? "act" : ""} onClick={() => setSort("cited")}>Most cited</button>
-            </div>
-            <p className="pb-small pb-rv" style={{ "--d": ".4s" }}>{list.length} {list.length === 1 ? "result" : "results"}. Sample entries shown.</p>
-          </div>
-          <div className="pb-list pb-rv" style={{ "--d": ".2s" }} data-scroll key={filter + sort}>
-            {list.length === 0 && <p className="pb-empty">No publications match. Try a shorter title or a different type.</p>}
-            {list.map((p, n) => (
-              <article className="pb-pub" key={p.id} style={{ "--n": n }}>
-                <span className="pb-yr">{p.year}</span>
-                <div>
-                  <h3>{p.title}</h3>
-                  <p>{p.authors}. {p.venue}.</p>
-                  <small>{typeLabel(p.type)}</small>
-                </div>
-                <span className="pb-cite"><b>{p.cites}</b>citations</span>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. IMPACT */}
-      <section className={cls(3)} aria-label="Citations and research impact">
-        <div className="pb-in pb-impact">
-          <div>
-            <h2 className="pb-rv">Where the work landed.</h2>
-            <div className="pb-stats">
-              {[[TOTAL_CITES, "citations"], [TOTAL_PUBS, "publications"], [H_INDEX, "h-index"]].map(([v, l], n) => (
-                <div className="pb-stat pb-rv" style={d(n, 0.1)} key={l}><strong><Count to={v} on={idx === 3} /></strong><span>{l}</span></div>
-              ))}
-            </div>
-            <p className="pb-small pb-rv" style={{ "--d": ".5s" }}>{SOURCE}</p>
-          </div>
-          <figure className="pb-chart pb-rv" style={{ "--d": ".25s" }}>
-            <svg viewBox="0 0 600 240" role="img" aria-label="Cumulative citations, 2013 to 2026">
-              <defs>
-                <linearGradient id="pbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2997ff" stopOpacity=".45" /><stop offset="1" stopColor="#2997ff" stopOpacity="0" /></linearGradient>
-              </defs>
-              {[0, 1, 2, 3].map((g) => <line key={g} x1="20" x2="580" y1={30 + g * 60} y2={30 + g * 60} className="pb-grid" />)}
-              <path d={`${line} L580 210 L20 210Z`} fill="url(#pbg)" className="pb-area" />
-              <path d={line} pathLength="1" className="pb-line" />
-              {pts.map((p, n) => <circle key={n} cx={p[0]} cy={p[1]} r={n === pts.length - 1 ? 5 : 2.5} className="pb-dot" style={{ "--n": n }} />)}
-              <text x="20" y="232" className="pb-ax">2013</text>
-              <text x="580" y="232" textAnchor="end" className="pb-ax">2026</text>
-            </svg>
-            <figcaption>Cumulative citations</figcaption>
-          </figure>
-        </div>
-      </section>
-
-      {/* 5. BY YEAR */}
-      <section className={cls(4)} aria-label="Annual research highlights">
-        <div className="pb-in pb-years">
-          <div className="pb-yinfo">
-            <h2 className="pb-rv">Year by year.</h2>
-            <div className="pb-big pb-rv" style={{ "--d": ".1s" }} key={Y.year}><span>{Y.year}</span></div>
-            <p className="pb-yline pb-rv" style={{ "--d": ".2s" }}><b>{Y.pubs}</b> publications <b>{Y.cites.toLocaleString()}</b> citations</p>
-            <p className="pb-lead pb-rv" style={{ "--d": ".3s" }}>Highlights for {Y.year} go here: awards, major papers and milestones. Use the left and right arrow keys to change year.</p>
-          </div>
-          <div className="pb-bars pb-rv" style={{ "--d": ".15s" }} role="group" aria-label="Publications per year">
-            {YEARS.map((y, n) => (
-              <button key={y.year} className={`pb-yb${n === yi ? " act" : ""}`} style={{ "--n": n, "--h": `${(y.pubs / maxPubs) * 100}%` }} onClick={() => setYi(n)} aria-label={`${y.year}: ${y.pubs} publications`} aria-pressed={n === yi}>
-                <i /><span>{String(y.year).slice(2)}</span>
+          <div className="pu-types pu-rv" role="group" aria-label="Publication types">
+            {types.map((ty) => (
+              <button key={ty.id} id={ty.chip} className={`pu-type${filter === ty.id ? " is-on" : ""}`} aria-pressed={filter === ty.id}
+                onClick={() => { setFilter(filter === ty.id ? "all" : ty.id); setLimit(pageSize); }}>
+                <strong>{num(ty.count ?? typeCounts[ty.id] ?? 0)}</strong>
+                <span className="pu-type-name">{ty.label}</span>
+                <span className="pu-type-text">{ty.text}</span>
               </button>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* 6. CONTINUE */}
-      <section className={cls(5)} aria-label="Keep exploring">
-        <div className="pb-in">
-          <h2 className="pb-rv">Keep exploring.</h2>
-          <div className="pb-next-grid">
-            {NEXT.map((n, k) => (
-              <Link key={n.h} href={to(n.h)} className="pb-card pb-rv" style={d(k, 0.1)}>
-                <h3>{n.t}</h3><p>{n.d}</p>
-              </Link>
-            ))}
+          <div className="pu-tools pu-rv">
+            <div className="pu-tabs" role="tablist" aria-label="Filter by type">
+              <button role="tab" aria-selected={filter === "all"} className={filter === "all" ? "is-on" : ""} onClick={() => { setFilter("all"); setLimit(pageSize); }}>{t.allLabel || "All"}<sup>{pubs.length}</sup></button>
+              {types.map((ty) => (
+                <button key={ty.id} role="tab" aria-selected={filter === ty.id} className={filter === ty.id ? "is-on" : ""} onClick={() => { setFilter(ty.id); setLimit(pageSize); }}>{ty.tab || ty.label}<sup>{typeCounts[ty.id] || 0}</sup></button>
+              ))}
+            </div>
+            <div className="pu-tools-r">
+              <label className="pu-search">
+                <SearchIcon />
+                <input value={q} onChange={(e) => { setQ(e.target.value); setLimit(pageSize); }} placeholder={t.searchPlaceholder} aria-label={t.searchPlaceholder} />
+              </label>
+              <label className="pu-select">
+                <span>Sort</span>
+                <select value={sort} onChange={(e) => setSort(e.target.value)}>
+                  <option value="new">Newest first</option>
+                  <option value="cited">Most cited</option>
+                </select>
+              </label>
+            </div>
           </div>
-          <div className="pb-row pb-rv" style={{ "--d": ".5s" }}>
-            <button className="pb-btn ghost" onClick={() => go(0)}>Back to the start</button>
+
+          <p className="pu-count" aria-live="polite">
+            <span><b>{shown.length}</b> {shown.length === 1 ? "publication" : "publications"}</span>
+            {filtered && <button className="pu-link" onClick={clearPubs}>{t.clear}</button>}
+          </p>
+
+          <div className="pu-list" key={filter + "|" + sort + "|" + q}>
+            {shown.slice(0, limit).map(renderPub)}
+          </div>
+          {shown.length === 0 && (
+            <div className="pu-empty"><p>{t.empty}</p><button className="pu-link" onClick={clearPubs}>{t.clear}</button></div>
+          )}
+          {shown.length > limit && (
+            <div className="pu-more-row">
+              <button className="pu-btn pu-mag" onClick={() => setLimit((n) => n + pageSize)}>{t.more} ({shown.length - limit} left)<Arrow /></button>
+            </div>
+          )}
+        </div>
+      );
+    },
+
+    citations: () => {
+      const t = c.texts.citations;
+      return (
+        <div className="pu-wrap">
+          <Head label={t.label || "Citations and impact"} title={t.title} lede={t.text} />
+
+          <div id="citation-indicators" className="pu-block">
+            <h3 className="pu-h3 pu-rv">{t.indicatorsTitle}</h3>
+            <div className="pu-ind pu-rv" style={D(1)}>
+              {(c.indicators || []).map((s, i) => (
+                <div className="pu-ind-i" key={s.label}>
+                  <strong><Counter value={s.value} delay={i * 100} /></strong>
+                  <span>{s.label}</span>
+                </div>
+              ))}
+            </div>
+            <p className="pu-small pu-rv" style={D(2)}>Source: {st.source}. Last updated {st.updated}.</p>
+          </div>
+
+          <div className="pu-chart pu-rv">
+            <div className="pu-chart-top">
+              <div>
+                <h3 className="pu-h3">Output by year</h3>
+                <p className="pu-readout" aria-live="polite"><b>{sel.year}</b> {num(sel.pubs)} publications, {num(sel.cites)} citations</p>
+              </div>
+              <div className="pu-tabs" role="tablist" aria-label="Chart metric">
+                <button role="tab" aria-selected={metric === "cites"} className={metric === "cites" ? "is-on" : ""} onClick={() => setMetric("cites")}>Citations</button>
+                <button role="tab" aria-selected={metric === "pubs"} className={metric === "pubs" ? "is-on" : ""} onClick={() => setMetric("pubs")}>Publications</button>
+              </div>
+            </div>
+            <div className="pu-bars" role="group" aria-label={metric === "cites" ? "Citations per year" : "Publications per year"}>
+              {yearly.map((y) => (
+                <button key={y.year} className={`pu-bar${y.year === cy ? " is-on" : ""}`} style={{ "--h": y[metric] / maxMetric }}
+                  onClick={() => setCy(y.year)} onMouseEnter={() => setCy(y.year)} onFocus={() => setCy(y.year)}
+                  aria-label={`${y.year}: ${y.pubs} publications, ${y.cites} citations`} aria-pressed={y.year === cy}>
+                  <em>{num(y[metric])}</em><i /><span>{String(y.year).slice(2)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div id="citation-members" className="pu-block">
+            <div className="pu-block-head pu-rv">
+              <h3 className="pu-h3">{t.membersTitle}</h3>
+              <div className="pu-tabs" role="tablist" aria-label="Sort members">
+                {[["citations", "Citations"], ["pubs", "Publications"], ["hIndex", "h-index"]].map(([k, l]) => (
+                  <button key={k} role="tab" aria-selected={msort === k} className={msort === k ? "is-on" : ""} onClick={() => setMsort(k)}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <div className="pu-table-wrap pu-rv" style={D(1)}>
+              <table className="pu-table pu-mtable">
+                <thead><tr><th>Member</th><th>Group</th><th className="r">Publications</th><th className="r">h-index</th><th>Citations</th></tr></thead>
+                <tbody>
+                  {sortedMembers.map((m) => (
+                    <tr key={m.id}>
+                      <td><Link href={to(`/people/member/${m.id}`)} className="pu-name">{m.name}</Link></td>
+                      <td>{(groupOf[m.group] || {}).label || ""}</td>
+                      <td className="r">{num(m.pubs)}</td>
+                      <td className="r">{num(m.hIndex)}</td>
+                      <td><span className="pu-meter"><i style={{ width: `${(m.citations / maxMember) * 100}%` }} /><b>{num(m.citations)}</b></span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </section>
-    </main>
+      );
+    },
+
+    highlights: () => {
+      const t = c.texts.highlights;
+      return (
+        <div className="pu-wrap">
+          <Head label={t.label || "Annual highlights"} title={t.title} lede={t.text} />
+          <div className="pu-years pu-rv" role="tablist" aria-label="Choose a year">
+            {yearsDesc.map((y) => {
+              const has = highlights.some((h) => h.year === y);
+              return (
+                <button key={y} role="tab" aria-selected={y === hy} className={`${y === hy ? "is-on" : ""}${has ? "" : " is-dim"}`} onClick={() => setHy(y)}>{y}</button>
+              );
+            })}
+          </div>
+          <div className="pu-hl" key={hy}>
+            <div className="pu-hl-side">
+              <div className="pu-big">{hy}</div>
+              {(() => { const y = yearly.find((x) => x.year === hy); return y ? <p className="pu-yline"><b>{num(y.pubs)}</b> publications <b>{num(y.cites)}</b> citations</p> : null; })()}
+              {hl && <p className="pu-lede">{hl.summary}</p>}
+            </div>
+            <div className="pu-hl-items">
+              {hl && hl.items.length > 0 ? hl.items.map((it) => {
+                const body = (
+                  <>
+                    <span className="pu-tag pu-tag--l">{it.kind}</span>
+                    <h3>{it.title}</h3>
+                    <p>{it.text}</p>
+                    {it.href && <span className="pu-more">Read more<Arrow /></span>}
+                  </>
+                );
+                return it.href
+                  ? <Link href={to(it.href)} className="pu-hcard" key={it.id}>{body}</Link>
+                  : <div className="pu-hcard is-static" key={it.id}>{body}</div>;
+              }) : <div className="pu-empty pu-empty--l"><p>{t.empty}</p></div>}
+            </div>
+          </div>
+        </div>
+      );
+    },
+
+    archive: () => {
+      const t = c.texts.archive;
+      return (
+        <div className="pu-wrap">
+          <Head label={t.label || "Research archive"} title={t.title} lede={t.text} />
+          <div className="pu-filters pu-rv">
+            <label className="pu-search pu-search--wide">
+              <SearchIcon />
+              <input value={af.q} onChange={(e) => setA("q", e.target.value)} placeholder={t.searchPlaceholder} aria-label={t.searchPlaceholder} />
+            </label>
+            <label className="pu-select"><span>Year</span>
+              <select value={af.year} onChange={(e) => setA("year", e.target.value)}>
+                <option value="all">All years</option>
+                {yearsDesc.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </label>
+            <label className="pu-select"><span>Member</span>
+              <select value={af.member} onChange={(e) => setA("member", e.target.value)}>
+                <option value="all">All members</option>
+                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </label>
+            <label className="pu-select"><span>Group</span>
+              <select value={af.group} onChange={(e) => setA("group", e.target.value)}>
+                <option value="all">All groups</option>
+                {groups.map((g) => <option key={g.id} value={g.id}>{g.label}</option>)}
+              </select>
+            </label>
+            <label className="pu-select"><span>Status</span>
+              <select value={af.status} onChange={(e) => setA("status", e.target.value)}>
+                <option value="all">Any status</option>
+                {statuses.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+            </label>
+          </div>
+
+          <p className="pu-count" aria-live="polite">
+            <span><b>{archive.length}</b> of {pubs.length} records</span>
+            {archFiltered && <button className="pu-link" onClick={clearArchive}>{t.clear}</button>}
+          </p>
+
+          {archive.length > 0 ? (
+            <div className="pu-table-wrap pu-rv">
+              <table className="pu-table pu-atable">
+                <thead><tr><th>Year</th><th>Title</th><th>Type</th><th>Members</th><th>Group</th><th>Status</th><th className="r">Citations</th></tr></thead>
+                <tbody>
+                  {archive.slice(0, alimit).map((p) => (
+                    <tr key={p.id}>
+                      <td className="pu-td-y" data-l="Year">{p.year}</td>
+                      <td className="pu-td-t" data-l="Title">{p.url ? <a href={p.url} target="_blank" rel="noopener noreferrer">{p.title}</a> : p.title}</td>
+                      <td data-l="Type">{(typeOf[p.type] || {}).label}</td>
+                      <td data-l="Members">{(p.members || []).map((id) => (memberOf[id] || {}).name).filter(Boolean).join(", ")}</td>
+                      <td data-l="Group">{(groupOf[p.group] || {}).label}</td>
+                      <td data-l="Status"><span className={`pu-status is-${p.status}`}>{(statusOf[p.status] || {}).label || p.status}</span></td>
+                      <td className="r" data-l="Citations">{num(p.cites)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="pu-empty"><p>{t.empty}</p><button className="pu-link" onClick={clearArchive}>{t.clear}</button></div>
+          )}
+          {archive.length > alimit && (
+            <div className="pu-more-row">
+              <button className="pu-btn pu-mag" onClick={() => setAlimit((n) => n + archiveSize)}>{t.more} ({archive.length - alimit} left)<Arrow /></button>
+            </div>
+          )}
+        </div>
+      );
+    },
+
+    cta: () => {
+      const t = c.cta;
+      return (
+        <div className="pu-wrap">
+          <div className="pu-cta-in">
+            <div>
+              <h2 className="pu-h pu-rv">{t.title}</h2>
+              <p className="pu-lede pu-rv" style={D(1)}>{t.text}</p>
+              {t.footer && <p className="pu-foot pu-rv" style={D(2)}>{t.footer}</p>}
+            </div>
+            <div className="pu-cta-links pu-rv" style={D(2)}>
+              {t.items.map((it) => (
+                <Link href={to(it.href)} className="pu-cta-link pu-mag" key={it.id}>
+                  <span className="pu-cta-i"><Arrow /></span>
+                  <span className="pu-cta-t"><b>{it.title}</b><small>{it.text}</small></span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    },
+  };
+
+  const h = c.hero;
+  const [heroFail, setHeroFail] = useState(false);
+  const heroLines = Array.isArray(h.headline) ? h.headline : [h.headline];
+
+  return (
+    <div className="pu" ref={rootRef} onMouseMove={onMove} onMouseOut={onOut}>
+
+      {/* ===================== HERO ===================== */}
+      {heroSec && (
+        <section className="pu-hero" id="publications-top">
+          {h.image && !heroFail && (
+            <div className="pu-hero-media" aria-hidden="true"><img src={h.image} alt="" loading="eager" decoding="async" onError={() => setHeroFail(true)} /></div>
+          )}
+          <div className="pu-grid-bg" aria-hidden="true" />
+
+          <div className="pu-wrap pu-hero-copy">
+            {h.eyebrow && <p className="pu-eyebrow"><i />{h.eyebrow}</p>}
+            <h1 className="pu-title" aria-label={heroLines.join(" ")}>
+              {heroLines.map((l, i) => (
+                <span className="pu-ln" key={l}><span className={l === h.highlight ? "pu-hl" : ""} style={{ "--i": i }}>{l}</span></span>
+              ))}
+            </h1>
+            <p className="pu-hero-lede">{h.lead}</p>
+            <div className="pu-hero-cta">
+              <button className="pu-btn pu-mag" onClick={() => goTo(h.primary.target)}>{h.primary.label}<Arrow /></button>
+              <button className="pu-btn pu-btn--ghost pu-mag" onClick={() => goTo(h.secondary.target)}>{h.secondary.label}<Arrow /></button>
+            </div>
+          </div>
+
+          <div className="pu-wrap pu-glance">
+            <div className="pu-glance-bar">
+              <span>At a glance</span>
+              <span>Source: {st.source}. Updated {st.updated}.</span>
+            </div>
+            <div className="pu-glance-grid">
+              {(h.stats || []).map((s, i) => (
+                <div className="pu-gl" key={s.label}>
+                  <strong><Counter value={s.value} delay={900 + i * 100} /></strong>
+                  <span className="pu-gl-label">{s.label}</span>
+                  {s.note && <p className="pu-gl-note">{s.note}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ===================== STICKY MENU ===================== */}
+      {navList.length > 0 && (
+        <nav className="pu-subnav" aria-label="Publications sections">
+          <div className="pu-wrap pu-subnav-scroll">
+            <ul>
+              {navList.map((s) => (
+                <li key={s.id}>
+                  <a
+                    href={`#${s.id}`}
+                    className={active === s.id ? "is-active" : ""}
+                    aria-current={active === s.id ? "true" : undefined}
+                    onClick={(e) => { e.preventDefault(); goTo(s.id); }}
+                  >{s.label}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="pu-progress" aria-hidden="true"><span /></div>
+        </nav>
+      )}
+
+      {/* ===================== TICKER ===================== */}
+      {c.ticker && c.ticker.length > 0 && (
+        <div className="pu-ticker" aria-hidden="true">
+          <div className="pu-ticker-track">
+            {[0, 1].map((k) => <ul key={k}>{c.ticker.map((t) => <li key={t + k}>{t}</li>)}</ul>)}
+          </div>
+        </div>
+      )}
+
+      {/* ===================== SECTIONS ===================== */}
+      {rest.map((s) => {
+        const render = SECTIONS[s.id];
+        if (!render) return null;
+        return (
+          <section key={s.id} id={s.id} className={`pu-sec pu-${s.tone || "dark"} pu-sec-${s.id}`}>
+            {render()}
+          </section>
+        );
+      })}
+    </div>
   );
 }
+
+function DS(i) { return { "--d": i * 55 }; }

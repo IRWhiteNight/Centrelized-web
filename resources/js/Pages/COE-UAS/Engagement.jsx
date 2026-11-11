@@ -1,90 +1,27 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Head, Link } from "@inertiajs/react";
+import { useEngagementContent, imgUrl } from "../../data/COEUAS-data/engagementContent";
+import { BASE } from "../../data/COEUAS-data/siteMapCOEUAS";
 import "../../../css/COE-UAS-css/coe-engagement.css";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
-import { Head, Link } from "@inertiajs/react";
-import { PAGE, SCENES, CONTENT, SHOW_SAMPLE_BADGE } from "../../Components/COEUAS-Components/engagementContent";
+/* ------------------------------------------------------------------
+   Engagement.jsx is layout and motion only.
+   All text, links, images and numbers come from engagementContent.js
+   (later: the admin CMS). Pass a `content` prop to preview changes.
+   The top navigation bar comes from COEUAsWebsiteLayout.
+   Every class starts with "ng-" so no other page's CSS can leak in.
+------------------------------------------------------------------- */
 
-/* ════════════════════════════════════════════════════════════════
-   ENGAGEMENT PAGE  —  full-screen "scenes" instead of a long scroll.
-   • All text/data lives in engagementContent.js
-   • Each scene has its own arrival transition (see TRANSITIONS)
-   • Navigate: wheel · touch swipe · ← → ↑ ↓ · PageUp/Down · Home/End · pager
-   ════════════════════════════════════════════════════════════════ */
+const to = (h = "/") =>
+  h === "/" ? BASE : h.startsWith("/") && !h.startsWith(BASE + "/") && h !== BASE ? BASE + h : h;
 
-const EASE = [0.76, 0, 0.24, 1];
-const OUT = [0.2, 0.8, 0.2, 1];
-const LOCK_MS = 1100; // input lock while a transition plays
-const pad = (n) => String(n).padStart(2, "0");
-const reduced = () =>
-  typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const pad = (n) => String(n + 1).padStart(2, "0");
+const D = (i) => ({ "--d": i * 90 });
+const DS = (i) => ({ "--d": Math.min(i, 12) * 55 });
 
-const NavCtx = createContext({ go: () => {}, next: () => {}, restart: () => {}, lockNav: () => {} });
-
-/* ─────────────── SCENE ARRIVAL TRANSITIONS ───────────────
-   enter → starting state · center → resting state · exit → leaving state
-   `d` = direction (1 forward, -1 backward)                          */
-const TRANSITIONS = {
-  fade: {
-    enter: { opacity: 0 },
-    center: { opacity: 1, transition: { duration: 0.9 } },
-    exit: { opacity: 0, transition: { duration: 0.5 } },
-  },
-  iris: {
-    enter: { clipPath: "circle(0% at 50% 55%)" },
-    center: { clipPath: "circle(145% at 50% 55%)", transition: { duration: 1.1, ease: EASE } },
-    exit: { opacity: 0, scale: 0.94, filter: "blur(10px)", transition: { duration: 0.7 } },
-  },
-  curtain: {
-    enter: { clipPath: "inset(0% 50% 0% 50%)" },
-    center: { clipPath: "inset(0% 0% 0% 0%)", transition: { duration: 1, ease: EASE } },
-    exit: { opacity: 0, scale: 1.06, filter: "brightness(2.2)", transition: { duration: 0.6 } },
-  },
-  flip: {
-    enter: (d) => ({ opacity: 0, rotateY: 70 * d, x: 140 * d, transformPerspective: 1600 }),
-    center: { opacity: 1, rotateY: 0, x: 0, transformPerspective: 1600, transition: { duration: 1, ease: OUT } },
-    exit: (d) => ({ opacity: 0, rotateY: -70 * d, x: -140 * d, transformPerspective: 1600, transition: { duration: 0.7 } }),
-  },
-  slice: {
-    enter: (d) => ({
-      clipPath: d > 0
-        ? "polygon(0% 0%, 0% 0%, -25% 100%, -25% 100%)"
-        : "polygon(100% 0%, 100% 0%, 125% 100%, 125% 100%)",
-    }),
-    center: (d) => ({
-      clipPath: d > 0
-        ? "polygon(0% 0%, 125% 0%, 100% 100%, -25% 100%)"
-        : "polygon(100% 0%, -25% 0%, 0% 100%, 125% 100%)",
-      transition: { duration: 1, ease: EASE },
-    }),
-    exit: (d) => ({ opacity: 0, x: -70 * d, transition: { duration: 0.6 } }),
-  },
-  zoom: {
-    enter: { opacity: 0, scale: 1.5, filter: "blur(16px)" },
-    center: { opacity: 1, scale: 1, filter: "blur(0px)", transition: { duration: 1, ease: OUT } },
-    exit: { opacity: 0, scale: 0.6, filter: "blur(16px)", transition: { duration: 0.6 } },
-  },
-  rise: {
-    enter: (d) => ({ y: d > 0 ? "100%" : "-100%" }),
-    center: { y: "0%", transition: { duration: 1, ease: EASE } },
-    exit: (d) => ({ opacity: 0, scale: 0.95, y: d > 0 ? "-18%" : "18%", transition: { duration: 0.8 } }),
-  },
-};
-
-/* shared entrance variants for content inside a scene */
-const stagger = (delay = 0.5, gap = 0.08) => ({ hidden: {}, show: { transition: { delayChildren: delay, staggerChildren: gap } } });
-const rise = { hidden: { opacity: 0, y: 36, filter: "blur(8px)" }, show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.8, ease: OUT } } };
-const pop = { hidden: { opacity: 0, scale: 0.6 }, show: { opacity: 1, scale: 1, transition: { type: "spring", stiffness: 170, damping: 16 } } };
-
-function Body({ children, className = "", delay = 0.5 }) {
-  return (
-    <motion.div className={`eg-body ${className}`} variants={stagger(delay)} initial="hidden" animate="show">
-      {children}
-    </motion.div>
-  );
-}
-
-/* ═══════════════ SMALL BUILDING BLOCKS ═══════════════ */
+/* section types this page knows how to draw (see engagementContent.js) */
+const TYPES = ["groups", "pillars", "panels", "news", "media", "cta"];
 
 const ICONS = {
   cap: <><path d="M2 9l10-5 10 5-10 5L2 9z" /><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5" /><path d="M22 9v6" /></>,
@@ -98,700 +35,570 @@ const ICONS = {
   shield: <><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /><path d="M9 12l2 2 4-4" /></>,
   flask: <><path d="M9 3h6M10 3v6L4.5 19a1.5 1.5 0 0 0 1.3 2h12.4a1.5 1.5 0 0 0 1.3-2L14 9V3" /><path d="M7.5 15h9" /></>,
   handshake: <><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1" /><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" /></>,
-  arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
-  up: <path d="M6 15l6-6 6 6" />,
-  down: <path d="M6 9l6 6 6-6" />,
-  play: <path d="M8 5v14l11-7z" />,
-  cam: <><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></>,
   news: <><path d="M5 4h12v16H7a2 2 0 0 1-2-2z" /><path d="M17 8h3v10a2 2 0 0 1-2 2M8 8h6M8 12h6M8 16h4" /></>,
+  play: <path d="M8 5v14l11-7z" />,
   close: <path d="M6 6l12 12M18 6L6 18" />,
   external: <path d="M14 4h6v6M20 4l-9 9M18 14v6H4V6h6" />,
+  image: <><rect x="3" y="5" width="18" height="14" rx="2" /><circle cx="9" cy="11" r="2" /><path d="m21 16-5-5-8 8" /></>,
 };
 
 function Icon({ name, size = 22 }) {
   return (
-    <svg className="eg-icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg className="ng-icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
       strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {ICONS[name] ?? ICONS.star}
+      {ICONS[name] || ICONS.star}
     </svg>
   );
 }
 
-function SmartLink({ href, children, ...rest }) {
-  if (!href) return <span {...rest}>{children}</span>;
-  if (/^(https?:|mailto:)|\.pdf$/i.test(href))
-    return <a href={href} target="_blank" rel="noreferrer" {...rest}>{children}</a>;
-  return <Link href={href} {...rest}>{children}</Link>;
+const Arrow = () => (
+  <svg className="ng-arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+/* internal pages use Inertia, external links and PDFs open in a new tab */
+const isExt = (h) => /^(https?:|mailto:)|\.pdf$/i.test(h);
+function Go({ href, className, style, children }) {
+  return isExt(href)
+    ? <a href={href} target="_blank" rel="noreferrer" className={className} style={style}>{children}</a>
+    : <Link href={to(href)} className={className} style={style}>{children}</Link>;
 }
 
-const GLYPHS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<>/[]{}=+*#";
-const scramble = (t) => t.replace(/\S/g, () => GLYPHS[(Math.random() * GLYPHS.length) | 0]);
-
-/* text that "decrypts" into place */
-function ScrambleText({ text, delay = 0, duration = 1000, as: Tag = "span", className = "" }) {
-  const [out, setOut] = useState(() => (reduced() ? text : scramble(text)));
+/* adds .in to every .ng-rv once it scrolls into view (re-runs when the content changes) */
+function useReveal(rootRef, dep) {
   useEffect(() => {
-    if (reduced()) { setOut(text); return; }
-    let raf, t0;
-    const id = setTimeout(() => {
-      const step = (t) => {
-        t0 = t0 ?? t;
-        const p = Math.min((t - t0) / duration, 1);
-        const keep = Math.floor(p * text.length);
-        setOut(text.split("").map((c, i) => (c === " " || i < keep ? c : GLYPHS[(Math.random() * GLYPHS.length) | 0])).join(""));
-        if (p < 1) raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-    }, delay);
-    return () => { clearTimeout(id); cancelAnimationFrame(raf); };
-  }, [text, delay, duration]);
-  return <Tag className={className} aria-label={text}>{out}</Tag>;
-}
-
-function CountUp({ to, suffix = "", duration = 1600, delay = 800 }) {
-  const isNum = typeof to === "number";
-  const [v, setV] = useState(isNum ? 0 : to);
-  useEffect(() => {
-    if (!isNum) return;
-    if (reduced()) { setV(to); return; }
-    let raf;
-    const id = setTimeout(() => {
-      const t0 = performance.now();
-      const step = (t) => {
-        const p = Math.min((t - t0) / duration, 1);
-        setV(Math.round(to * (1 - Math.pow(1 - p, 3))));
-        if (p < 1) raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-    }, delay);
-    return () => { clearTimeout(id); cancelAnimationFrame(raf); };
-  }, [to, isNum, duration, delay]);
-  return <>{isNum ? pad(v) : v}{suffix}</>;
-}
-
-/* 3D tilt + moving glare (pure CSS vars) */
-function Tilt({ children, className = "", max = 10, ...rest }) {
-  const ref = useRef(null);
-  const move = (e) => {
-    const el = ref.current; if (!el) return;
-    const r = el.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
-    el.style.setProperty("--rx", `${(0.5 - py) * max}deg`);
-    el.style.setProperty("--ry", `${(px - 0.5) * max}deg`);
-    el.style.setProperty("--mx", `${px * 100}%`);
-    el.style.setProperty("--my", `${py * 100}%`);
-  };
-  const leave = () => { const el = ref.current; if (el) { el.style.setProperty("--rx", "0deg"); el.style.setProperty("--ry", "0deg"); } };
-  return <div ref={ref} className={`eg-tilt ${className}`} onMouseMove={move} onMouseLeave={leave} {...rest}>{children}</div>;
-}
-
-function SampleBadge({ show }) {
-  return SHOW_SAMPLE_BADGE && show ? <em className="eg-sample">Sample</em> : null;
-}
-
-/* ═══════════════ LIVING BACKDROP (canvas network) ═══════════════ */
-function Backdrop({ index }) {
-  const ref = useRef(null);
-  const idx = useRef(index);
-  idx.current = index;
-
-  useEffect(() => {
-    const c = ref.current;
-    const ctx = c?.getContext?.("2d");
-    if (!ctx) return;
-    const still = reduced();
-    let w = 0, h = 0, raf = 0, pts = [];
-    const mouse = { x: -999, y: -999 };
-    const hub = { x: 0.5, y: 0.5 };
-
-    const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = c.clientWidth; h = c.clientHeight;
-      c.width = w * dpr; c.height = h * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const n = Math.round(Math.min(100, (w * h) / 15000));
-      pts = Array.from({ length: n }, () => ({
-        x: Math.random() * w, y: Math.random() * h, vx: 0, vy: 0,
-        bx: (Math.random() - 0.5) * 0.28, by: (Math.random() - 0.5) * 0.28, r: Math.random() * 1.5 + 0.7,
-      }));
-    };
-    const onMove = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; };
-
-    const frame = () => {
-      ctx.clearRect(0, 0, w, h);
-      const i = idx.current;
-      hub.x += (0.5 + Math.cos(i * 1.7) * 0.28 - hub.x) * 0.03;
-      hub.y += (0.5 + Math.sin(i * 1.3) * 0.22 - hub.y) * 0.03;
-      const hx = hub.x * w, hy = hub.y * h;
-      const g = ctx.createRadialGradient(hx, hy, 0, hx, hy, Math.max(w, h) * 0.55);
-      g.addColorStop(0, "rgba(30,110,255,.24)"); g.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-
-      for (const p of pts) {
-        p.vx += (hx - p.x) * 0.000012; p.vy += (hy - p.y) * 0.000012;
-        const dx = p.x - mouse.x, dy = p.y - mouse.y, d2 = dx * dx + dy * dy;
-        if (d2 < 14400) { const f = (1 - Math.sqrt(d2) / 120) * 0.012; p.vx += dx * f; p.vy += dy * f; }
-        p.vx *= 0.96; p.vy *= 0.96;
-        if (!still) { p.x += p.vx + p.bx; p.y += p.vy + p.by; }
-        if (p.x < -10) p.x = w + 10; else if (p.x > w + 10) p.x = -10;
-        if (p.y < -10) p.y = h + 10; else if (p.y > h + 10) p.y = -10;
-      }
-      for (let a = 0; a < pts.length; a++) {
-        for (let b = a + 1; b < pts.length; b++) {
-          const dx = pts[a].x - pts[b].x, dy = pts[a].y - pts[b].y, d = Math.hypot(dx, dy);
-          if (d < 130) {
-            ctx.strokeStyle = `rgba(70,170,255,${(1 - d / 130) * 0.32})`;
-            ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pts[a].x, pts[a].y); ctx.lineTo(pts[b].x, pts[b].y); ctx.stroke();
-          }
-        }
-      }
-      ctx.fillStyle = "rgba(130,215,255,.85)";
-      for (const p of pts) { ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill(); }
-      if (!still) raf = requestAnimationFrame(frame);
-    };
-
-    resize(); frame();
-    window.addEventListener("resize", resize);
-    window.addEventListener("pointermove", onMove);
-    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); window.removeEventListener("pointermove", onMove); };
-  }, []);
-
-  return <canvas ref={ref} className="eg-canvas" aria-hidden="true" />;
-}
-
-/* ═══════════════ SCENE 0 · WELCOME ═══════════════ */
-function Hero({ data }) {
-  const { next } = useContext(NavCtx);
-  const [w, setW] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setW((v) => (v + 1) % data.words.length), 2400);
-    return () => clearInterval(id);
-  }, [data.words.length]);
-
-  return (
-    <>
-      <div className="eg-rings" aria-hidden="true"><i /><i /><i /><i /><b /><b /><b /></div>
-      <Body className="eg-hero" delay={0.35}>
-        <motion.p variants={rise} className="eg-eyebrow">{data.eyebrow}</motion.p>
-        <motion.h1 variants={rise} className="eg-hero-title">
-          <ScrambleText text={data.title} delay={450} duration={1300} />
-        </motion.h1>
-        <motion.div variants={rise} className="eg-rotator">
-          <span>{data.rotatorLead}</span>
-          <span className="eg-rotator-word">
-            <AnimatePresence mode="wait">
-              <motion.b key={w} initial={{ y: "100%", opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-                exit={{ y: "-100%", opacity: 0 }} transition={{ duration: 0.45, ease: OUT }}>
-                {data.words[w]}
-              </motion.b>
-            </AnimatePresence>
-          </span>
-        </motion.div>
-        <motion.p variants={rise} className="eg-lead">{data.description}</motion.p>
-        <motion.div variants={rise} className="eg-stats">
-          {data.stats.map((s) => (
-            <div className="eg-stat" key={s.label}>
-              <strong><CountUp to={s.value} suffix={s.suffix} /></strong>
-              <span>{s.label}</span>
-            </div>
-          ))}
-        </motion.div>
-        <motion.button variants={rise} className="eg-cta" onClick={next}>
-          <span>{data.cta}</span><Icon name="arrow" />
-        </motion.button>
-      </Body>
-    </>
-  );
-}
-
-/* ═══════════════ SCENE 1 · NETWORKING (orbit) ═══════════════ */
-function Network({ data }) {
-  const [active, setActive] = useState(0);
-  const [hold, setHold] = useState(false);
-  const n = data.groups.length;
-  useEffect(() => {
-    if (hold) return;
-    const id = setInterval(() => setActive((a) => (a + 1) % n), 5000);
-    return () => clearInterval(id);
-  }, [hold, n]);
-
-  const g = data.groups[active];
-  const pos = data.groups.map((_, i) => {
-    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-    return { x: 50 + 38 * Math.cos(a), y: 50 + 38 * Math.sin(a) };
-  });
-
-  return (
-    <Body className="eg-split eg-network" delay={0.45}>
-      <div className="eg-col">
-        <motion.p className="eg-eyebrow" variants={rise}>{data.eyebrow}</motion.p>
-        <motion.h2 className="eg-title" variants={rise}>{data.title}</motion.h2>
-        <motion.p className="eg-lead" variants={rise}>{data.description}</motion.p>
-        <motion.div variants={rise} className="eg-panel" style={{ "--accent": g.accent }}>
-          <AnimatePresence mode="wait">
-            <motion.div key={g.id} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.35 }}>
-              <header><Icon name={g.icon} /><h3>{g.label}</h3></header>
-              <p>{g.blurb}</p>
-              <ul className="eg-chips">
-                {g.items.map((it) => (
-                  <li key={it.name} className={it.placeholder ? "is-placeholder" : ""}>
-                    <b>{it.name}</b>{it.note && <small>{it.note}</small>}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
-      </div>
-
-      <motion.div className="eg-orbit" variants={pop} onMouseEnter={() => setHold(true)} onMouseLeave={() => setHold(false)}>
-        <svg viewBox="0 0 100 100" aria-hidden="true">
-          <circle className="eg-ring eg-ring-a" cx="50" cy="50" r="38" />
-          <circle className="eg-ring eg-ring-b" cx="50" cy="50" r="26" />
-          <circle className="eg-ring eg-ring-c" cx="50" cy="50" r="47" />
-          {pos.map((p, i) => (
-            <g key={i}>
-              <motion.line x1="50" y1="50" x2={p.x} y2={p.y} stroke={data.groups[i].accent}
-                strokeWidth={i === active ? 0.7 : 0.3} strokeOpacity={i === active ? 1 : 0.55}
-                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ delay: 0.9 + i * 0.12, duration: 0.9 }} />
-              <circle r="0.9" fill={data.groups[i].accent}>
-                <animateMotion dur={`${3 + i * 0.45}s`} repeatCount="indefinite" path={`M50,50 L${p.x},${p.y}`} />
-              </circle>
-            </g>
-          ))}
-        </svg>
-        <div className="eg-core"><span>{data.centerLabel}</span></div>
-        {data.groups.map((gr, i) => (
-          <button key={gr.id} className={`eg-node ${i === active ? "is-on" : ""}`}
-            style={{ left: `${pos[i].x}%`, top: `${pos[i].y}%`, "--accent": gr.accent }}
-            onClick={() => { setActive(i); setHold(true); }} onMouseEnter={() => setActive(i)}>
-            <Icon name={gr.icon} size={24} /><span>{gr.short}</span>
-          </button>
-        ))}
-      </motion.div>
-    </Body>
-  );
-}
-
-/* ═══════════════ SCENE 2 · ECOSYSTEM (pillars) ═══════════════ */
-function Ecosystem({ data }) {
-  const hl = new Set(data.highlight);
-  let k = 0;
-  return (
-    <Body className="eg-ecosystem" delay={0.4}>
-      <motion.p className="eg-eyebrow" variants={rise}>{data.eyebrow}</motion.p>
-      <h2 className="eg-quote" aria-label={data.quote.join(" ")}>
-        {data.quote.map((line, li) => (
-          <span className="eg-quote-line" key={li}>
-            {line.split(" ").map((word) => (
-              <motion.span key={k} className={hl.has(word) ? "is-hl" : ""} variants={rise} custom={k++}>{word}&nbsp;</motion.span>
-            ))}
-          </span>
-        ))}
-      </h2>
-
-      <div className="eg-pillars">
-        {data.pillars.map((p, i) => (
-          <motion.article key={p.role} className="eg-pillar" style={{ "--accent": p.accent, "--lift": `${[0, 22, 44, 22, 0][i % 5]}px` }}
-            variants={{ hidden: { clipPath: "inset(100% 0 0 0)", opacity: 0 }, show: { clipPath: "inset(0% 0 0 0)", opacity: 1, transition: { duration: 0.9, ease: OUT } } }}>
-            <span className="eg-pillar-no">{pad(i + 1)}</span>
-            <Icon name={p.icon} size={30} />
-            <h3>{p.role}</h3>
-            <small>{p.tag}</small>
-            <p>{p.text}</p>
-          </motion.article>
-        ))}
-      </div>
-      <motion.div variants={rise} className="eg-hub"><span>{data.centerLabel}</span></motion.div>
-
-      <motion.div variants={rise} className="eg-marquee" aria-hidden="true">
-        <div className="eg-marquee-track">
-          {[...data.together, ...data.together, ...data.together].map((t, i) => <span key={i}>{t}<i /></span>)}
-        </div>
-      </motion.div>
-    </Body>
-  );
-}
-
-/* ═══════════════ SCENE 3 · MEMBERSHIP (3D cards) ═══════════════ */
-function Membership({ data }) {
-  return (
-    <>
-      <div className="eg-ghost-word" aria-hidden="true">{data.ghost}</div>
-      <Body className="eg-membership" delay={0.45}>
-        <motion.p className="eg-eyebrow" variants={rise}>{data.eyebrow}</motion.p>
-        <motion.h2 className="eg-title" variants={rise}>{data.title}</motion.h2>
-        <motion.p className="eg-lead" variants={rise}>{data.description}</motion.p>
-        <div className="eg-cards">
-          {data.cards.map((c) => (
-            <motion.div key={c.title} variants={{ hidden: { opacity: 0, rotateY: -55, y: 70 }, show: { opacity: 1, rotateY: 0, y: 0, transition: { duration: 0.9, ease: OUT } } }}>
-              <Tilt className="eg-card" style={{ "--accent": c.accent }}>
-                <div className="eg-card-ic"><Icon name={c.icon} size={28} /></div>
-                {c.badge && <span className="eg-badge">{c.badge}</span>}
-                <h3>{c.title}</h3>
-                <p>{c.text}</p>
-                <ul>
-                  {c.items.map((it) => (
-                    <li key={it.text} className={it.placeholder ? "is-placeholder" : ""}>{it.text}</li>
-                  ))}
-                </ul>
-                {c.link && <SmartLink href={c.link.href} className="eg-link">{c.link.label}<Icon name="arrow" size={18} /></SmartLink>}
-              </Tilt>
-            </motion.div>
-          ))}
-        </div>
-      </Body>
-    </>
-  );
-}
-
-/* ═══════════════ SCENE 4 · NEWS ═══════════════ */
-function News({ data }) {
-  const [cat, setCat] = useState("all");
-  const [sel, setSel] = useState(null);
-  const list = data.items.filter((i) => cat === "all" || i.category === cat);
-  const cur = list.find((i) => i.id === sel) ?? list[0];
-  const accentOf = (id) => data.categories.find((c) => c.id === id)?.accent ?? "#3fe0ff";
-  const labelOf = (id) => data.categories.find((c) => c.id === id)?.label ?? id;
-
-  return (
-    <Body className="eg-news" delay={0.45}>
-      <motion.p className="eg-eyebrow" variants={rise}>{data.eyebrow}</motion.p>
-      <motion.h2 className="eg-title" variants={rise}>{data.title}</motion.h2>
-      <motion.div className="eg-filters" variants={rise}>
-        {[{ id: "all", label: "All", accent: "#3fe0ff" }, ...data.categories].map((c) => (
-          <button key={c.id} className={cat === c.id ? "is-on" : ""} style={{ "--accent": c.accent }}
-            onClick={() => { setCat(c.id); setSel(null); }}>{c.label}</button>
-        ))}
-      </motion.div>
-
-      <div className="eg-news-grid">
-        <motion.div variants={rise} className="eg-feature-wrap">
-          <AnimatePresence mode="wait">
-            {cur ? (
-              <motion.article key={cur.id} className="eg-feature" style={{ "--accent": accentOf(cur.category) }}
-                initial={{ opacity: 0, x: 40, rotateY: 12 }} animate={{ opacity: 1, x: 0, rotateY: 0 }}
-                exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.45, ease: OUT }}>
-                {cur.image && <img src={cur.image} alt="" />}
-                <div className="eg-feature-top">
-                  <span className="eg-tag">{labelOf(cur.category)}</span>
-                  <time>{cur.date}</time>
-                  <SampleBadge show={cur.sample} />
-                </div>
-                <h3>{cur.title}</h3>
-                <p>{cur.summary}</p>
-                {cur.href && <SmartLink href={cur.href} className="eg-link">Read more<Icon name="arrow" size={18} /></SmartLink>}
-              </motion.article>
-            ) : (
-              <motion.p key="empty" className="eg-empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>No stories in this category yet.</motion.p>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        <motion.ul variants={rise} className="eg-news-list">
-          <AnimatePresence mode="popLayout">
-            {list.map((it, i) => (
-              <motion.li layout key={it.id} initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.4, delay: i * 0.04 }}>
-                <button className={cur?.id === it.id ? "is-on" : ""} style={{ "--accent": accentOf(it.category) }} onClick={() => setSel(it.id)}>
-                  <time>{it.date}</time><b>{it.title}</b>
-                </button>
-              </motion.li>
-            ))}
-          </AnimatePresence>
-        </motion.ul>
-      </div>
-    </Body>
-  );
-}
-
-/* ═══════════════ SCENE 5 · MEDIA ═══════════════ */
-function Media({ data }) {
-  const { lockNav } = useContext(NavCtx);
-  const [tab, setTab] = useState(data.tabs[0].id);
-  const [box, setBox] = useState(null);
-  const t = data.tabs.find((x) => x.id === tab);
-
-  useEffect(() => {
-    lockNav(!!box);
-    if (!box) return;
-    const onKey = (e) => e.key === "Escape" && setBox(null);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [box, lockNav]);
-  useEffect(() => () => lockNav(false), [lockNav]);
-
-  return (
-    <Body className="eg-media" delay={0.45}>
-      <motion.p className="eg-eyebrow" variants={rise}>{data.eyebrow}</motion.p>
-      <motion.h2 className="eg-title" variants={rise}>{data.title}</motion.h2>
-      <motion.p className="eg-lead" variants={rise}>{data.description}</motion.p>
-      <motion.div className="eg-tabs" variants={rise}>
-        {data.tabs.map((x) => (
-          <button key={x.id} className={x.id === tab ? "is-on" : ""} onClick={() => setTab(x.id)}>{x.label}</button>
-        ))}
-      </motion.div>
-
-      <motion.div variants={rise} className="eg-media-stage">
-        <AnimatePresence mode="wait">
-          <motion.div key={t.id} className={`eg-media-${t.kind}`} initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.04 }} transition={{ duration: 0.35 }}>
-            {t.kind === "gallery" && t.items.map((it, i) => (
-              <motion.button key={it.id} className={`eg-tile ${it.size || ""}`} style={{ "--h": 205 + i * 13 }}
-                initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                onClick={() => setBox(it)} aria-label={it.title}>
-                {it.src ? <img src={it.src} alt={it.title} loading="lazy" /> : <span className="eg-tile-art" />}
-                <span className="eg-tile-cap">{it.video !== undefined && <Icon name="play" size={16} />}{it.title}</span>
-              </motion.button>
-            ))}
-            {t.kind === "press" && t.items.map((it, i) => (
-              <motion.div key={it.id} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
-                <Tilt className="eg-press" max={6}>
-                  <Icon name="news" size={26} />
-                  <small>{it.outlet} · {it.date}</small>
-                  <h3>{it.title}</h3>
-                  <SampleBadge show={it.sample} />
-                  {it.href && <SmartLink href={it.href} className="eg-link">Read article<Icon name="external" size={16} /></SmartLink>}
-                </Tilt>
-              </motion.div>
-            ))}
-            {t.kind === "docs" && t.items.map((it, i) => (
-              <motion.div key={it.id} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}>
-                <Tilt className="eg-doc" max={6}>
-                  <span className="eg-doc-type">{it.type}</span>
-                  <h3>{it.title}</h3>
-                  <p>{it.note}</p>
-                  {it.href ? <SmartLink href={it.href} className="eg-link">Open<Icon name="external" size={16} /></SmartLink>
-                    : <em className="eg-soon">Link coming soon</em>}
-                </Tilt>
-              </motion.div>
-            ))}
-          </motion.div>
-        </AnimatePresence>
-      </motion.div>
-
-      <AnimatePresence>
-        {box && (
-          <motion.div className="eg-lightbox" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setBox(null)}>
-            <motion.figure initial={{ scale: 0.8, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9 }} onClick={(e) => e.stopPropagation()}>
-              {box.video ? <video src={box.video} controls autoPlay />
-                : box.src ? <img src={box.src} alt={box.title} />
-                : <div className="eg-tile-art big" style={{ "--h": 220 }} />}
-              <figcaption>{box.title}</figcaption>
-              <button className="eg-x" onClick={() => setBox(null)} aria-label="Close"><Icon name="close" /></button>
-            </motion.figure>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </Body>
-  );
-}
-
-/* ═══════════════ SCENE 6 · COLLABORATE ═══════════════ */
-function Collaborate({ data }) {
-  const { restart } = useContext(NavCtx);
-  return (
-    <>
-      <div className="eg-pulse" aria-hidden="true"><i /><i /><i /></div>
-      <Body className="eg-collab" delay={0.5}>
-        <motion.p className="eg-eyebrow" variants={rise}>{data.eyebrow}</motion.p>
-        <motion.h2 variants={rise} className="eg-hero-title eg-collab-title">
-          <ScrambleText text={data.title} delay={700} duration={1200} />
-        </motion.h2>
-        <motion.p className="eg-lead" variants={rise}>{data.description}</motion.p>
-        <div className="eg-channels">
-          {data.channels.map((c) => (
-            <motion.div key={c.title} variants={pop}>
-              <Tilt className="eg-channel-wrap" max={8}>
-                <SmartLink href={c.href} className="eg-channel" style={{ "--accent": c.accent }}>
-                  <Icon name={c.icon} size={30} />
-                  <h3>{c.title}</h3>
-                  <p>{c.text}</p>
-                  <span className="eg-link">Enquire<Icon name="arrow" size={18} /></span>
-                </SmartLink>
-              </Tilt>
-            </motion.div>
-          ))}
-        </div>
-        <motion.div variants={rise} className="eg-actions">
-          <SmartLink href={data.primary.href} className="eg-cta eg-cta-big"><span>{data.primary.label}</span><Icon name="arrow" /></SmartLink>
-          <button className="eg-ghost-btn" onClick={restart}>{data.restart}</button>
-        </motion.div>
-        <motion.p variants={rise} className="eg-foot">{data.footer}</motion.p>
-      </Body>
-    </>
-  );
-}
-
-const VIEWS = { hero: Hero, network: Network, ecosystem: Ecosystem, membership: Membership, news: News, media: Media, collaborate: Collaborate };
-
-/* ═══════════════ PAGE / SCENE ENGINE ═══════════════ */
-const N = SCENES.length;
-const clamp = (v) => Math.max(0, Math.min(N - 1, v));
-
-function canScrollInner(target, root, dy) {
-  for (let el = target; el && el !== root; el = el.parentElement) {
-    if (el.scrollHeight > el.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(el).overflowY)) {
-      if (dy > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 2) return true;
-      if (dy < 0 && el.scrollTop > 2) return true;
+    const nodes = rootRef.current ? rootRef.current.querySelectorAll(".ng-rv:not(.in)") : [];
+    if (reduced() || !("IntersectionObserver" in window)) {
+      nodes.forEach((n) => n.classList.add("in"));
+      return undefined;
     }
-  }
-  return false;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" });
+    nodes.forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, [rootRef, dep]);
 }
 
-export default function Engagement() {
-  const [index, setIndex] = useState(() => {
-    if (typeof window === "undefined") return 0;
-    const i = SCENES.findIndex((s) => `#${s.id}` === window.location.hash);
-    return i < 0 ? 0 : i;
-  });
-  const [dir, setDir] = useState(1);
-  const idxRef = useRef(index);
-  const busy = useRef(false);
-  const navLocked = useRef(false);
+/* number that counts up the first time it is seen */
+function Counter({ value, delay = 0 }) {
+  const ref = useRef(null);
+  const [v, setV] = useState(reduced() ? value : 0);
+  useEffect(() => {
+    if (reduced()) { setV(value); return undefined; }
+    const el = ref.current;
+    let raf = 0, timer = 0;
+    const run = () => {
+      const t0 = performance.now();
+      const tick = (t) => {
+        const p = Math.min(1, (t - t0) / 1300);
+        setV(Math.round(value * (p === 1 ? 1 : 1 - Math.pow(2, -10 * p))));
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    };
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { io.disconnect(); timer = setTimeout(run, delay); }
+    }, { threshold: 0.4 });
+    io.observe(el);
+    return () => { io.disconnect(); clearTimeout(timer); cancelAnimationFrame(raf); };
+  }, [value, delay]);
+  return <span ref={ref}>{v}</span>;
+}
+
+/* One image slot: the picture when it exists, otherwise a placeholder. */
+function Media({ src: file, alt = "", hints, className = "" }) {
+  const src = imgUrl(file);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  const live = !!src && !failed;
+  return (
+    <div className={`ng-media ${className} ${live ? "is-live" : "is-empty"}`}>
+      {live ? (
+        <img src={src} alt={alt} loading="lazy" onError={() => setFailed(true)} />
+      ) : (
+        <div className={`ng-ph ${hints ? "" : "quiet"}`}>
+          <span className="ng-ph-ic"><Icon name="image" size={40} /></span>
+          {hints && <b>Photo slot</b>}
+          {hints && file && <code>{file}</code>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SectionHead({ n, s }) {
+  return (
+    <header className="ng-head">
+      <p className="ng-kicker ng-rv"><span>{pad(n)}</span>{s.eyebrow || s.label}</p>
+      <h2 className="ng-h ng-rv" style={D(1)}>{s.title}</h2>
+      {s.text && <p className="ng-lede ng-rv" style={D(2)}>{s.text}</p>}
+    </header>
+  );
+}
+
+/* ==========================================================================
+   PAGE
+========================================================================== */
+
+export default function Engagement({ content: override }) {
+  const { content: c } = useEngagementContent(override);
   const rootRef = useRef(null);
-  const first = useRef(true);
+  const st = c.settings || {};
+  const hints = st.showSlotHints !== false;
+  const showPh = st.showPlaceholders !== false;
+  const showSample = st.showSampleBadge !== false;
 
-  const go = useCallback((to) => {
-    if (busy.current || navLocked.current) return;
-    const t = clamp(to);
-    if (t === idxRef.current) return;
-    busy.current = true;
-    setDir(t > idxRef.current ? 1 : -1);
-    idxRef.current = t;
-    setIndex(t);
-    setTimeout(() => { busy.current = false; }, LOCK_MS);
-  }, []);
-  const next = useCallback(() => go(idxRef.current + 1), [go]);
-  const restart = useCallback(() => go(0), [go]);
-  const lockNav = useCallback((v) => { navLocked.current = v; }, []);
+  const sections = useMemo(() => c.sections.filter((s) => s.visible !== false && TYPES.includes(s.type)), [c.sections]);
+  const navList = useMemo(() => sections.filter((s) => s.nav !== false && s.type !== "cta"), [sections]);
+  const navKey = navList.map((s) => s.id).join();
+  const [active, setActive] = useState(navList[0] ? navList[0].id : "");
 
-  /* lock page scroll while this page is mounted */
-  useEffect(() => {
-    document.documentElement.classList.add("eg-lock");
-    return () => document.documentElement.classList.remove("eg-lock");
-  }, []);
+  const newsSec = sections.find((s) => s.type === "news");
+  const mediaSec = sections.find((s) => s.type === "media");
+  const [cat, setCat] = useState("all");
+  const [tabId, setTabId] = useState("");
+  const [box, setBox] = useState(null);
+  const tab = mediaSec ? (mediaSec.tabs.find((t) => t.id === tabId) || mediaSec.tabs[0]) : null;
 
-  /* keep #hash in sync (preserves Inertia's history state) */
-  useEffect(() => {
-    if (first.current) { first.current = false; return; }
-    window.history.replaceState(window.history.state, "", `#${SCENES[index].id}`);
-  }, [index]);
+  const itemTotal = sections.reduce((t, s) => t + (s.items ? s.items.length : 0) + (s.tabs ? s.tabs.reduce((m, x) => m + x.items.length, 0) : 0), 0);
+  useReveal(rootRef, sections.map((s) => s.id).join() + "|" + itemTotal + "|" + cat + "|" + (tab ? tab.id : ""));
 
-  /* wheel · keyboard · touch */
+  /* scroll: progress bar, hero parallax, active menu item */
   useEffect(() => {
     const root = rootRef.current;
-    let acc = 0, accT = 0, touch = null;
-
-    const onWheel = (e) => {
-      if (navLocked.current) return;
-      if (canScrollInner(e.target, root, e.deltaY)) return; // let tall content scroll natively
-      e.preventDefault();
-      const now = performance.now();
-      if (now - accT > 220) acc = 0;
-      accT = now; acc += e.deltaY;
-      if (Math.abs(acc) > 45) { go(idxRef.current + (acc > 0 ? 1 : -1)); acc = 0; }
+    if (!root) return undefined;
+    const heroEl = root.querySelector(".ng-hero");
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const y = window.scrollY;
+      const h = root.scrollHeight - window.innerHeight;
+      if (y < 1100 && heroEl) heroEl.style.setProperty("--sy", `${y}`);
+      root.style.setProperty("--progress", h > 0 ? Math.min(1, Math.max(0, y / h)).toFixed(4) : 0);
+      const line = window.innerHeight * 0.35;
+      let cur = navList[0] ? navList[0].id : "";
+      navList.forEach((s) => {
+        const el = document.getElementById(s.id);
+        if (el && el.getBoundingClientRect().top <= line) cur = s.id;
+      });
+      setActive(cur);
     };
-    const onKey = (e) => {
-      if (navLocked.current || e.target.closest?.("input,textarea,select")) return;
-      const k = e.key;
-      if (["ArrowDown", "ArrowRight", "PageDown", " "].includes(k)) { e.preventDefault(); go(idxRef.current + 1); }
-      else if (["ArrowUp", "ArrowLeft", "PageUp"].includes(k)) { e.preventDefault(); go(idxRef.current - 1); }
-      else if (k === "Home") go(0);
-      else if (k === "End") go(N - 1);
-    };
-    const scroller = (t) => t.closest?.(".eg-scene-inner");
-    const onTouchStart = (e) => {
-      const t = e.touches[0], s = scroller(e.target);
-      touch = { y: t.clientY, x: t.clientX, s, top: s ? s.scrollTop : 0 };
-    };
-    const onTouchEnd = (e) => {
-      if (!touch || navLocked.current) return;
-      const t = e.changedTouches[0], dy = touch.y - t.clientY, dx = touch.x - t.clientX, s = touch.s;
-      const moved = s && Math.abs(s.scrollTop - touch.top) > 2;
-      touch = null;
-      if (moved || Math.abs(dy) < 60 || Math.abs(dy) < Math.abs(dx)) return;
-      if (s && s.scrollHeight > s.clientHeight + 2) {
-        if (dy > 0 && s.scrollTop + s.clientHeight < s.scrollHeight - 2) return;
-        if (dy < 0 && s.scrollTop > 2) return;
-      }
-      go(idxRef.current + (dy > 0 ? 1 : -1));
-    };
-    const onMove = (e) => {
-      root.style.setProperty("--cx", `${e.clientX}px`);
-      root.style.setProperty("--cy", `${e.clientY}px`);
-    };
-
-    root.addEventListener("wheel", onWheel, { passive: false });
-    root.addEventListener("touchstart", onTouchStart, { passive: true });
-    root.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("pointermove", onMove);
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     return () => {
-      root.removeEventListener("wheel", onWheel);
-      root.removeEventListener("touchstart", onTouchStart);
-      root.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("pointermove", onMove);
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
     };
-  }, [go]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navKey]);
 
-  const scene = SCENES[index];
-  const View = VIEWS[scene.id];
-  const variants = TRANSITIONS[scene.transition] ?? TRANSITIONS.fade;
-  const sweepFrom = dir > 0 ? "-110%" : "110%";
-  const sweepTo = dir > 0 ? "110%" : "-110%";
+  /* open already scrolled to #anchor. News categories and media tabs open that filter / tab first. */
+  useEffect(() => {
+    const jump = () => {
+      let id = decodeURIComponent(window.location.hash.slice(1));
+      if (!id) return;
+      const nc = newsSec && newsSec.categories.find((x) => x.anchor === id);
+      if (nc) { setCat(nc.id); id = newsSec.id; }
+      const mt = mediaSec && mediaSec.tabs.find((x) => x.anchor === id);
+      if (mt) { setTabId(mt.id); id = mediaSec.id; }
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ block: "start" });
+      }, nc || mt ? 80 : 0);
+    };
+    const t = setTimeout(jump, 150);
+    window.addEventListener("hashchange", jump);
+    return () => { clearTimeout(t); window.removeEventListener("hashchange", jump); };
+  }, [newsSec, mediaSec]);
+
+  /* keep the active menu item visible on small screens */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const a = root.querySelector(".ng-subnav a.is-active");
+    const b = root.querySelector(".ng-subnav-scroll");
+    if (a && b) b.scrollTo({ left: a.offsetLeft - b.clientWidth / 2 + a.clientWidth / 2, behavior: "smooth" });
+  }, [active]);
+
+  /* media viewer: Esc closes it */
+  useEffect(() => {
+    if (!box) return undefined;
+    const onKey = (e) => { if (e.key === "Escape") setBox(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [box]);
+
+  const goTo = useCallback((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
+    if (window.history && window.history.replaceState) window.history.replaceState(window.history.state, "", "#" + id);
+  }, []);
+
+  /* pointer effects: magnetic buttons */
+  const onMove = useCallback((e) => {
+    const t = e.target;
+    if (!t.closest || reduced()) return;
+    const mag = t.closest(".ng-mag");
+    if (mag) {
+      const r = mag.getBoundingClientRect();
+      mag.style.setProperty("--tx", `${((e.clientX - (r.left + r.width / 2)) * 0.22).toFixed(1)}px`);
+      mag.style.setProperty("--ty", `${((e.clientY - (r.top + r.height / 2)) * 0.3).toFixed(1)}px`);
+    }
+  }, []);
+  const onOut = useCallback((e) => {
+    const t = e.target.closest && e.target.closest(".ng-mag");
+    if (t && !t.contains(e.relatedTarget)) ["--tx", "--ty"].forEach((p) => t.style.removeProperty(p));
+  }, []);
+
+  /* hero numbers: "section" counts items, "section.field" counts a nested list (placeholders skipped) */
+  const countOf = (path) => {
+    const [sid, field] = path.split(".");
+    const s = c.sections.find((x) => x.id === sid);
+    if (!s || !s.items) return 0;
+    if (!field) return s.items.length;
+    return s.items.reduce((t, it) => t + (it[field] || []).filter((x) => !x.placeholder).length, 0);
+  };
+  const stats = (c.hero.stats || []).map((s) => ({ ...s, n: s.of ? countOf(s.of) : s.value }));
+
+  const vis = (arr = []) => (showPh ? arr : arr.filter((x) => !x.placeholder));
+  const Sample = ({ on }) => (showSample && on ? <em className="ng-sample">Sample</em> : null);
+
+  /* ---------- the section types ---------- */
+  const renderSection = (s, n) => {
+    const items = s.items || [];
+    switch (s.type) {
+      /* linkage groups: every group and its partners visible at once */
+      case "groups":
+        return (
+          <div className="ng-wrap">
+            <SectionHead n={n} s={s} />
+            <div className="ng-groups">
+              {items.map((g, i) => {
+                const list = vis(g.partners);
+                return (
+                  <article className="ng-card ng-group ng-rv" id={g.anchor || undefined} style={DS(i)} key={g.id}>
+                    <header><span className="ng-ic"><Icon name={g.icon} /></span><h3>{g.label}</h3></header>
+                    {g.blurb && <p>{g.blurb}</p>}
+                    {list.length > 0 ? (
+                      <ul className="ng-partners">
+                        {list.map((p) => (
+                          <li className={p.placeholder ? "is-ph" : ""} key={p.name}>
+                            <b>{p.name}</b>{p.note && <small>{p.note}</small>}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : <p className="ng-note">{st.emptyNote}</p>}
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        );
+
+      /* ecosystem: a statement, the five roles, and the shared outcomes */
+      case "pillars": {
+        const hl = new Set(s.highlight || []);
+        return (
+          <div className="ng-wrap">
+            <header className="ng-quote-head">
+              <p className="ng-kicker ng-rv"><span>{pad(n)}</span>{s.eyebrow || s.label}</p>
+              <h2 className="ng-quote ng-rv" style={D(1)} aria-label={(s.quote || []).join(" ")}>
+                {(s.quote || []).map((line) => (
+                  <span className="ng-quote-line" key={line}>
+                    {line.split(" ").map((w, k) => <span key={k} className={hl.has(w) ? "ng-hl" : ""}>{w}{" "}</span>)}
+                  </span>
+                ))}
+              </h2>
+            </header>
+            <ul className="ng-pillars">
+              {items.map((p, i) => (
+                <li className="ng-card ng-pillar ng-rv" style={D(i)} key={p.id}>
+                  <span className="ng-ic"><Icon name={p.icon} size={26} /></span>
+                  <h3>{p.role}</h3>
+                  <small>{p.tag}</small>
+                  <p>{p.text}</p>
+                </li>
+              ))}
+            </ul>
+            {s.centerLabel && <p className="ng-hub ng-rv">{s.centerLabel}</p>}
+            {s.together && s.together.length > 0 && (
+              <div className="ng-together ng-rv">
+                {s.togetherTitle && <h3>{s.togetherTitle}</h3>}
+                <ul>{s.together.map((t) => <li key={t}>{t}</li>)}</ul>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      /* membership: a few panels, each with its own list */
+      case "panels":
+        return (
+          <div className="ng-wrap">
+            <SectionHead n={n} s={s} />
+            <div className="ng-panels">
+              {items.map((p, i) => {
+                const list = vis(p.list);
+                return (
+                  <article className="ng-card ng-panel ng-rv" id={p.anchor || undefined} style={D(i)} key={p.id}>
+                    <header>
+                      <span className="ng-ic"><Icon name={p.icon} /></span>
+                      {p.badge && <span className="ng-tag">{p.badge}</span>}
+                    </header>
+                    <h3>{p.title}</h3>
+                    <p>{p.text}</p>
+                    {list.length > 0 ? (
+                      <ul className="ng-dots">
+                        {list.map((x) => <li className={x.placeholder ? "is-ph" : ""} key={x.text}>{x.text}</li>)}
+                      </ul>
+                    ) : <p className="ng-note">{st.emptyNote}</p>}
+                    {p.link && p.link.href && <Go href={p.link.href} className="ng-more">{p.link.label}<Arrow /></Go>}
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        );
+
+      /* news: filter by category, every story is a card */
+      case "news": {
+        const cats = s.categories || [];
+        const list = items.filter((x) => cat === "all" || x.category === cat);
+        const labelOf = (id) => (cats.find((x) => x.id === id) || {}).label || id;
+        const counts = { all: items.length };
+        items.forEach((x) => { counts[x.category] = (counts[x.category] || 0) + 1; });
+        const filtered = cat !== "all";
+        return (
+          <div className="ng-wrap">
+            <SectionHead n={n} s={s} />
+            <div className="ng-tabs ng-rv" role="tablist" aria-label="Filter stories">
+              {[{ id: "all", label: s.allLabel || "All" }, ...cats].map((x) => (
+                <button key={x.id} role="tab" aria-selected={cat === x.id} className={cat === x.id ? "is-on" : ""} onClick={() => setCat(x.id)}>
+                  {x.label}<sup>{counts[x.id] || 0}</sup>
+                </button>
+              ))}
+            </div>
+            <p className="ng-count" aria-live="polite">
+              <span><b>{list.length}</b> of {items.length} stories</span>
+              {filtered && <button className="ng-link" onClick={() => setCat("all")}>Show all stories</button>}
+            </p>
+            <div className="ng-news" key={cat}>
+              {list.map((it, i) => {
+                const body = (
+                  <>
+                    {it.image && <Media src={it.image} alt="" hints={hints} className="ng-photo" />}
+                    <div className="ng-news-top">
+                      <span className="ng-tag">{labelOf(it.category)}</span>
+                      <time>{it.date}</time>
+                      <Sample on={it.sample} />
+                    </div>
+                    <h3>{it.title}</h3>
+                    <p>{it.summary}</p>
+                    {it.href && <span className="ng-more">Read more<Arrow /></span>}
+                  </>
+                );
+                return it.href
+                  ? <Go href={it.href} className="ng-card ng-story ng-pop is-link" style={DS(i)} key={it.id}>{body}</Go>
+                  : <article className="ng-card ng-story ng-pop" style={DS(i)} key={it.id}>{body}</article>;
+              })}
+            </div>
+            {list.length === 0 && (
+              <div className="ng-empty ng-pop">
+                <p>{s.emptyText}</p>
+                <button className="ng-link" onClick={() => setCat("all")}>Show all stories</button>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      /* media: tabs for photos & videos, press coverage and documents */
+      case "media":
+        return (
+          <div className="ng-wrap">
+            <SectionHead n={n} s={s} />
+            <div className="ng-tabs ng-rv" role="tablist" aria-label="Media type">
+              {s.tabs.map((x) => (
+                <button key={x.id} role="tab" aria-selected={tab && tab.id === x.id} className={tab && tab.id === x.id ? "is-on" : ""} onClick={() => setTabId(x.id)}>
+                  {x.label}<sup>{x.items.length}</sup>
+                </button>
+              ))}
+            </div>
+
+            {tab && tab.kind === "gallery" && (
+              <div className="ng-mosaic" key={tab.id}>
+                {tab.items.map((it, i) => {
+                  const canOpen = !!(it.src || it.video);
+                  const inner = (
+                    <>
+                      <Media src={it.src} alt={it.title} hints={hints} className="ng-tile-media" />
+                      <span className="ng-tile-cap">{it.video !== undefined && <Icon name="play" size={16} />}{it.title}</span>
+                    </>
+                  );
+                  return canOpen
+                    ? <button className={`ng-tile ng-pop is-open ${it.size || ""}`} style={DS(i)} onClick={() => setBox(it)} aria-label={`Open: ${it.title}`} key={it.id}>{inner}</button>
+                    : <div className={`ng-tile ng-pop ${it.size || ""}`} style={DS(i)} key={it.id}>{inner}</div>;
+                })}
+              </div>
+            )}
+
+            {tab && tab.kind === "press" && (
+              <div className="ng-press" key={tab.id}>
+                {tab.items.map((it, i) => (
+                  <article className="ng-card ng-item ng-pop" style={DS(i)} key={it.id}>
+                    <span className="ng-ic"><Icon name="news" /></span>
+                    <small>{it.outlet} &middot; {it.date}</small>
+                    <h3>{it.title}</h3>
+                    <Sample on={it.sample} />
+                    {it.href && <Go href={it.href} className="ng-more">Read article<Icon name="external" size={16} /></Go>}
+                  </article>
+                ))}
+              </div>
+            )}
+
+            {tab && tab.kind === "docs" && (
+              <div className="ng-docs" key={tab.id}>
+                {tab.items.map((it, i) => (
+                  <article className="ng-card ng-item ng-pop" style={DS(i)} key={it.id}>
+                    <span className="ng-tag">{it.type}</span>
+                    <h3>{it.title}</h3>
+                    {it.note && <p>{it.note}</p>}
+                    {it.href
+                      ? <Go href={it.href} className="ng-more">Open<Icon name="external" size={16} /></Go>
+                      : <em className="ng-soon">Link coming soon</em>}
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+
+      case "cta":
+        return (
+          <div className="ng-wrap">
+            <div className="ng-cta-in">
+              <div>
+                <h2 className="ng-h ng-rv">{s.title}</h2>
+                {s.text && <p className="ng-lede ng-rv" style={D(1)}>{s.text}</p>}
+                {s.footer && <p className="ng-foot ng-rv" style={D(2)}>{s.footer}</p>}
+                {s.restart && <button className="ng-link ng-restart ng-rv" style={D(3)} onClick={() => goTo("overview")}>{s.restart}</button>}
+              </div>
+              <div className="ng-cta-links ng-rv" style={D(2)}>
+                {items.map((it) => (
+                  <Go href={it.href} className="ng-cta-link ng-mag" key={it.id}>
+                    <span className="ng-cta-n"><Icon name={it.icon} size={20} /></span>
+                    <span className="ng-cta-t"><b>{it.title}</b>{it.text && <small>{it.text}</small>}</span>
+                    <Arrow />
+                  </Go>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const h = c.hero;
+  const heroImg = imgUrl(h.image);
+  const [heroFail, setHeroFail] = useState(false);
+  const heroLines = Array.isArray(h.headline) ? h.headline : [h.headline];
 
   return (
-    <NavCtx.Provider value={{ go, next, restart, lockNav }}>
-      <div className="eg-root" ref={rootRef}>
-        <Head title={PAGE.title} />
-        <Backdrop index={index} />
-        <div className="eg-floor" aria-hidden="true" />
-        <div className="eg-aurora" aria-hidden="true"><i /><i /><i /></div>
-        <div className="eg-spot" aria-hidden="true" />
-        <div className="eg-scan" aria-hidden="true" />
-        <div className="eg-vignette" aria-hidden="true" />
+    <div className="ng" ref={rootRef} onMouseMove={onMove} onMouseOut={onOut}>
+      <Head title={c.page ? c.page.title : "Engagement | COE-UAS"} />
 
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={index} className="eg-ghost" initial={{ opacity: 0, y: 60 }} animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -60 }} transition={{ duration: 0.6, ease: OUT }} aria-hidden="true">{pad(index + 1)}</motion.div>
-        </AnimatePresence>
+      {/* ===================== HERO ===================== */}
+      <section className="ng-hero" id="overview">
+        {heroImg && !heroFail && (
+          <div className="ng-hero-media" aria-hidden="true"><img src={heroImg} alt="" loading="eager" decoding="async" onError={() => setHeroFail(true)} /></div>
+        )}
+        <div className="ng-grid-bg" aria-hidden="true" />
 
-        <AnimatePresence custom={dir}>
-          <motion.section key={scene.id} className="eg-scene" custom={dir} variants={variants}
-            initial="enter" animate="center" exit="exit" aria-label={scene.label}>
-            <div className="eg-scene-inner"><View data={CONTENT[scene.id]} /></div>
-          </motion.section>
-        </AnimatePresence>
-
-        <motion.div key={`sweep-${index}`} className="eg-sweep" aria-hidden="true"
-          initial={{ x: sweepFrom, opacity: first.current ? 0 : 1 }} animate={{ x: sweepTo, opacity: 1 }}
-          transition={{ duration: 1.05, ease: EASE }} />
-
-        <p className="eg-hint">{PAGE.hint}</p>
-        <nav className="eg-pager" aria-label="Scenes">
-          <button onClick={() => go(index - 1)} disabled={index === 0} aria-label="Previous scene"><Icon name="up" size={18} /></button>
-          <ol>
-            {SCENES.map((s, i) => (
-              <li key={s.id}>
-                <button className={i === index ? "is-on" : i < index ? "is-done" : ""} onClick={() => go(i)} aria-label={s.label} aria-current={i === index}>
-                  <span className="eg-seg-label">{s.label}</span>
-                </button>
-              </li>
+        <div className="ng-wrap ng-hero-copy">
+          {h.eyebrow && <p className="ng-eyebrow"><i />{h.eyebrow}</p>}
+          <h1 className="ng-title" aria-label={heroLines.join(" ")}>
+            {heroLines.map((l, i) => (
+              <span className="ng-ln" key={l}><span className={l === h.highlight ? "ng-hl" : ""} style={{ "--i": i }}>{l}</span></span>
             ))}
-          </ol>
-          <button onClick={() => go(index + 1)} disabled={index === N - 1} aria-label="Next scene"><Icon name="down" size={18} /></button>
-        </nav>
-        <div className="eg-counter" aria-hidden="true">
-          <AnimatePresence mode="wait">
-            <motion.span key={index} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3 }}>
-              <b>{pad(index + 1)}</b> / {pad(N)} · {scene.label}
-            </motion.span>
-          </AnimatePresence>
+          </h1>
+          <p className="ng-hero-lede">{h.lead}</p>
+          <div className="ng-hero-cta">
+            {h.primary && <button className="ng-btn ng-mag" onClick={() => goTo(h.primary.target)}>{h.primary.label}<Arrow /></button>}
+            {h.secondary && <Link className="ng-btn ng-btn--ghost ng-mag" href={to(h.secondary.href)}>{h.secondary.label}<Arrow /></Link>}
+          </div>
         </div>
-      </div>
-    </NavCtx.Provider>
+
+        {stats.length > 0 && (
+          <div className="ng-wrap ng-glance">
+            <div className="ng-glance-bar">
+              <span>At a glance</span>
+              {h.caption && <span><b>{h.caption.place}</b> &middot; {h.caption.note}</span>}
+            </div>
+            <div className="ng-glance-grid">
+              {stats.map((s, i) => (
+                <div className="ng-gl" key={s.label}>
+                  <strong>{typeof s.n === "number" ? <Counter value={s.n} delay={900 + i * 100} /> : s.n}</strong>
+                  <span className="ng-gl-label">{s.label}</span>
+                  {s.note && <p className="ng-gl-note">{s.note}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ===================== STICKY MENU ===================== */}
+      {navList.length > 0 && (
+        <nav className="ng-subnav" aria-label="Engagement sections">
+          <div className="ng-wrap ng-subnav-scroll">
+            <ul>
+              {navList.map((s) => (
+                <li key={s.id}>
+                  <a
+                    href={`#${s.id}`}
+                    className={active === s.id ? "is-active" : ""}
+                    aria-current={active === s.id ? "true" : undefined}
+                    onClick={(e) => { e.preventDefault(); goTo(s.id); }}
+                  >{s.label || s.title}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="ng-progress" aria-hidden="true"><span /></div>
+        </nav>
+      )}
+
+      {/* ===================== SECTIONS ===================== */}
+      {sections.map((s) => {
+        const idx = Math.max(0, navList.findIndex((x) => x.id === s.id));
+        return (
+          <section key={s.id} id={s.id} className={`ng-sec ng-${s.tone || "dark"} ng-sec-${s.type}`}>
+            {renderSection(s, idx)}
+          </section>
+        );
+      })}
+
+      {/* ===================== MEDIA VIEWER ===================== */}
+      {box && (
+        <div className="ng-lightbox" role="dialog" aria-modal="true" aria-label={box.title} onClick={() => setBox(null)}>
+          <figure onClick={(e) => e.stopPropagation()}>
+            {box.video ? <video src={box.video} controls autoPlay /> : <img src={imgUrl(box.src)} alt={box.title} />}
+            <figcaption>{box.title}</figcaption>
+            <button className="ng-x" onClick={() => setBox(null)} aria-label="Close" autoFocus><Icon name="close" /></button>
+          </figure>
+        </div>
+      )}
+    </div>
   );
 }

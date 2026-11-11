@@ -1,1360 +1,1361 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap');
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
-/* =========================================================
-   DESIGN TOKENS
-========================================================= */
-
-:root {
-    --cn-height: 82px;
-
-    --cn-ink: #050914;
-    --cn-panel: #0a1222;
-
-    --cn-blue: #43a9ff;
-    --cn-cyan: #a4e4ff;
-
-    --cn-white: #f5f8ff;
-    --cn-muted: #94a3b8;
-
-    --cn-line: rgba(255, 255, 255, 0.11);
-
-    --cn-ease: cubic-bezier(.22, 1, .36, 1);
-}
-
-/* =========================================================
-   GLOBAL NAVIGATION RESET
-========================================================= */
-
-.cn-lock-scroll {
-    overflow: hidden;
-}
-
-#coe-nav,
-#coe-nav *,
-.cn-mobile-drawer,
-.cn-mobile-drawer * {
-    box-sizing: border-box;
-}
-
-/* =========================================================
-   HEADER
-========================================================= */
+/* ==========================================================
+   COE-UAS NAVBAR: black / blue / white
+   (same design system as PSB navbar4; classes are prefixed cx-
+   so they never clash with the PSB stylesheet)
+   bar + mega card + drawer : near-black, light text, blue accents
+   mega intro column        : brand blue, WHITE text, halftone dots
+   buttons                  : pill + round arrow chip
+   ========================================================== */
 
 #coe-nav {
-    position: fixed;
-    inset: 0 0 auto;
+    --b: #1a6cff;
+    --b2: #5aa2ff;
+    --ink: #0d0d0d;
+    --bg: #050914;
+    --bg-2: #141414;
+    --fg: #f4f4f4;
+    --muted: rgba(255, 255, 255, 0.62);
+    --line: rgba(255, 255, 255, 0.12);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+    --logo-s: 1;
 
-    z-index: 1200;
-
-    color: var(--cn-white);
-
-    font-family: 'DM Sans', sans-serif;
-
-    transition: transform .55s var(--cn-ease);
-}
-
-#coe-nav[data-hidden="true"]:not([data-mega="true"]):not([data-drawer="true"]):not(:focus-within) {
-    transform: translateY(-110%);
-}
-
-#coe-nav:before {
-    content: "";
-
-    position: absolute;
-    inset: 0 0 auto;
-
-    height: var(--cn-height);
-
-    background: rgba(5, 9, 20, .72);
-
-    backdrop-filter: blur(22px) saturate(1.5);
-
-    border-bottom: 1px solid transparent;
-
-    transition: .35s;
-}
-
-#coe-nav[data-scrolled="true"]:before,
-#coe-nav[data-mega="true"]:before,
-#coe-nav[data-drawer="true"]:before {
-    background: rgba(5, 9, 20, .96);
-
-    border-color: var(--cn-line);
-}
-
-/* =========================================================
-   TOP INFORMATION BAR
-========================================================= */
-
-.cn-topline {
-    position: relative;
-    z-index: 2;
-
-    height: 25px;
-
-    padding: 0 clamp(20px, 4vw, 64px);
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
-    background: #050914;
-
-    border-bottom: 1px solid rgba(255, 255, 255, .06);
-
-    font-size: 9px;
-    letter-spacing: .16em;
-
-    color: #718198;
-}
-
-.cn-topline i {
-    display: inline-block;
-
-    width: 5px;
-    height: 5px;
-
-    margin-right: 8px;
-
-    border-radius: 50%;
-
-    background: #42b5ff;
-
-    box-shadow: 0 0 10px #42b5ff;
-}
-
-.cn-topline-right b {
-    color: #3e9de8;
-
-    margin: 0 8px;
-}
-
-/* =========================================================
-   MAIN BAR
-========================================================= */
-
-.cn-bar {
-    position: relative;
-    z-index: 2;
-
-    height: var(--cn-height);
-
-    padding: 0 clamp(18px, 3.5vw, 56px);
-
-    display: grid;
-
-    grid-template-columns:
-        minmax(190px, 1fr)
-        auto
-        minmax(190px, 1fr);
-
-    align-items: center;
-
-    gap: 24px;
-}
-
-/* =========================================================
-   BRAND
-========================================================= */
-
-.cn-brand-area {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.cn-brand {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-
-    text-decoration: none;
-    color: var(--cn-white);
-
-    font: 600 20px 'Space Grotesk', sans-serif;
-
-    letter-spacing: -.055em;
-
-    white-space: nowrap;
-}
-
-.cn-brand > span:last-child {
-    display: grid;
-    gap: 0;
-}
-
-.cn-brand small {
-    font: 500 8px 'DM Sans', sans-serif;
-
-    letter-spacing: .17em;
-
-    color: #8190a6;
-}
-
-.cn-brand-mark {
-    width: 34px;
-    height: 34px;
-
-    display: grid;
-    place-items: center;
-
-    color: var(--cn-blue);
-}
-
-.cn-brand-mark svg {
+    position: sticky;
+    top: 0;
+    will-change: transform;
+    transition: transform 450ms var(--ease-out), box-shadow 450ms ease;
+    z-index: 1000;
     width: 100%;
-
-    fill: none;
-
-    stroke: currentColor;
-    stroke-width: 1.8;
-
-    stroke-linecap: round;
-}
-
-.cn-brand-mark circle {
-    fill: var(--cn-cyan);
-    stroke: none;
-}
-
-.cn-brand-mark ellipse {
-    fill: rgba(67, 169, 255, .18);
-
-    transform-box: fill-box;
-    transform-origin: center;
-}
-
-.cn-brand:hover ellipse {
-    animation: cn-rotor .55s linear infinite;
-}
-
-@keyframes cn-rotor {
-    to {
-        transform: scaleX(.3);
-    }
-}
-
-/* =========================================================
-   BRAND SWITCH
-========================================================= */
-
-.cn-brand-switch {
-    width: 27px;
-    height: 27px;
-
-    border: 1px solid transparent;
-    border-radius: 50%;
-
-    color: #8ea0b9;
-
-    cursor: pointer;
-
-    transition: .25s;
-}
-
-.cn-brand-switch:hover,
-.cn-brand-switch.is-open {
-    border-color: var(--cn-line);
-
-    background: #ffffff0b;
-
-    color: white;
-}
-
-.cn-brand-switch span {
-    display: block;
-
-    transition: transform .3s;
-}
-
-.cn-brand-switch.is-open span {
-    transform: rotate(180deg);
-}
-
-/* =========================================================
-   DESKTOP NAVIGATION
-========================================================= */
-
-.cn-desktop-nav {
-    justify-self: center;
-}
-
-.cn-nav-list {
-    display: flex;
-    align-items: center;
-
-    gap: 3px;
-
-    margin: 0;
-    padding: 4px;
-
-    list-style: none;
-
-    border: 1px solid var(--cn-line);
-    border-radius: 999px;
-
-    background: rgba(255, 255, 255, .035);
-}
-
-.cn-nav-list li {
-    animation: cn-fade-up .6s var(--cn-ease) both;
-
-    animation-delay: calc(var(--nav-i) * 45ms);
-}
-
-@keyframes cn-fade-up {
-    from {
-        opacity: 0;
-        transform: translateY(8px);
-    }
-
-    to {
-        opacity: 1;
-        transform: none;
-    }
-}
-
-.cn-nav-link {
-    position: relative;
-
-    display: flex;
-    align-items: center;
-
-    gap: 6px;
-
-    height: 38px;
-
-    padding: 0 13px;
-
-    border-radius: 999px;
-
-    color: #9aa8bc;
-
-    text-decoration: none;
-
-    font-size: 12px;
+    color: var(--fg);
+    background: rgba(10, 10, 10, 0.9);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+    border-bottom: 1px solid var(--line);
+    font-family: 'Inter Tight', 'Inter', 'Helvetica Neue', Arial, sans-serif;
     font-weight: 500;
+    letter-spacing: -0.02em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 
-    white-space: nowrap;
-
-    transition:
-        color .25s,
-        background .25s;
+    animation: cx-enter 700ms var(--ease-out) backwards;
 }
 
-.cn-nav-link:hover,
-.cn-nav-link.is-active,
-.cn-nav-link[aria-expanded=true] {
-    color: white;
+#coe-nav *,
+#coe-nav *::before,
+#coe-nav *::after { box-sizing: border-box; }
 
-    background:
-        linear-gradient(
-            180deg,
-            #2997ff35,
-            #2997ff12
-        );
-
-    box-shadow:
-        inset 0 0 0 1px #8fd0ff24;
-}
-
-.cn-nav-caret {
-    font-size: 12px;
-
-    color: #65758c;
-
-    transition: transform .3s;
-}
-
-.cn-nav-link[aria-expanded=true] .cn-nav-caret {
-    transform: rotate(180deg);
-}
-
-/* =========================================================
-   RIGHT ACTIONS
-========================================================= */
-
-.cn-actions {
-    justify-self: end;
-
-    display: flex;
-    align-items: center;
-
-    gap: 10px;
-}
-
-.cn-collab,
-.cn-contact {
-    height: 43px;
-
-    display: inline-flex;
-    align-items: center;
-
-    gap: 9px;
-
-    padding: 0 14px;
-
-    text-decoration: none;
-
-    font-size: 12px;
-    font-weight: 600;
-
-    white-space: nowrap;
-
-    transition: .3s var(--cn-ease);
-}
-
-.cn-collab {
-    color: #c1ccdc;
-
-    border-radius: 999px;
-}
-
-.cn-collab:hover {
-    background: #ffffff0b;
-    color: white;
-}
-
-.cn-collab-dot {
-    width: 6px;
-    height: 6px;
-
-    border-radius: 50%;
-
-    background: #47b4ff;
-
-    box-shadow: 0 0 10px #47b4ff;
-}
-
-.cn-contact {
-    color: #03101e;
-
-    background: var(--cn-blue);
-
-    border-radius: 999px;
-
-    padding-left: 19px;
-}
-
-.cn-contact:hover {
-    background: var(--cn-cyan);
-
-    box-shadow: 0 8px 28px #2997ff35;
-
-    transform: translateY(-1px);
-}
-
-.cn-contact > span {
-    width: 28px;
-    height: 28px;
-
-    display: grid;
-    place-items: center;
-
-    background: #06101d;
-
-    color: #a4e4ff;
-
-    border-radius: 50%;
-}
-
-/* =========================================================
-   ARROW ICON
-========================================================= */
-
-.cn-arrow {
-    width: 15px;
-    height: 15px;
-
-    fill: none;
-
-    stroke: currentColor;
-    stroke-width: 1.5;
-
-    stroke-linecap: round;
-    stroke-linejoin: round;
-
-    transition: transform .3s var(--cn-ease);
-}
-
-.cn-arrow--diagonal {
-    transform: rotate(0);
-}
-
-a:hover > .cn-arrow,
-a:hover .cn-arrow {
-    transform: translate(2px, -2px);
-}
-
-/* =========================================================
-   MOBILE BURGER
-========================================================= */
-
-.cn-burger {
-    display: none;
-}
-
-/* =========================================================
-   MEGA MENU CONTAINER
-========================================================= */
-
-.cn-mega-wrap {
+/* faint halftone dots across the bar, fading out to the right */
+#coe-nav::before {
+    content: "";
     position: absolute;
-    z-index: 1;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0.9px, transparent 1.3px) 0 0 / 7px 7px;
+    opacity: 0.07;
+    -webkit-mask-image: linear-gradient(90deg, #000, transparent 55%);
+    mask-image: linear-gradient(90deg, #000, transparent 55%);
+}
 
-    top: calc(25px + var(--cn-height));
+/* Once the page has moved: smaller logo, soft shadow. The bar's height never
+   changes, so the content underneath doesn't jump. */
+#coe-nav[data-scrolled="true"] {
+    --logo-s: 0.86;
+    box-shadow: 0 14px 34px -16px rgba(0, 0, 0, 0.7);
+}
 
+/* Slide up out of view on scroll down. Stays visible while any menu is open
+   or something inside the bar has keyboard focus. */
+#coe-nav[data-hidden="true"]:not(:has(:focus-visible)):not([data-mega="true"]):not([data-drawer="true"]):not([data-partners="true"]) {
+    transform: translateY(-100%);
+}
+
+@keyframes cx-enter {
+    from { opacity: 0; transform: translateY(-100%); }
+}
+
+@keyframes cx-rise {
+    from { opacity: 0; transform: translateY(14px); }
+}
+
+.cx-bar {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 10px clamp(16px, 2.6vw, 44px);
+}
+
+/* Each part of the bar rises in, one after another */
+.cx-brand-wrap,
+.cx-pill li,
+.cx-actions {
+    animation: cx-rise 700ms var(--ease-out) backwards;
+    animation-delay: calc(250ms + var(--i, 0) * 60ms);
+}
+
+/* ---------- Scroll progress: signal yellow ---------- */
+
+.cx-progress {
+    position: absolute;
     left: 0;
     right: 0;
-
-    padding: 0 clamp(20px, 4vw, 64px);
-
-    opacity: 0;
-    visibility: hidden;
-
-    transform: translateY(-12px);
-
-    transition:
-        opacity .25s,
-        transform .45s var(--cn-ease),
-        visibility 0s .45s;
-
+    bottom: -1px;
+    height: 3px;
+    background: var(--b2);
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.35);
+    transform: scaleX(var(--p, 0));
+    transform-origin: left;
     pointer-events: none;
 }
 
-.cn-mega-wrap.is-open {
-    opacity: 1;
-    visibility: visible;
+/* ---------- Rolling text (links and buttons) ---------- */
 
-    transform: none;
-
-    transition-delay: 0s;
-
-    pointer-events: auto;
-}
-
-/* =========================================================
-   MEGA MENU PANEL
-========================================================= */
-
-.cn-mega {
-    position: relative;
-
-    max-width: 1320px;
-
-    margin: 0 auto;
-
+.cx-roll {
     display: grid;
-
-    grid-template-columns:
-        minmax(260px, .78fr)
-        minmax(0, 1.5fr);
-
-    gap: 48px;
-
-    padding: 32px 36px 35px;
-
-    border: 1px solid #ffffff16;
-
-    border-radius: 25px;
-
-    background:
-        radial-gradient(
-            420px 260px at 0 0,
-            #1675c51a,
-            transparent 75%
-        ),
-        rgba(8, 15, 29, .98);
-
-    box-shadow: 0 32px 90px #0008;
-
+    height: 1.3em;
     overflow: hidden;
-
-    animation: cn-card-in .5s var(--cn-ease) both;
+    line-height: 1.3em;
 }
 
-@keyframes cn-card-in {
-    from {
-        opacity: .5;
-        transform: translateY(8px) scale(.99);
-    }
-
-    to {
-        opacity: 1;
-        transform: none;
-    }
+.cx-roll span {
+    grid-area: 1 / 1;
+    transition: transform 450ms var(--ease-out);
 }
 
-.cn-mega:before {
-    content: "";
+.cx-roll span:last-child { transform: translateY(110%); }
 
-    position: absolute;
+a:hover > .cx-roll span:first-child,
+a:focus-visible > .cx-roll span:first-child { transform: translateY(-110%); }
 
-    top: 0;
-    left: 7%;
-    right: 7%;
+a:hover > .cx-roll span:last-child,
+a:focus-visible > .cx-roll span:last-child { transform: none; }
 
-    height: 1px;
+/* ---------- Left: logo + partner dropdown ---------- */
 
-    background:
-        linear-gradient(
-            90deg,
-            transparent,
-            #8fd0ff65,
-            transparent
-        );
-}
-
-/* =========================================================
-   MEGA MENU INTRO
-========================================================= */
-
-.cn-mega-intro {
-    padding: 10px 0 0;
-
-    align-self: start;
-}
-
-.cn-eyebrow {
-    font-size: 9px;
-
-    letter-spacing: .2em;
-
-    font-weight: 700;
-
-    color: #6cbcff;
-}
-
-.cn-mega-intro h2 {
-    max-width: 410px;
-
-    margin: 17px 0 12px;
-
-    font: 500
-        clamp(25px, 2.4vw, 38px)/1.13
-        'Space Grotesk', sans-serif;
-
-    letter-spacing: -.055em;
-}
-
-.cn-mega-intro h2 em {
-    font-style: normal;
-
-    color: var(--cn-cyan);
-}
-
-.cn-mega-intro p {
-    max-width: 350px;
-
-    color: #93a3b9;
-
-    font-size: 13px;
-    line-height: 1.7;
-}
-
-.cn-explore-link {
+.cx-brand-wrap {
+    position: relative;
+    justify-self: start;
     display: inline-flex;
     align-items: center;
+    gap: 8px;
+}
 
-    gap: 10px;
-
-    margin-top: 23px;
-
-    padding-bottom: 7px;
-
-    border-bottom: 1px solid #43a9ff70;
-
-    color: #c6e9ff;
-
+/* the logo sits on a white capsule so any logo artwork stays legible on black */
+.cx-brand {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 16px;
+    border-radius: 99px;
+    background: #fff;
+    color: var(--ink);
     text-decoration: none;
-
-    font-size: 12px;
-    font-weight: 600;
+    transition: transform 450ms var(--ease-out), box-shadow 350ms ease;
 }
 
-/* =========================================================
-   MEGA MENU CONTENT
-========================================================= */
-
-.cn-mega-content {
-    min-width: 0;
+.cx-bar .cx-logo {
+    display: block;
+    height: 46px;
+    width: auto;
+    transform: scale(var(--logo-s));
+    transform-origin: left center;
+    transition: transform 450ms var(--ease-out);
 }
 
-.cn-mega-heading {
+.cx-brand-wrap:hover .cx-brand { box-shadow: 0 0 0 3px rgba(26, 108, 255, 0.55); }
+.cx-brand:active { transform: scale(0.97); }
+
+.cx-caret {
+    display: inline-grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: #fff;
+    cursor: pointer;
+    transition: color 250ms ease, background-color 250ms ease, transform 250ms var(--ease-out);
+}
+
+.cx-caret svg { transition: transform 450ms var(--ease-out); }
+
+.cx-brand-wrap:hover .cx-caret,
+.cx-caret:focus-visible {
+    color: #fff;
+    background: var(--b);
+    box-shadow: none;
+}
+
+.cx-caret:active { transform: scale(0.88); }
+.cx-brand-wrap.is-open .cx-caret svg { transform: rotate(180deg); }
+
+/* Padding (not margin) at the top, so the pointer never crosses a gap */
+.cx-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    padding-top: 14px;
+    min-width: 320px;
+
+    visibility: hidden;
+    pointer-events: none;
+    clip-path: inset(0 0 100% 0 round 0 0 24px 24px);
+    transition:
+        clip-path 350ms var(--ease-in-out),
+        visibility 0s linear 350ms;
+}
+
+.cx-brand-wrap.is-open .cx-dropdown {
+    visibility: visible;
+    pointer-events: auto;
+    clip-path: inset(0 -40px -60px -40px round 24px);
+    transition:
+        clip-path 600ms var(--ease-in-out),
+        visibility 0s;
+}
+
+.cx-dropdown-inner {
     display: flex;
-    justify-content: space-between;
-
-    padding: 0 2px 13px;
-
-    border-bottom: 1px solid var(--cn-line);
-
-    font-size: 9px;
-    letter-spacing: .16em;
-
-    color: #687a92;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border-radius: 26px;
+    background: linear-gradient(155deg, #242424, #121212);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 30px 60px -24px #000;
 }
 
-.cn-mega-grid {
-    display: grid;
-
-    grid-template-columns:
-        repeat(2, minmax(0, 1fr));
-
-    gap: 3px 9px;
-
-    padding-top: 8px;
+/* Title and cards fade up one by one when the dropdown opens */
+.cx-dropdown-title,
+.cx-partner {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 150ms ease, transform 150ms ease,
+        background-color 250ms ease, box-shadow 350ms var(--ease-out);
 }
 
-/* =========================================================
-   MEGA MENU ITEM
-========================================================= */
+.cx-brand-wrap.is-open .cx-dropdown-title,
+.cx-brand-wrap.is-open .cx-partner {
+    opacity: 1;
+    transform: none;
+    transition:
+        opacity 500ms ease calc(150ms + var(--i) * 80ms),
+        transform 700ms var(--ease-out) calc(150ms + var(--i) * 80ms),
+        background-color 250ms ease,
+        box-shadow 350ms var(--ease-out);
+}
 
-.cn-mega-item {
-    min-width: 0;
+.cx-dropdown-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 6px 6px;
+    color: var(--fg);
+    font-size: 0.78rem;
+    letter-spacing: -0.01em;
+}
 
-    display: grid;
+.cx-dropdown-title i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--b2);
+}
 
-    grid-template-columns:
-        25px
-        minmax(0, 1fr)
-        15px;
-
-    gap: 9px;
-
-    align-items: start;
-
-    padding: 12px 10px;
-
-    border-radius: 12px;
-
+.cx-partner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px 10px 10px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
     color: inherit;
+    text-decoration: none;
+}
 
+/* logos get a white tile so dark artwork stays visible */
+.cx-partner-logo {
+    display: grid;
+    place-items: center;
+    width: 100px;
+    height: 54px;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.cx-partner-logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 450ms var(--ease-out);
+}
+
+.cx-partner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.cx-partner strong { font-size: 0.98rem; font-weight: 600; letter-spacing: -0.03em; }
+.cx-partner small  { color: var(--muted); font-size: 0.78rem; }
+
+.cx-partner-arrow {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--b);
+    color: #fff;
+    font-size: 15px;
+    opacity: 0;
+    transform: translate(-8px, 8px);
+    transition: opacity 250ms ease, transform 450ms var(--ease-out);
+}
+
+.cx-brand-wrap.is-open .cx-partner:hover,
+.cx-brand-wrap.is-open .cx-partner:focus-visible {
+    background: rgba(255, 255, 255, 0.11);
+    box-shadow: inset 0 0 0 1.5px var(--b2);
+    transform: translateY(-2px);
+}
+
+.cx-partner:hover .cx-partner-logo img { transform: scale(1.08); }
+
+.cx-partner:hover .cx-partner-arrow,
+.cx-partner:focus-visible .cx-partner-arrow {
+    opacity: 1;
+    transform: none;
+}
+
+/* ---------- Center: dark pill, yellow sliding highlight ---------- */
+
+.cx-pill {
+    position: relative;           /* the highlight is positioned against this */
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin: 0;
+    padding: 4px;
+    list-style: none;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.cx-pill li { position: relative; z-index: 1; }
+
+/* The moving highlight. JS sets --x and --w */
+.cx-indicator {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 0;
+    z-index: 0;
+    width: var(--w, 0);
+    transform: translateX(var(--x, 0));
+    border-radius: 99px;
+    background: var(--b);
+    box-shadow: 0 8px 22px -8px rgba(26, 108, 255, 0.6);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Only animates after the first paint, so it doesn't slide in from the left */
+.cx-pill.is-ready .cx-indicator {
+    transition:
+        transform 550ms var(--ease-out),
+        width 550ms var(--ease-out),
+        opacity 300ms ease;
+}
+
+/* Used when the highlight appears from nowhere: no slide, just fade in */
+.cx-pill.is-ready .cx-indicator.is-snap {
+    transition: opacity 300ms ease;
+}
+
+.cx-pill a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 10px 16px;
+    color: rgba(255, 255, 255, 0.76);
+    font-size: 0.82rem;
+    font-weight: 500;
+    white-space: nowrap;
     text-decoration: none;
 
     transition:
-        background .25s,
-        transform .35s var(--cn-ease);
+        color 300ms ease,
+        transform 250ms var(--ease-out);
 }
 
-.cn-mega-item:hover {
-    background: #ffffff09;
+/* the tab sitting on top of the yellow highlight gets dark text */
+.cx-pill a.is-lit { color: #fff; font-weight: 600; }
+.cx-pill a:not(.is-lit):hover,
+.cx-pill a:not(.is-lit):focus-visible { color: #fff; }
+.cx-pill a:active { transform: scale(0.95); }
 
-    transform: translateX(3px);
+/* ---------- Mega menu ---------- */
+
+/* Full-width strip under the bar. Its top padding is a hover bridge, so the
+   pointer can travel from a tab into the card without ever leaving the menu. */
+.cx-mega {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 12px clamp(16px, 2.6vw, 44px) 0;
+    z-index: 2;
+
+    visibility: hidden;
+    pointer-events: none;
+    clip-path: inset(0 0 100% 0);
+    transition:
+        clip-path 380ms var(--ease-in-out),
+        visibility 0s linear 380ms;
 }
 
-.cn-item-index {
-    padding-top: 2px;
-
-    color: #4b91c8;
-
-    font: 500 10px 'Space Grotesk', sans-serif;
+#coe-nav[data-mega="true"] .cx-mega {
+    visibility: visible;
+    pointer-events: auto;
+    /* negative insets leave room for the shadow */
+    clip-path: inset(0 -80px -100px -80px);
+    transition:
+        clip-path 650ms var(--ease-out),
+        visibility 0s;
 }
 
-.cn-item-copy {
+.cx-mega-card {
+    --h: 340px;
+    position: relative;
+    max-width: 1180px;
+    height: var(--h);
+    margin: 0 auto;
+    overflow: hidden;
+    border-radius: 30px;
+    background: linear-gradient(155deg, #1f1f1f, #0f0f0f);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 40px 80px -30px #000;
+    transition: height 560ms var(--ease-out);
+}
+
+/* Panels stack on top of each other. The active one is shown; the others wait
+   to the left or right, so switching tabs slides in the direction you moved. */
+.cx-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
     display: grid;
-    gap: 5px;
+    grid-template-columns: 340px minmax(0, 1fr);
 
-    min-width: 0;
+    visibility: hidden;
+    opacity: 0;
+    transition:
+        opacity 220ms ease,
+        transform 220ms ease,
+        visibility 0s linear 220ms;
 }
 
-.cn-item-copy b {
-    font-size: 12px;
+.cx-panel[data-state="before"] { transform: translateX(-36px); }
+.cx-panel[data-state="after"]  { transform: translateX(36px); }
 
-    font-weight: 600;
-
-    color: #e9f1fb;
+.cx-panel[data-state="current"] {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition:
+        opacity 420ms ease 70ms,
+        transform 700ms var(--ease-out) 70ms,
+        visibility 0s;
 }
 
-.cn-item-copy small {
-    font-size: 10.5px;
+/* Left column: a signal-yellow scene, BLACK text */
 
-    line-height: 1.5;
-
-    color: #8595aa;
-}
-
-.cn-mega-item > .cn-arrow {
-    color: #61758d;
-
-    margin-top: 2px;
-}
-
-.cn-mega-item:hover > .cn-arrow {
-    color: var(--cn-cyan);
-}
-
-/* =========================================================
-   MEGA MENU CHIPS
-========================================================= */
-
-.cn-chips {
+.cx-intro {
+    --ink-l: #fff;
+    --mut-l: rgba(255, 255, 255, 0.82);
+    position: relative;
     display: flex;
-    flex-wrap: wrap;
-
-    gap: 4px;
-
-    margin-top: 3px;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 28px;
+    padding: 30px 28px;
+    overflow: hidden;
+    color: var(--ink-l);
+    background:
+        radial-gradient(circle, rgba(255, 255, 255, 0.2) 0.9px, transparent 1.3px) 0 0 / 7px 7px,
+        var(--b);
 }
 
-.cn-chips span {
-    padding: 3px 6px;
+.cx-intro-top { position: relative; z-index: 1; }
 
-    border: 1px solid #ffffff12;
-
-    border-radius: 5px;
-
-    color: #8da4bc;
-
-    font-size: 9px;
-}
-
-/* =========================================================
-   ECOSYSTEM MENU
-========================================================= */
-
-.cn-ecosystem {
-    grid-template-columns: 1fr 1.15fr;
-
-    max-width: 780px;
-
-    margin-left: clamp(18px, 3.5vw, 56px);
-
-    padding: 28px;
-}
-
-.cn-ecosystem .cn-mega-intro h2 {
-    font-size: 30px;
-}
-
-.cn-ecosystem-links {
-    display: grid;
-
-    gap: 8px;
-
-    align-content: center;
-}
-
-.cn-ecosystem-links > a {
-    display: grid;
-
-    grid-template-columns:
-        42px
-        1fr
-        18px;
-
+.cx-eyebrow {
+    display: flex;
     align-items: center;
+    gap: 8px;
+    margin: 0 0 18px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+}
 
+.cx-eyebrow i {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--b2);
+    box-shadow: 0 0 0 0 rgba(26, 108, 255, 0.6);
+    animation: cx-ping 2.2s ease-out infinite;
+}
+
+.cx-intro .cx-eyebrow i {
+    background: #fff;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55);
+    animation-name: cx-ping-dark;
+}
+
+.cx-eyebrow em { margin-left: auto; font-style: normal; font-weight: 600; }
+.cx-eyebrow s { text-decoration: none; color: var(--mut-l); font-weight: 500; }
+
+@keyframes cx-ping {
+    70%, 100% { box-shadow: 0 0 0 9px rgba(26, 108, 255, 0); }
+}
+
+@keyframes cx-ping-dark {
+    70%, 100% { box-shadow: 0 0 0 9px rgba(255, 255, 255, 0); }
+}
+
+.cx-intro h3 {
+    margin: 0 0 14px;
+    font-size: clamp(1.7rem, 2.2vw, 2.1rem);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.055em;
+    text-wrap: balance;
+}
+
+.cx-blurb {
+    margin: 0;
+    max-width: 28ch;
+    color: var(--mut-l);
+    font-size: 0.95rem;
+    line-height: 1.42;
+}
+
+/* A slow radar sweep: a quiet nod to airspace */
+.cx-radar {
+    position: absolute;
+    right: -80px;
+    bottom: -80px;
+    width: 270px;
+    height: 270px;
+    border-radius: 50%;
+    background: repeating-radial-gradient(
+        circle,
+        transparent 0 24px,
+        rgba(0, 0, 0, 0.16) 24px 25px
+    );
+    pointer-events: none;
+}
+
+.cx-radar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg,
+        rgba(0, 0, 0, 0) 0deg,
+        rgba(0, 0, 0, 0.2) 70deg,
+        rgba(0, 0, 0, 0) 71deg
+    );
+    animation: cx-sweep 6s linear infinite;
+}
+
+@keyframes cx-sweep { to { transform: rotate(360deg); } }
+
+.cx-panel:not([data-state="current"]) .cx-radar::after,
+.cx-panel:not([data-state="current"]) .cx-eyebrow i { animation-play-state: paused; }
+
+/* black pill, yellow round arrow chip (Home's .p-b-dark) */
+.cx-intro-link {
+    position: relative;
+    z-index: 1;
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
     gap: 12px;
+    height: 46px;
+    padding: 0 22px 0 6px;
+    border-radius: 99px;
+    background: #0d0d0d;
+    color: #fff;
+    font-size: 0.86rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 350ms var(--ease-out), box-shadow 350ms var(--ease-out);
+}
 
-    padding: 13px;
+.cx-intro-arrow {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--b);
+    transition: transform 450ms var(--ease-out);
+}
 
-    border-radius: 14px;
+.cx-intro-link:hover .cx-intro-arrow,
+.cx-intro-link:focus-visible .cx-intro-arrow { transform: translateX(3px) rotate(-45deg); }
+.cx-intro-link:hover { box-shadow: 0 14px 30px -14px rgba(0, 0, 0, 0.7); }
+.cx-intro-link:active { transform: scale(0.97); }
 
-    background: #ffffff06;
+/* Right column: the pages (dark) */
 
-    border: 1px solid #ffffff0b;
+.cx-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 4px 8px;
+    padding: 18px;
+}
 
+.cx-item {
+    --mx: 50%;
+    --my: 50%;
+    position: relative;
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) 30px;
+    align-items: start;
+    gap: 2px 8px;
+    padding: 16px 14px 16px 14px;
+    border-radius: 20px;
+    box-shadow: inset 0 0 0 1px transparent;
+
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+        opacity 150ms ease,
+        transform 150ms ease,
+        box-shadow 250ms ease,
+        background-color 250ms ease;
+}
+
+.cx-panel[data-state="current"] .cx-item {
+    opacity: 1;
+    transform: none;
+    transition:
+        opacity 500ms ease calc(160ms + var(--i) * 45ms),
+        transform 750ms var(--ease-out) calc(160ms + var(--i) * 45ms),
+        box-shadow 250ms ease,
+        background-color 250ms ease;
+}
+
+/* Yellow light that follows the cursor */
+.cx-item::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+        240px circle at var(--mx) var(--my),
+        rgba(26, 108, 255, 0.16),
+        transparent 70%
+    );
+    opacity: 0;
+    transition: opacity 300ms ease;
+    pointer-events: none;
+}
+
+.cx-item:hover,
+.cx-item:focus-within {
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.cx-item:hover::before,
+.cx-item:focus-within::before { opacity: 1; }
+
+.cx-item-idx {
+    padding-top: 3px;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    transition: color 250ms ease;
+}
+
+.cx-item:hover .cx-item-idx,
+.cx-item:focus-within .cx-item-idx { color: var(--b2); }
+
+.cx-item-body { min-width: 0; }
+
+/* The whole card is clickable; the chips sit above it */
+.cx-item-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     color: inherit;
-
     text-decoration: none;
 }
 
-.cn-mini-mark {
+.cx-item-main::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.cx-item-main strong {
+    color: #fff;
+    font-size: 1.02rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.035em;
+}
+
+.cx-item-main small {
+    color: var(--muted);
+    font-size: 0.86rem;
+    line-height: 1.38;
+}
+
+/* round yellow arrow chip slides in on hover */
+.cx-item-arrow {
     display: grid;
     place-items: center;
-
-    width: 42px;
-    height: 42px;
-
-    border: 1px solid #2997ff45;
-
-    background: #2997ff18;
-
-    border-radius: 12px;
-
-    color: #9bd8ff;
-
-    font-size: 11px;
-    font-weight: 700;
+    width: 28px;
+    height: 28px;
+    margin-top: -1px;
+    border-radius: 50%;
+    background: var(--b);
+    color: #fff;
+    opacity: 0;
+    transform: translate(-8px, 8px);
+    transition: opacity 250ms ease, transform 450ms var(--ease-out);
 }
 
-.cn-ecosystem-links a > span:nth-child(2) {
+.cx-item:hover .cx-item-arrow,
+.cx-item:focus-within .cx-item-arrow {
+    opacity: 1;
+    transform: rotate(-45deg);
+}
+
+/* Title-only cards sit on one line */
+.cx-item.is-compact {
+    align-items: center;
+    padding-top: 13px;
+    padding-bottom: 13px;
+}
+
+.cx-item.is-compact .cx-item-idx,
+.cx-item.is-compact .cx-item-arrow { padding-top: 0; margin-top: 0; }
+
+/* Small links under a card title (Home's chips) */
+.cx-chips {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 12px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cx-chips a {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.3;
+    text-decoration: none;
+    transition: color 250ms ease, background-color 250ms ease, box-shadow 250ms ease, transform 250ms var(--ease-out);
+}
+
+.cx-chips a:hover,
+.cx-chips a:focus-visible {
+    background: var(--b);
+    box-shadow: none;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+/* Process strip along the bottom of a panel */
+.cx-foot {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    padding: 18px 28px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: #151515;
+}
+
+.cx-foot .cx-eyebrow { margin: 0; white-space: nowrap; }
+
+.cx-foot ol {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.cx-foot li {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.86rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.86);
+    white-space: nowrap;
+
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.cx-foot li:last-child { flex: 0 0 auto; }
+
+.cx-panel[data-state="current"] .cx-foot li {
+    opacity: 1;
+    transform: none;
+    transition:
+        opacity 500ms ease calc(450ms + var(--s) * 110ms),
+        transform 700ms var(--ease-out) calc(450ms + var(--s) * 110ms);
+}
+
+.cx-foot li b {
     display: grid;
-    gap: 4px;
+    place-items: center;
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--b);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
 }
 
-.cn-ecosystem b {
-    font-size: 12px;
+/* Line that draws itself between the steps */
+.cx-foot li:not(:last-child)::after {
+    content: "";
+    flex: 1;
+    min-width: 14px;
+    height: 1px;
+    background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.4) 0 4px, transparent 4px 8px);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 150ms ease;
 }
 
-.cn-ecosystem-links small {
-    font-size: 10px;
-
-    color: #8a9bb1;
+.cx-panel[data-state="current"] .cx-foot li:not(:last-child)::after {
+    transform: none;
+    transition: transform 700ms var(--ease-out) calc(650ms + var(--s) * 110ms);
 }
 
-.cn-ecosystem-links .cn-arrow {
-    color: #71859e;
+.cx-foot-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--b2);
+    font-size: 0.86rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
 }
 
-/* =========================================================
-   PAGE CONTENT OFFSET
-========================================================= */
-
-.cn-page-shell {
-    padding-top: calc(25px + var(--cn-height));
+.cx-foot-chip {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--b);
+    color: #fff;
+    transition: transform 450ms var(--ease-out);
 }
 
-/* =========================================================
-   TABLET / COMPACT DESKTOP
-========================================================= */
+.cx-foot-link:hover .cx-foot-chip,
+.cx-foot-link:focus-visible .cx-foot-chip { transform: translateX(2px) rotate(-45deg); }
 
-@media (max-width: 1360px) {
-
-    .cn-bar {
-        grid-template-columns:
-            minmax(170px, 1fr)
-            auto
-            minmax(150px, 1fr);
-
-        gap: 14px;
-
-        padding-inline: 24px;
-    }
-
-    .cn-nav-link {
-        padding-inline: 10px;
-
-        font-size: 11px;
-    }
-
-    .cn-brand {
-        font-size: 18px;
-    }
-
-    .cn-actions {
-        gap: 5px;
-    }
-
-    .cn-collab {
-        padding-inline: 9px;
-    }
+/* Dims and blurs the page behind the menu. Sits outside the header, because
+   a backdrop-filter can't see past a parent that has its own. */
+.cx-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: rgba(8, 8, 8, 0.6);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 350ms ease, visibility 0s linear 350ms;
 }
 
-/* =========================================================
-   MOBILE / TABLET DRAWER
-========================================================= */
+.cx-scrim[data-open="true"] {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 450ms ease, visibility 0s;
+}
 
-@media (max-width: 1120px) {
+/* ---------- Right: FAQ, button, burger ---------- */
 
-    .cn-topline-right {
-        display: none;
-    }
+.cx-actions {
+    justify-self: end;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-    .cn-bar {
+/* ghost pill (Home's .p-b-ghost) */
+.cx-faq {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 46px;
+    padding: 0 20px 0 6px;
+    border-radius: 99px;
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 0.86rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 250ms ease, box-shadow 250ms ease;
+}
+
+.cx-faq i {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #fff;
+    color: #0d0d0d;
+    font-size: 0.85rem;
+    font-style: normal;
+    font-weight: 700;
+    transition: transform 450ms var(--ease-out), background-color 250ms ease;
+}
+
+.cx-faq:hover,
+.cx-faq:focus-visible,
+.cx-faq.is-active { background: rgba(255, 255, 255, 0.16); }
+.cx-faq.is-active { box-shadow: inset 0 0 0 1.5px var(--b2); }
+
+.cx-faq:hover i { transform: rotate(360deg); background: var(--b); color: #fff; }
+
+/* yellow pill, black round arrow chip (Home's .p-b-yellow) */
+.cx-cta {
+    --tx: 0px;
+    --ty: 0px;
+    --lift: 0px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    height: 46px;
+    padding: 0 22px 0 6px;
+    border-radius: 99px;
+    background: var(--b);
+    color: #fff;
+    font-size: 0.86rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: 0 0 0 5px rgba(26, 108, 255, 0.14), 0 14px 30px -14px rgba(26, 108, 255, 0.6);
+    transform: translate(var(--tx), calc(var(--ty) + var(--lift)));
+    transition:
+        transform 350ms var(--ease-out),
+        box-shadow 350ms var(--ease-out);
+}
+
+
+.cx-cta-arrow {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border-radius: 50%;
+    background: #fff;
+    color: var(--b);
+    transition: transform 450ms var(--ease-out);
+}
+
+.cx-cta:hover,
+.cx-cta:focus-visible {
+    --lift: -2px;
+    box-shadow: 0 0 0 7px rgba(26, 108, 255, 0.2), 0 18px 36px -14px rgba(26, 108, 255, 0.75);
+}
+
+.cx-cta:hover .cx-cta-arrow,
+.cx-cta:focus-visible .cx-cta-arrow { transform: translateX(3px) rotate(-45deg); }
+
+.cx-cta:active { transform: translate(var(--tx), var(--ty)) scale(0.97); }
+
+/* Burger: two lines that cross into an X */
+.cx-burger {
+    display: none;
+    place-items: center;
+    position: relative;
+    width: 46px;
+    height: 46px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 250ms ease, color 250ms ease, transform 250ms var(--ease-out);
+}
+
+.cx-burger span {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 18px;
+    height: 2px;
+    margin: -1px 0 0 -9px;
+    border-radius: 2px;
+    background: currentColor;
+    transition: transform 500ms var(--ease-out);
+}
+
+.cx-burger span:first-child { transform: translateY(-3.5px); }
+.cx-burger span:last-child  { transform: translateY(3.5px); }
+
+.cx-burger:hover { background: rgba(255, 255, 255, 0.18); }
+.cx-burger:active { transform: scale(0.9); }
+
+.cx-burger[aria-expanded="true"] { background: var(--b); color: #fff; box-shadow: none; }
+.cx-burger[aria-expanded="true"] span:first-child { transform: rotate(45deg); }
+.cx-burger[aria-expanded="true"] span:last-child  { transform: rotate(-45deg); }
+
+/* ---------- Mobile drawer ---------- */
+
+.cx-drawer {
+    display: none;
+}
+
+/* ---------- Accessibility ---------- */
+
+.cx-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+#coe-nav a:focus-visible,
+#coe-nav button:focus-visible {
+    outline: 2px solid var(--b2);
+    outline-offset: 3px;
+}
+
+#coe-nav .cx-intro a:focus-visible { outline-color: #fff; }
+#coe-nav .cx-pill a:focus-visible { outline-offset: -2px; }
+
+#coe-nav ::selection { background: var(--b); color: #fff; }
+
+/* ---------- Narrower laptops ---------- */
+
+@media (max-width: 1400px) {
+    .cx-pill a { padding-inline: 13px; }
+}
+
+@media (max-width: 1300px) {
+    .cx-pill a { padding-inline: 11px; font-size: 0.8rem; }
+    .cx-pill { gap: 0; }
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 1200px) {
+    .cx-pill,
+    .cx-mega,
+    .cx-faq { display: none; }
+
+    .cx-scrim { display: none; }
+    .cx-burger { display: grid; }
+
+    .cx-bar {
         grid-template-columns: 1fr auto;
+        padding: 8px 16px;
     }
 
-    .cn-desktop-nav,
-    .cn-actions {
-        display: none;
-    }
-
-    /* BURGER */
-
-    .cn-burger {
-        justify-self: end;
-
-        display: grid;
-        align-content: center;
-
-        gap: 5px;
-
-        width: 44px;
-        height: 44px;
-
-        padding: 0 12px;
-
-        border: 1px solid var(--cn-line);
-
-        border-radius: 50%;
-
-        background: #ffffff06;
-
-        cursor: pointer;
-    }
-
-    .cn-burger span {
-        height: 1.5px;
-
-        background: #e9f4ff;
-
-        border-radius: 2px;
-
-        transition:
-            transform .35s,
-            opacity .2s;
-    }
-
-    .cn-burger[aria-expanded=true] span:first-child {
-        transform: translateY(6.5px) rotate(45deg);
-    }
-
-    .cn-burger[aria-expanded=true] span:nth-child(2) {
-        opacity: 0;
-    }
-
-    .cn-burger[aria-expanded=true] span:last-child {
-        transform: translateY(-6.5px) rotate(-45deg);
-    }
-
-    /* HIDE DESKTOP MEGA MENU */
-
-    .cn-mega-wrap {
-        display: none;
-    }
-
-    /* MOBILE BACKDROP */
-
-    .cn-mobile-scrim {
-        display: block;
-
-        position: fixed;
-        inset: 0;
-
-        z-index: 1190;
-
-        background: #020611a8;
-
-        backdrop-filter: blur(5px);
-
-        opacity: 0;
-
-        animation: cn-scrim .3s forwards;
-    }
-
-    /* MOBILE DRAWER */
-
-    .cn-mobile-drawer {
-        display: flex;
-
-        position: fixed;
-
-        z-index: 1201;
-
-        top: 0;
-        right: 0;
-        bottom: 0;
-
-        width: min(460px, 92vw);
-
-        flex-direction: column;
-
-        background: #07101f;
-
-        border-left: 1px solid #ffffff14;
-
-        transform: translateX(105%);
-
-        transition: transform .55s var(--cn-ease);
-
-        box-shadow: -30px 0 80px #0005;
-    }
-
-    .cn-mobile-drawer.is-open {
-        transform: none;
-    }
-
-    /* DRAWER HEADER */
-
-    .cn-mobile-head {
-        height: 82px;
-
-        flex: none;
-
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-
-        padding: 0 25px;
-
-        border-bottom: 1px solid var(--cn-line);
-
-        font: 600 20px 'Space Grotesk', sans-serif;
-    }
-
-    .cn-mobile-head span {
-        display: grid;
-        gap: 1px;
-    }
-
-    .cn-mobile-head small {
-        font: 500 9px 'DM Sans', sans-serif;
-
-        letter-spacing: .16em;
-
-        color: #7f91a9;
-    }
-
-    .cn-mobile-head button {
-        font-size: 30px;
-
-        color: #8fa1b8;
-
-        background: none;
-
-        border: 0;
-
-        cursor: pointer;
-    }
-
-    /* DRAWER SCROLL */
-
-    .cn-mobile-scroll {
-        overflow: auto;
-
-        padding: 14px 25px 30px;
-
-        flex: 1;
-    }
-
-    /* HOME LINK */
-
-    .cn-mobile-home {
-        display: flex;
-
-        align-items: center;
-        justify-content: space-between;
-
-        padding: 18px 0;
-
-        color: #a8dfff;
-
-        text-decoration: none;
-
-        border-bottom: 1px solid var(--cn-line);
-
-        font-size: 13px;
-    }
-
-    /* MOBILE CATEGORY */
-
-    .cn-mobile-section {
-        border-bottom: 1px solid var(--cn-line);
-    }
-
-    .cn-mobile-trigger {
+    .cx-bar .cx-logo { height: 38px; }
+
+    .cx-drawer {
+        position: absolute;
+        top: 100%;
+        left: 0;
         width: 100%;
-
+        height: calc(100vh - 100%);
+        height: calc(100dvh - 100%);
         display: flex;
-        align-items: center;
-        justify-content: space-between;
+        flex-direction: column;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 8px 20px 28px;
+        color: #f4f4f4;
+        background:
+            radial-gradient(circle, rgba(255, 255, 255, 0.07) 0.9px, transparent 1.3px) 0 0 / 7px 7px,
+            #0a0a0a;
 
-        padding: 18px 0;
-
-        background: none;
-
-        border: 0;
-
-        color: #f0f5fc;
-
-        text-align: left;
-
-        cursor: pointer;
-
-        font: 500 16px 'Space Grotesk', sans-serif;
+        visibility: hidden;
+        pointer-events: none;
+        clip-path: circle(0 at calc(100% - 38px) -30px);
+        transition:
+            clip-path 650ms var(--ease-in-out),
+            visibility 0s linear 650ms;
     }
 
-    .cn-mobile-trigger > span {
-        display: flex;
-        align-items: center;
-
-        gap: 13px;
+    #coe-nav[data-drawer="true"] .cx-drawer {
+        visibility: visible;
+        pointer-events: auto;
+        clip-path: circle(150% at calc(100% - 38px) -30px);
+        transition: clip-path 900ms var(--ease-in-out), visibility 0s;
     }
 
-    .cn-mobile-trigger small {
-        color: #4d9bd3;
+    .cx-m-list { margin: 0; padding: 0; list-style: none; }
 
-        font: 500 10px 'DM Sans', sans-serif;
+    .cx-m-item,
+    .cx-m-foot {
+        opacity: 0;
+        transform: translateY(22px);
+        transition: opacity 150ms ease, transform 150ms ease;
     }
 
-    .cn-mobile-trigger > b {
-        color: #7e9ab6;
-
-        font-size: 22px;
-        font-weight: 400;
-    }
-
-    /* MOBILE SUBMENU */
-
-    .cn-mobile-submenu {
-        display: grid;
-
-        padding: 0 0 14px 28px;
-
-        animation: cn-fade-up .3s var(--cn-ease);
-    }
-
-    .cn-mobile-submenu a {
-        display: flex;
-
-        justify-content: space-between;
-        align-items: center;
-
-        padding: 12px 0;
-
-        color: #9baec5;
-
-        text-decoration: none;
-
-        font-size: 12px;
-    }
-
-    .cn-mobile-submenu a:hover {
-        color: white;
-    }
-
-    /* MOBILE FOOTER */
-
-    .cn-mobile-footer {
-        display: grid;
-
-        grid-template-columns: 1fr 1fr;
-
-        gap: 10px;
-
-        padding:
-            20px
-            25px
-            calc(20px + env(safe-area-inset-bottom));
-
-        border-top: 1px solid var(--cn-line);
-    }
-
-    .cn-mobile-footer a {
-        display: flex;
-
-        align-items: center;
-        justify-content: space-between;
-
-        gap: 7px;
-
-        padding: 13px;
-
-        border-radius: 12px;
-
-        background: #2997ff19;
-
-        border: 1px solid #2997ff30;
-
-        color: #b9e4ff;
-
-        text-decoration: none;
-
-        font-size: 12px;
-        font-weight: 600;
-    }
-
-    .cn-mobile-footer a:last-child {
-        background: #2997ff;
-
-        color: #03101e;
-    }
-
-    .cn-page-shell {
-        padding-top: calc(25px + var(--cn-height));
-    }
-}
-
-@keyframes cn-scrim {
-    to {
+    #coe-nav[data-drawer="true"] .cx-m-item,
+    #coe-nav[data-drawer="true"] .cx-m-foot {
         opacity: 1;
+        transform: none;
+        transition:
+            opacity 500ms ease calc(280ms + var(--i) * 55ms),
+            transform 800ms var(--ease-out) calc(280ms + var(--i) * 55ms);
     }
+
+    .cx-m-item { border-bottom: 1px solid var(--line); }
+
+    .cx-m-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .cx-m-row a {
+        display: flex;
+        flex: 1;
+        align-items: baseline;
+        gap: 14px;
+        padding: 16px 0;
+        color: #fff;
+        font-size: 2rem;
+        font-weight: 600;
+        letter-spacing: -0.05em;
+        line-height: 1;
+        text-decoration: none;
+    }
+
+    .cx-m-row a[aria-current="page"] { color: var(--b2); }
+
+    .cx-m-idx {
+        min-width: 22px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+    }
+
+    .cx-m-row button {
+        position: relative;
+        flex: none;
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.09);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+        color: #fff;
+        cursor: pointer;
+        transition: background-color 250ms ease, color 250ms ease, transform 450ms var(--ease-out);
+    }
+
+    /* Plus that turns into a minus */
+    .cx-m-row button::before,
+    .cx-m-row button span {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 14px;
+        height: 2px;
+        margin: -1px 0 0 -7px;
+        background: currentColor;
+        border-radius: 2px;
+        transition: transform 450ms var(--ease-out);
+    }
+
+    .cx-m-row button span { transform: rotate(90deg); }
+    .is-expanded .cx-m-row button { background: var(--b); color: #fff; box-shadow: none; }
+    .is-expanded .cx-m-row button span { transform: rotate(0); }
+
+    /* Smooth height without measuring anything */
+    .cx-m-sub {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 500ms var(--ease-out);
+    }
+
+    .is-expanded .cx-m-sub { grid-template-rows: 1fr; }
+
+    .cx-m-sub > ul {
+        min-height: 0;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        list-style: none;
+    }
+
+    .cx-m-sub li:last-child { margin-bottom: 14px; }
+
+    .cx-m-sub a {
+        display: block;
+        padding: 9px 0 9px 36px;
+        color: rgba(255, 255, 255, 0.66);
+        font-size: 1rem;
+        text-decoration: none;
+        transition: color 250ms ease, padding-left 350ms var(--ease-out);
+    }
+
+    .cx-m-sub a:hover,
+    .cx-m-sub a:focus-visible { color: var(--b2); padding-left: 44px; }
+
+    .cx-m-foot {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        margin-top: auto;
+        padding-top: 28px;
+    }
+
+    .cx-m-faq {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.95rem;
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    .cx-m-faq i {
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #fff;
+        color: #0d0d0d;
+        font-size: 0.72rem;
+        font-style: normal;
+        font-weight: 700;
+    }
+
+    .cx-m-cta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 8px 8px 24px;
+        border-radius: 99px;
+        background: var(--b);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: transform 250ms var(--ease-out);
+    }
+
+    .cx-m-cta-chip {
+        display: grid;
+        place-items: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #fff;
+        color: var(--b);
+    }
+
+    .cx-m-cta:active { transform: scale(0.97); }
+
+    .cx-m-partners {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-top: 6px;
+    }
+
+    .cx-m-partners a {
+        display: grid;
+        place-items: center;
+        padding: 8px 16px;
+        border-radius: 14px;
+        background: #fff;
+    }
+
+    .cx-m-partners img { display: block; height: 28px; width: auto; }
 }
 
-/* =========================================================
-   SMALL MOBILE
-========================================================= */
-
-@media (max-width: 520px) {
-
-    :root {
-        --cn-height: 68px;
-    }
-
-    .cn-topline {
-        height: 22px;
-
-        padding-inline: 16px;
-
-        font-size: 8px;
-    }
-
-    .cn-bar {
-        padding-inline: 16px;
-    }
-
-    .cn-brand {
-        font-size: 17px;
-        gap: 8px;
-    }
-
-    .cn-brand-mark {
-        width: 30px;
-        height: 30px;
-    }
-
-    .cn-brand small {
-        font-size: 7px;
-    }
-
-    .cn-brand-switch {
-        width: 23px;
-        height: 23px;
-    }
-
-    .cn-mobile-head {
-        height: 72px;
-    }
-
-    .cn-mobile-scroll {
-        padding-inline: 20px;
-    }
-
-    .cn-mobile-footer {
-        padding-inline: 20px;
-    }
-
-    .cn-mobile-footer a {
-        padding: 12px 10px;
-
-        font-size: 11px;
-    }
-
-    .cn-page-shell {
-        padding-top: calc(22px + var(--cn-height));
-    }
+@media (max-width: 560px) {
+    .cx-cta { padding-right: 16px; }
+    .cx-m-row a { font-size: 1.8rem; }
 }
 
-/* =========================================================
-   ACCESSIBILITY / REDUCED MOTION
-========================================================= */
+@media (max-width: 400px) {
+    .cx-cta { display: none; }
+}
+
+/* ---------- Reduced motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
-
     #coe-nav,
-    .cn-mega-wrap,
-    .cn-mobile-drawer,
-    .cn-nav-list li,
-    .cn-mega,
-    .cn-mobile-scrim {
+    #coe-nav *,
+    #coe-nav *::before,
+    #coe-nav *::after {
         animation: none !important;
-        transition: none !important;
-    }
-
-    .cn-brand:hover ellipse {
-        animation: none;
+        transition-duration: 1ms !important;
+        transition-delay: 0s !important;
     }
 }
-

@@ -14,23 +14,22 @@ const filled = (b) => !!(b.items?.length || b.groups?.length || b.file || b.text
 const ok = (b) => (b.type === 'logos' ? b.groups?.length : filled(b));
 const key = (label, i) => `${label ?? ''}-${i}`;
 const st = (i) => ({ '--i': i });
-const pad = (n) => String(n).padStart(2, '0');
 const tone = (t) => ({ light: 'graphite', grey: 'graphite' }[t] || t || 'dark');
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-/* Optional hero copy. Add a `hero` key to aboutData to override any of this. */
+/* Hero copy. Add a `hero` key to aboutData to override any of this.
+   `file` is the full-bleed photo (an aerial of the site works best); without it the hero shows a dusk sky. */
 const HERO = {
-    eyebrow: 'Perlis Airspace Sandbox',
-    title: 'A national testbed for the *next era of flight.*',
-    lead: 'Perlis is opening its low-altitude airspace to government, industry and researchers, so drones, air taxis and cargo flights can be tested under real conditions.',
-    meta: ['Perlis, Malaysia', 'Government, industry and research', 'Low-altitude airspace'],
-    cta: { label: 'Explore the sandbox' },
-    apply: { label: 'Apply to participate', href: '/apply' },
-    file: '',
+    title: 'Where Malaysia’s drones learn to fly for real.',
+    lead: 'Perlis is opening a stretch of real, low-altitude airspace to government, industry and researchers, so new aircraft can be proven here before they ever fly over a city.',
+    cta: { label: 'See what we do' },
+    apply: { label: 'Apply to test with us', href: '/apply' },
+    caption: { place: 'Sungai Batu Pahat, Perlis', note: 'The sandbox site, about 30 hectares beside the UniMAP runway.' },
+    file: 'hero-aerial.jpg',
 };
 
-/* "Low-altitude *airspace* test": words between * * become the gradient accent. Words rise out of a mask. */
+/* "Low-altitude *airspace* test": words between * * become the accent. Words rise out of a mask. */
 const plain = (t) => t.replace(/\*/g, '');
 function Words({ text }) {
     let it = false;
@@ -84,42 +83,7 @@ function Count({ to }) {
     return <span ref={ref}>{v.toFixed(dec)}</span>;
 }
 
-/* ---------- hero: one orchestrated moment. A flight path draws itself, a radar sweeps the airspace ---------- */
-const FLIGHT = 'M-40 660 C 230 640 330 230 650 310 S 1010 600 1200 330 S 1400 110 1500 50';
-
-function FlightPath() {
-    const still = reduced();
-    return (
-        <svg className="hero-path" viewBox="0 0 1440 800" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-            <defs>
-                <linearGradient id="fp-g" x1="0" x2="1" y1="0" y2="0">
-                    <stop offset="0" stopColor="#ffd21f" stopOpacity="0" />
-                    <stop offset=".45" stopColor="#ffd21f" />
-                    <stop offset="1" stopColor="#ff8a3d" />
-                </linearGradient>
-            </defs>
-            <path d={FLIGHT} className="fp-ghost" />
-            <path id="fp-d" d={FLIGHT} className="fp-line" pathLength="1" stroke="url(#fp-g)" />
-            {!still && (
-                <g>
-                    <animateMotion dur="11s" begin="1.4s" repeatCount="indefinite" rotate="auto"><mpath href="#fp-d" /></animateMotion>
-                    <circle r="22" fill="#ffd21f" opacity=".16" />
-                    <circle r="6" fill="#ffd21f" />
-                </g>
-            )}
-        </svg>
-    );
-}
-
-const Radar = () => (
-    <div className="radar" aria-hidden="true">
-        <i className="r-sweep" />
-        <i className="r-b" style={{ '--x': '63%', '--y': '31%', '--t': '0s' }} />
-        <i className="r-b" style={{ '--x': '38%', '--y': '58%', '--t': '1.4s' }} />
-        <i className="r-b" style={{ '--x': '71%', '--y': '66%', '--t': '2.5s' }} />
-    </div>
-);
-
+/* ---------- hero: a photograph, one plain sentence, a caption. Nothing loops. ---------- */
 function Hero({ h, onStart, firstId }) {
     const media = url(h.file);
     return (
@@ -129,23 +93,21 @@ function Hero({ h, onStart, firstId }) {
                     ? <video src={media} muted loop playsInline autoPlay preload="auto" />
                     : <img src={media} alt="" loading="eager" decoding="async" />)}
             </div>
-            <i className="hero-glow" aria-hidden="true" />
-            <i className="hero-grid" aria-hidden="true" />
-            <Radar />
-            <FlightPath />
             <div className="hero-in">
-                <p className="hero-pill hr" style={{ '--d': '.1s' }}><i aria-hidden="true" />{h.eyebrow}</p>
                 <h1 aria-label={plain(h.title)}><Words text={h.title} /></h1>
                 <div className="hero-row">
-                    <p className="hero-lead hr" style={{ '--d': '.7s' }}>{h.lead}</p>
-                    <div className="hero-cta hr" style={{ '--d': '.85s' }}>
-                        <a className="btn" href={`#${firstId}`} onClick={(e) => { e.preventDefault(); onStart(); }}><span>{h.cta.label}</span><i aria-hidden="true">↓</i></a>
-                        <a className="btn btn--ghost" href={h.apply.href}><span>{h.apply.label}</span></a>
+                    <div className="hero-copy hr" style={{ '--d': '.7s' }}>
+                        <p className="hero-lead">{h.lead}</p>
+                        <div className="hero-cta">
+                            <a className="btn" href={`#${firstId}`} onClick={(e) => { e.preventDefault(); onStart(); }}><span>{h.cta.label}</span><i aria-hidden="true">↓</i></a>
+                            <a className="btn btn--ghost" href={h.apply.href}><span>{h.apply.label}</span></a>
+                        </div>
                     </div>
+                    {h.caption && (
+                        <p className="hero-cap hr" style={{ '--d': '1s' }}><b>{h.caption.place}</b>{h.caption.note}</p>
+                    )}
                 </div>
-                {h.meta?.length > 0 && <ul className="hero-meta hr" style={{ '--d': '1s' }}>{h.meta.map((m, i) => <li key={i}>{m}</li>)}</ul>}
             </div>
-            <div className="hero-scroll" aria-hidden="true"><span />Scroll</div>
         </section>
     );
 }
@@ -156,17 +118,22 @@ function Tabs({ b }) {
     const rail = useRef(null);
     const t = b.items[i];
     let last = '';
-    /* one yellow bar slides to the active tab */
+    /* one yellow bar slides to the active tab; it re-measures on resize, font load and content change */
     useLayoutEffect(() => {
+        const el = rail.current;
+        if (!el) return;
         const place = () => {
-            const btn = rail.current?.querySelectorAll('button')[i];
+            const btn = el.querySelectorAll('button')[i];
             if (!btn) return;
-            rail.current.style.setProperty('--ty', `${btn.offsetTop}px`);
-            rail.current.style.setProperty('--th', `${btn.offsetHeight}px`);
+            el.style.setProperty('--ty', `${btn.offsetTop}px`);
+            el.style.setProperty('--th', `${btn.offsetHeight}px`);
         };
         place();
-        window.addEventListener('resize', place);
-        return () => window.removeEventListener('resize', place);
+        const ro = new ResizeObserver(place);
+        ro.observe(el);
+        el.querySelectorAll('button').forEach((x) => ro.observe(x));
+        document.fonts?.ready.then(place);
+        return () => ro.disconnect();
     }, [i]);
     const onKey = (e) => {
         if (!['ArrowDown', 'ArrowUp', 'ArrowRight', 'ArrowLeft'].includes(e.key)) return;
@@ -286,18 +253,6 @@ function Block({ b }) {
                     </div>
                 </div>
             );
-        case 'ticker':
-            return (
-                <div className="ticker" style={{ '--dur': `${b.speed || 38}s` }}>
-                    <div className="tk-row">
-                        {[0, 1].map((k) => (
-                            <div className="tk-set" key={k} aria-hidden={k ? 'true' : undefined}>
-                                {b.items.map((x, i) => <span key={i}>{x}<i aria-hidden="true" /></span>)}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
         case 'full':
             return (
                 <div className="full">
@@ -411,7 +366,7 @@ function Section({ s }) {
     );
 }
 
-/* ---------- vertical navigation (right) with scroll progress line ---------- */
+/* ---------- navigation: pill at the top, with a second pill for sub-pages ---------- */
 function SideNav({ list, active, go }) {
     const [open, setOpen] = useState(false);
     const groups = [];
@@ -479,7 +434,6 @@ export default function About({ content }) {
     useEffect(() => {
         const el = root.current;
         const secs = [...el.querySelectorAll('.sec')];
-        const heroEl = el.querySelector('.hero');
 
         /* the section crossing the middle of the screen becomes the live one */
         const io = new IntersectionObserver((l) => l.forEach((e) => {
@@ -491,12 +445,12 @@ export default function About({ content }) {
         const vio = new IntersectionObserver((l) => l.forEach((e) => (e.isIntersecting ? e.target.play?.().catch(() => {}) : e.target.pause())), { threshold: 0.1 });
         el.querySelectorAll('video').forEach((v) => vio.observe(v));
 
-        /* scroll-linked values. Everything is written in whole pixels so text and photos stay sharp. */
+        /* scroll progress bar */
         let raf = 0;
         const onScroll = () => {
             cancelAnimationFrame(raf);
             raf = requestAnimationFrame(() => {
-                const vh = window.innerHeight, y = window.scrollY, r = el.getBoundingClientRect();
+                const vh = window.innerHeight, r = el.getBoundingClientRect();
                 const total = r.height - vh;
                 el.style.setProperty('--prog', total > 0 ? clamp(-r.top / total, 0, 1).toFixed(4) : 0);
             });
@@ -532,15 +486,10 @@ export default function About({ content }) {
     }, [ready, sections.length]);
 
     const cur = sections.find((s) => s.id === active);
-    const idx = sections.findIndex((s) => s.id === active);
-    const here = cur ? (cur.nav || cur.group || '') : '';
 
     return (
         <div className={`ab t-${tone(cur?.tone)} ${ready ? 'is-ready' : ''}`} ref={root}>
             <div className="ab-prog" aria-hidden="true"><span /></div>
-            {idx >= 0 && (
-                <div className="ab-idx" aria-hidden="true"><b key={active}>{pad(idx + 1)}</b><span>/ {pad(sections.length)}</span><em>{here}</em></div>
-            )}
             <SideNav list={sections} active={active} go={go} />
             <main>
                 <Hero h={hero} firstId={sections[0]?.id} onStart={() => sections[0] && go(sections[0].id)} />

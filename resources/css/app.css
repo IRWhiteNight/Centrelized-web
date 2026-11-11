@@ -43,3 +43,67 @@
 ::-webkit-scrollbar:horizontal {
     height: 8px;
 }
+
+
+/* =========================================
+   CUSTOM SCROLLBAR (colour changes per site)
+   The site name comes from <html data-site="...">, which app.jsx sets on every page.
+
+   Yellow : psb, admin-psb, super-admin (and auth/login pages)
+   Blue   : coeuas, admin-coeuas
+========================================= */
+
+/* default = yellow */
+:root {
+    --sb-thumb: #ffd60a;
+    --sb-thumb-hover: #ffe45c;
+    --sb-track: #0a0a0a;
+}
+
+/* COE-UAS website + COE-UAS admin = blue */
+html[data-site="coeuas"],
+html[data-site="admin-coeuas"] {
+    --sb-thumb: #2997ff;
+    --sb-thumb-hover: #0a4dff;
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--sb-thumb) var(--sb-track);
+}
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+/* Scrollbar track */
+::-webkit-scrollbar-track {
+    background: var(--sb-track);
+    border-radius: 999px;
+}
+
+/* Scrollbar thumb */
+::-webkit-scrollbar-thumb {
+    background: var(--sb-thumb);
+    border: 2px solid var(--sb-track);
+    border-radius: 999px;
+    transition: background 0.3s ease;
+}
+
+/* Hover effect */
+::-webkit-scrollbar-thumb:hover {
+    background: var(--sb-thumb-hover);
+}
+
+/* Scrollbar corner */
+::-webkit-scrollbar-corner {
+    background: var(--sb-track);
+}
+
+/* Horizontal scrollbar */
+::-webkit-scrollbar:horizontal {
+    height: 8px;
+}

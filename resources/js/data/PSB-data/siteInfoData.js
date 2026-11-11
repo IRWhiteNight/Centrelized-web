@@ -1,13 +1,28 @@
 /* ==========================================================================
    SITE INFORMATION: ALL CONTENT LIVES HERE
-   Edit text, links and images in this file only. The page layout never needs to change.
-   - "TBC" means the supplied documents do not contain this yet. Replace it when you have it.
-   - Images live in  public/images/about/  (an empty or missing file shows a labelled placeholder).
-   - Add / remove / reorder items in any list and the page follows.
+   Put this file at resources/js/data/PSB-data/siteInfoData.js
+
+   HOW TO EDIT (the page layout never needs to change)
+   - TEXT:    change the strings below.
+   - ADD:     copy one { ... } line inside any list, paste it under the last one, edit it.
+   - DELETE:  remove that { ... } line. The page and the menu follow.
+   - REORDER: move the lines up or down.
+   - PHOTOS:  files go in  public/images/about/  and are written as  P + 'file.jpg'.
+              An empty ('') or missing file shows a labelled placeholder, nothing breaks.
+   - VIDEOS:  anywhere a photo is accepted you can use a video instead
+              (.mp4 / .webm). Put it in public/videos/ and write '/videos/clip.mp4'.
+              Videos play muted and loop. Click-to-enlarge shows controls.
+   - HERO VIDEO: set hero.video below (imported file, or a '/videos/...' path).
+   - SECTIONS: delete a line from `sections` to remove a whole section and its menu item.
+               `tone` = light | dark | graphite | yellow  (the section background).
+   - "TBC" means the supplied documents do not contain this yet.
    ========================================================================== */
+
+import heroVideo from '../../videos/bg-video2.mp4';
 
 const P = '/images/about/';
 
+/* every photo used on the page, in one place */
 export const IMG = {
     aerial: P + 'site-aerial.jpg',
     plan: P + 'site-plan.jpg',
@@ -30,33 +45,34 @@ export const page = {
 };
 
 export const hero = {
+    /* background: video first, then image, then plain dark. Use '' to turn one off. */
+    video: heroVideo,
+    image: '',
     eyebrow: 'Site information',
     title: 'Everything you need to know',
     titleEm: 'before you fly with us.',
     text: 'Where the sandbox is, what is on site, how the airspace works, today’s weather and the guidelines for taking part. In one place.',
+    note: 'Sungai Batu Pahat, Perlis · about 30 hectares',
     stats: [
-        { to: 30, unit: ' ha', label: 'Sandbox facility (about)' },
-        { to: 6, unit: '', label: 'Aerodrome facilities' },
-        { to: 2, unit: '', label: 'Planned flight corridors' },
-        { to: 4, unit: '', label: 'Development phases' },
+        { to: 30, unit: ' ha', label: 'Sandbox facility (about)', text: 'Beside the UniMAP runway' },
+        { to: 6, unit: '', label: 'Aerodrome facilities', text: 'Landing, test, support and training' },
+        { to: 2, unit: '', label: 'Planned flight corridors', text: 'East to the dam, west to Langkawi' },
+        { to: 4, unit: '', label: 'Development phases', text: 'Phase 1 build-out from mid 2026' },
     ],
 };
 
-/* Order here = order on the page = order in the top navigation */
+/* Order here = order on the page = order in the top menu */
 export const sections = [
-    { id: 'location', label: 'Location & Access', n: '01', title: 'Location', em: '& access.', intro: 'Sungai Batu Pahat, Perlis: a controlled, accessible, low-density environment for early-stage testing and scalable sandbox operations.' },
-    { id: 'facilities', label: 'Facilities', n: '02', title: 'Facilities', em: '& infrastructure.', intro: 'A functional mock-up aerodrome: test areas, landing areas, hangar and ground support in one safe, controlled site.' },
-    { id: 'airspace', label: 'Airspace', n: '03', title: 'Airspace &', em: 'operations.', intro: 'A controlled, regulator-ready airspace, coordinated with the Civil Aviation Authority of Malaysia and other agencies.' },
-    { id: 'weather', label: 'Weather', n: '04', title: 'Weather', em: 'information.', intro: 'A quick summary for planning, with links to the official sources you should always check before flying.' },
-    { id: 'guidelines', label: 'Guidelines', n: '05', title: 'Guidelines', em: '& downloads.', intro: 'How to take part, what support is provided, safety guidance and documents to download.' },
+    { id: 'location', tone: 'light', label: 'Location & Access', n: '01', title: 'Location', em: '& access.', intro: 'Sungai Batu Pahat, Perlis: a controlled, accessible, low-density environment for early-stage testing and scalable sandbox operations.' },
+    { id: 'facilities', tone: 'dark', label: 'Facilities', n: '02', title: 'Facilities', em: '& infrastructure.', intro: 'A functional mock-up aerodrome: test areas, landing areas, hangar and ground support in one safe, controlled site.' },
+    { id: 'airspace', tone: 'light', label: 'Airspace', n: '03', title: 'Airspace &', em: 'operations.', intro: 'A controlled, regulator-ready airspace, coordinated with the Civil Aviation Authority of Malaysia and other agencies.' },
+    { id: 'weather', tone: 'graphite', label: 'Weather', n: '04', title: 'Weather', em: 'information.', intro: 'A quick summary for planning, with links to the official sources you should always check before flying.' },
+    { id: 'guidelines', tone: 'yellow', label: 'Guidelines', n: '05', title: 'Guidelines', em: '& downloads.', intro: 'How to take part, what support is provided, safety guidance and documents to download.' },
 ];
 
 /* ---------- 01 LOCATION & ACCESS ---------- */
 export const location = {
-    address: [
-        'Sungai Batu Pahat Mango Farm (PKENPs)',
-        'Sungai Batu Pahat, Perlis, Malaysia',
-    ],
+    address: ['Sungai Batu Pahat Mango Farm (PKENPs)', 'Sungai Batu Pahat, Perlis, Malaysia'],
     coordinates: 'TBC',
     postcode: 'TBC',
     /* Google Maps searches this text. Replace with exact coordinates later, e.g. '6.50,100.20' */
@@ -75,6 +91,7 @@ export const location = {
         { title: 'Low-density surroundings', text: 'Low population density means minimal impact on daily life and communities.' },
     ],
     nearby: ['Perlis Snake Park', 'Taman Eko-Rimba Bukit Ayer', 'Timah Tasoh Dam', 'Kuala Perlis', 'Langkawi Island (via the west corridor)'],
+    /* photos or videos. 4 fills one row on a wide screen. */
     gallery: [
         { src: IMG.aerial, caption: 'Sandbox site and the runway that will be upgraded' },
         { src: IMG.farm, caption: 'Sungai Batu Pahat Mango Farm site, 19.7 ha' },
@@ -85,6 +102,7 @@ export const location = {
 
 /* ---------- 02 FACILITIES & INFRASTRUCTURE ---------- */
 export const facilities = {
+    /* slideshow + the equal-size picker below it. Add or remove lines freely. */
     items: [
         { name: 'Vertiport', tag: 'Landing areas', src: P + 'vertiport.jpg', text: 'Purpose-built vertiports for take-off and landing.' },
         { name: 'Test Flight Corridor', tag: 'Test areas', src: P + 'test-flight-corridor.jpg', text: 'A dedicated low-altitude test range with segmented altitude zones for different operational scenarios.' },
@@ -93,19 +111,17 @@ export const facilities = {
         { name: 'Flight Simulator', tag: 'Training', src: P + 'flight-simulator.jpg', text: 'Operator training and simulation. The Phase 2 roadmap adds a full Training and Simulation Center.' },
         { name: 'Radar / Communication System / UTMS', tag: 'Airspace management', src: P + 'radar-utms.jpg', text: 'Radar, communication and Unmanned Traffic Management (UTM) systems for digital airspace management.' },
     ],
-    hangar: { src: IMG.hangar, caption: 'Main building and hangar bay, architect conceptual render' },
-    exterior: { src: IMG.exterior, caption: 'Main building, architect conceptual render' },
+    /* architect renders shown beside the site plan */
+    renders: [
+        { src: IMG.hangar, caption: 'Main building and hangar bay, architect conceptual render' },
+        { src: IMG.exterior, caption: 'Main building, architect conceptual render' },
+    ],
     planTitle: 'Phase 1 site plan',
     plan: { src: IMG.plan, caption: 'Architect conceptual illustration: Phase 1, Mango Farm' },
     legend: ['Guard House', 'Main Building', 'EV Parking', 'Parking', 'Motorcycle Parking', 'Helipad', 'Vertiport', 'Lake'],
     provided: {
         title: 'Available to participants',
-        items: [
-            'Access to sandbox test zones',
-            'Vertiport, landing area and staging',
-            'Power and charging support (if available)',
-            'Site logistics coordination',
-        ],
+        items: ['Access to sandbox test zones', 'Vertiport, landing area and staging', 'Power and charging support (if available)', 'Site logistics coordination'],
     },
     phase1: {
         title: 'Phase 1 build-out',
@@ -156,26 +172,20 @@ export const weather = {
 
 /* ---------- 05 GUIDELINES & DOWNLOADS ---------- */
 export const guidelines = {
+    stepsTitle: 'How to take part',
     steps: [
         { title: 'Submit interest', text: 'Send your Expression of Interest.' },
         { title: 'Define activity', text: 'Outline your testing scope and objectives.' },
         { title: 'Review & approval', text: 'Coordination and review with relevant authorities.' },
         { title: 'Execute', text: 'Conduct your testing within the sandbox.' },
     ],
-    accordion: [
-        {
-            title: 'Who can participate',
-            list: ['Aircraft & drone manufacturers', 'Technology & system providers', 'Operators & service providers', 'Universities & research institutions', 'Government agencies'],
-        },
-        {
-            title: 'Operational notes',
-            list: ['Ways to take part: join government-led trials, test & demonstrate your technology, or conduct research & innovation', 'Grant applications: funding opportunities, application guidance and documentation review', 'Collaboration: matching with local partners and joint testing with other participants and hosts'],
-        },
-        {
-            title: 'Safety guidance',
-            list: ['Operational SOP development', 'Safety framework', 'Regulatory coordination', 'Governance framework', 'Basic safety systems and an operational safety zone on site'],
-        },
+    /* every group is shown open, side by side */
+    groups: [
+        { title: 'Who can participate', list: ['Aircraft & drone manufacturers', 'Technology & system providers', 'Operators & service providers', 'Universities & research institutions', 'Government agencies'] },
+        { title: 'Operational notes', list: ['Ways to take part: join government-led trials, test & demonstrate your technology, or conduct research & innovation', 'Grant applications: funding opportunities, application guidance and documentation review', 'Collaboration: matching with local partners and joint testing with other participants and hosts'] },
+        { title: 'Safety guidance', list: ['Operational SOP development', 'Safety framework', 'Regulatory coordination', 'Governance framework', 'Basic safety systems and an operational safety zone on site'] },
     ],
+    downloadsTitle: 'Downloads',
     /* href '' shows "Coming soon". Put the file in public/downloads/ and set e.g. '/downloads/eoi-form.pdf' */
     downloads: [
         { title: 'Expression of Interest form', type: 'PDF', href: '' },
@@ -184,3 +194,5 @@ export const guidelines = {
         { title: 'Public airspace chart', type: 'PDF', href: '' },
     ],
 };
+
+export const closing = { heading: 'Have a technology', em: 'to test?' };

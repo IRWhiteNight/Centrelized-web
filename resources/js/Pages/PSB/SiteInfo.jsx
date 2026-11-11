@@ -1,66 +1,45 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import '../../../css/PSB-css/psb-siteinfo.css';
-import videobg from '../../videos/bg-video2.mp4';
-import { page, hero, sections, location as loc, facilities, airspace, weather, guidelines } from '../../data/PSB-data/siteInfoData';
+import {
+    page, hero, sections, location as loc, facilities, airspace, weather, guidelines, closing,
+} from '../../data/PSB-data/siteInfoData';
 
-/* ==========================================================
-   HELPERS
-   W      splits a headline into words that rise out of a mask when the block scrolls into view
-   Rv     scroll reveal (fade only, so text is never moved or softened)
-   Pic    photo wiped open with a clip, never scaled or blurred; optional click to open the lightbox
-   Count  number that counts up when it scrolls into view
-========================================================== */
-
+/* ==========================================================================
+   Helpers
+   All content comes from siteInfoData.js. Nothing in this file needs editing
+   to add, remove or change text, photos or videos.
+========================================================================== */
 const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const D = (i) => ({ '--d': i * 80 });
+const pad = (n) => String(n).padStart(2, '0');
+const isVideo = (s) => /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(s || '');
+const TONES = { light: 'si-light', dark: 'si-dark', graphite: 'si-dark si-graphite', yellow: 'si-yellow' };
 
-const words = (str, o, d, s) => str.split(' ').map((w, i) => (
-    <span key={i}><span className="si-w"><span className="si-wi" style={{ '--wd': d + (o + i) * s }}>{w}</span></span>{' '}</span>
-));
-
-function W({ t, em, d = 0, s = 40 }) {
-    const n = t ? t.split(' ').length : 0;
-    return <>{t && words(t, 0, d, s)}{em && <em>{words(em, n, d, s)}</em>}</>;
+/* adds .in to every .si-rv once it is on screen */
+function useReveal(rootRef) {
+    useEffect(() => {
+        const nodes = rootRef.current.querySelectorAll('.si-rv');
+        if (reduced() || !('IntersectionObserver' in window)) {
+            nodes.forEach((n) => n.classList.add('in'));
+            return undefined;
+        }
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach((e) => {
+                if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+            });
+        }, { threshold: 0.05, rootMargin: '0px 0px -4% 0px' });
+        nodes.forEach((n) => io.observe(n));
+        return () => io.disconnect();
+    }, [rootRef]);
 }
 
-function Rv({ as: T = 'div', className = '', d = 0, text = false, style, children, ...rest }) {
-    return (
-        <T data-rv className={`si-rv${text ? ' si-t' : ''} ${className}`} style={{ '--d': d, ...style }} {...rest}>
-            {children}
-        </T>
-    );
-}
-
-function Photo({ src, alt, label }) {
-    const [bad, setBad] = useState(!src);
-    return bad
-        ? <div className="si-ph"><span>{label || alt}</span></div>
-        : <img src={src} alt={alt} loading="lazy" decoding="async" onError={() => setBad(true)} />;
-}
-
-function Pic({ src, alt, label, caption, className = '', ratio, d = 0, onOpen }) {
-    const open = onOpen && src ? () => onOpen({ src, alt, caption }) : undefined;
-    const key = open ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } } : undefined;
-    return (
-        <figure
-            data-rv
-            className={`si-rv si-pic ${className}`}
-            style={{ '--d': d, aspectRatio: ratio }}
-            {...(open ? { role: 'button', tabIndex: 0, 'aria-label': `Enlarge: ${alt}`, onClick: open, onKeyDown: key } : {})}
-        >
-            <Photo src={src} alt={alt} label={label} />
-            {caption && <figcaption>{caption}</figcaption>}
-            {open && <span className="si-zoom" aria-hidden="true">+</span>}
-        </figure>
-    );
-}
-
+/* number that counts up the first time it is seen */
 function Count({ to, dec = 0 }) {
     const ref = useRef(null);
     useEffect(() => {
         const el = ref.current;
         if (!el) return undefined;
-        if (reduced()) { el.textContent = to.toFixed(dec); return undefined; }
+        if (reduced()) { el.textContent = Number(to).toFixed(dec); return undefined; }
         const io = new IntersectionObserver(([e]) => {
             if (!e.isIntersecting) return;
             io.disconnect();
@@ -71,7 +50,7 @@ function Count({ to, dec = 0 }) {
                 if (p < 1) requestAnimationFrame(run);
             };
             requestAnimationFrame(run);
-        }, { threshold: 0.6 });
+        }, { threshold: 0.4 });
         io.observe(el);
         return () => io.disconnect();
     }, [to, dec]);
@@ -80,201 +59,59 @@ function Count({ to, dec = 0 }) {
 
 const Tbc = ({ v }) => (v === 'TBC' ? <span className="si-tbc">TBC</span> : v);
 
-/* adds .is-in to every [data-rv] once it enters the viewport */
-function useReveal() {
-    useEffect(() => {
-        const els = document.querySelectorAll('.si [data-rv]');
-        if (reduced()) { els.forEach((e) => e.classList.add('is-in')); return undefined; }
-        const io = new IntersectionObserver((list) => list.forEach((e) => {
-            if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
-        }), { threshold: 0.12, rootMargin: '0px 0px -6% 0px' });
-        els.forEach((e) => io.observe(e));
-        return () => io.disconnect();
-    }, []);
+const Arrow = () => (
+    <svg className="si-arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+        <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+/* photo OR video, with a labelled placeholder when the file is empty or missing */
+function Media({ src, alt, label, controls = false }) {
+    const [bad, setBad] = useState(!src);
+    useEffect(() => { setBad(!src); }, [src]);
+    if (bad) return <div className="si-ph"><span>{label || alt}</span></div>;
+    return isVideo(src)
+        ? <video src={src} aria-label={alt} autoPlay={!controls} muted={!controls} loop playsInline controls={controls} preload="metadata" onError={() => setBad(true)} />
+        : <img src={src} alt={alt} loading="lazy" decoding="async" onError={() => setBad(true)} />;
 }
 
-/* Sticky stack.
-   Each section is position: sticky. Its `top` is min(0, viewport height - section height), so a tall section
-   scrolls until its bottom edge reaches the bottom of the screen, then stays put while the next section
-   slides over it. A dark veil (opacity only) deepens on the covered section.
-   Also drives: top progress bar, active tab, per-section progress (--sp) and the hero parallax. */
-function useStack(setActive) {
-    useEffect(() => {
-        const root = document.querySelector('.si');
-        const bar = root.querySelector('.si-progress i');
-        const heroBg = root.querySelector('.si-hero-bg');
-        const secs = [...root.querySelectorAll('.si-stack > .si-sec')];
-        let raf = 0;
-        let last = '';
-
-        const fit = () => {
-            const vh = window.innerHeight;
-            secs.forEach((el) => { el.style.top = `${Math.min(0, Math.round(vh - el.offsetHeight))}px`; });
-        };
-        const run = () => {
-            raf = 0;
-            const vh = window.innerHeight;
-            const sy = window.scrollY;
-            const max = document.documentElement.scrollHeight - vh;
-            if (bar) bar.style.transform = `scaleX(${max > 0 ? clamp(sy / max, 0, 1) : 0})`;
-            if (heroBg && !reduced()) heroBg.style.transform = `translate3d(0, ${sy < vh ? Math.round(sy * 0.28) : 0}px, 0)`;
-
-            let cur = '';
-            sections.forEach((s) => {
-                const el = document.getElementById(s.id);
-                if (el && el.getBoundingClientRect().top <= vh * 0.4) cur = s.id;
-            });
-            if (cur !== last) { last = cur; setActive(cur); }
-
-            secs.forEach((el) => {
-                const r = el.getBoundingClientRect();
-                const range = el.offsetHeight - vh;
-                const p = range > 0 ? clamp(-r.top / range, 0, 1) : clamp(1 - r.top / vh, 0, 1);
-                el.style.setProperty('--sp', p.toFixed(3));
-
-                const nx = el.nextElementSibling;
-                if (!nx) return;
-                const stuck = r.bottom <= vh + 2;
-                const t = nx.getBoundingClientRect().top;
-                el.style.setProperty('--cv', stuck ? (clamp(1 - t / vh, 0, 1) * 0.6).toFixed(3) : '0');
-            });
-        };
-        const onScroll = () => { if (!raf) raf = requestAnimationFrame(run); };
-        const ro = new ResizeObserver(() => { fit(); onScroll(); });
-        secs.forEach((s) => ro.observe(s));
-        fit();
-        run();
-        window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('resize', onScroll);
-        return () => {
-            cancelAnimationFrame(raf);
-            ro.disconnect();
-            window.removeEventListener('scroll', onScroll);
-            window.removeEventListener('resize', onScroll);
-        };
-    }, [setActive]);
-}
-
-/* Pointer effects (mouse only): card spotlight, hero light, magnetic buttons. One delegated listener. */
-function usePointer() {
-    useEffect(() => {
-        const root = document.querySelector('.si');
-        if (!root || reduced()) return undefined;
-        let mag = null;
-        const clear = () => { if (mag) { mag.style.translate = ''; mag = null; } };
-        const move = (e) => {
-            if (e.pointerType === 'touch') return;
-            const t = e.target;
-            if (!t || !t.closest) return;
-            const spot = t.closest('.si-card, .si-picker button, .si-file');
-            if (spot) {
-                const r = spot.getBoundingClientRect();
-                spot.style.setProperty('--mx', `${Math.round(e.clientX - r.left)}px`);
-                spot.style.setProperty('--my', `${Math.round(e.clientY - r.top)}px`);
-            }
-            const h = t.closest('.si-hero');
-            if (h) {
-                const r = h.getBoundingClientRect();
-                h.style.setProperty('--hx', `${Math.round(e.clientX - r.left)}px`);
-                h.style.setProperty('--hy', `${Math.round(e.clientY - r.top)}px`);
-            }
-            const m = t.closest('.si-btn, .si-cta');
-            if (m !== mag) clear();
-            if (m) {
-                mag = m;
-                const r = m.getBoundingClientRect();
-                const x = Math.round((e.clientX - (r.left + r.width / 2)) * 0.22);
-                const y = Math.round((e.clientY - (r.top + r.height / 2)) * 0.32);
-                m.style.translate = `${x}px ${y}px`;
-            }
-        };
-        root.addEventListener('pointermove', move);
-        root.addEventListener('pointerleave', clear);
-        return () => { root.removeEventListener('pointermove', move); root.removeEventListener('pointerleave', clear); clear(); };
-    }, []);
-}
-
-/* Where a section starts in normal flow (a stuck section reports a shifted position, so add it up by hand) */
-const flowTop = (id) => {
-    const stack = document.querySelector('.si-stack');
-    const kids = [...stack.children];
-    const idx = kids.findIndex((k) => k.id === id);
-    let y = stack.getBoundingClientRect().top + window.scrollY;
-    for (let j = 0; j <= idx; j += 1) {
-        y += parseFloat(getComputedStyle(kids[j]).marginTop) || 0;
-        if (j < idx) y += kids[j].offsetHeight;
-    }
-    return Math.round(y);
-};
-const jump = (e, id) => {
-    e.preventDefault();
-    window.scrollTo({ top: flowTop(id), behavior: reduced() ? 'auto' : 'smooth' });
-};
-
-/* ==========================================================
-   SMALL COMPONENTS
-========================================================== */
-
-function Sec({ s, i, theme, children }) {
-    const next = sections[i + 1];
+/* media tile with optional click-to-enlarge */
+function Pic({ src, alt, label, caption, ratio, d = 0, onOpen, className = '' }) {
+    const open = onOpen && src ? () => onOpen({ src, alt, caption }) : undefined;
+    const key = open ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } } : undefined;
     return (
-        <section id={s.id} className={`si-sec si-sec--${theme}`}>
-            <div className="si-wrap si-split">
-                <aside className="si-side">
-                    <span className="si-ghost" aria-hidden="true">{s.n}</span>
-                    <Rv className="si-n"><b>{s.n}</b><span>{s.label}</span></Rv>
-                    <Rv as="h2" className="si-h" text><W t={s.title} em={s.em} /></Rv>
-                    <Rv as="p" className="si-intro" d={150}>{s.intro}</Rv>
-                    <ul className="si-dots" aria-hidden="true">
-                        {sections.map((x, k) => <li key={x.id} className={k < i ? 'is-past' : k === i ? 'is-on' : ''} />)}
-                    </ul>
-                    <div className="si-sp" aria-hidden="true"><i /></div>
-                    {next && <a className="si-next" href={`#${next.id}`} onClick={(e) => jump(e, next.id)}>Next: {next.label}<i aria-hidden="true">↓</i></a>}
-                </aside>
-                <div className="si-body">{children}</div>
+        <figure
+            className={`si-rv si-pic ${className}`}
+            style={{ '--d': d, aspectRatio: ratio }}
+            {...(open ? { role: 'button', tabIndex: 0, 'aria-label': `Enlarge: ${alt}`, onClick: open, onKeyDown: key } : {})}
+        >
+            <Media src={src} alt={alt} label={label || alt} />
+            {caption && <figcaption>{caption}</figcaption>}
+            {open && <span className="si-zoom" aria-hidden="true">+</span>}
+        </figure>
+    );
+}
+
+function Sec({ s, children }) {
+    return (
+        <section id={s.id} className={`si-sec ${TONES[s.tone] || TONES.light}`}>
+            <div className="si-wrap">
+                <header className="si-head">
+                    <p className="si-kicker si-rv"><span>{s.n}</span>{s.label}</p>
+                    <h2 className="si-h si-rv" style={D(1)}>{s.title}{s.em && <> <em>{s.em}</em></>}</h2>
+                    <p className="si-lede si-rv" style={D(2)}>{s.intro}</p>
+                </header>
+                {children}
             </div>
         </section>
     );
 }
 
-function Sub({ children }) {
-    return <Rv as="h3" className="si-sub">{children}</Rv>;
-}
+const Sub = ({ children }) => <h3 className="si-sub si-rv">{children}</h3>;
 
-function Acc({ title, list, d }) {
-    const [open, setOpen] = useState(false);
-    return (
-        <Rv className={`si-acc${open ? ' is-open' : ''}`} d={d}>
-            <button type="button" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-                <span>{title}</span><i aria-hidden="true" />
-            </button>
-            <div className="si-acc-body"><ul>{list.map((x) => <li key={x}>{x}</li>)}</ul></div>
-        </Rv>
-    );
-}
-
-/* Hero flight path: a dashed route with waypoints and a drone that follows it */
-function FlightPath() {
-    const d = 'M20 380 C 160 360, 190 210, 330 220 S 520 90, 600 120 S 740 60, 860 30';
-    return (
-        <svg className="si-path" viewBox="0 0 880 420" aria-hidden="true">
-            <path className="trail" d={d} />
-            {[[20, 380], [330, 220], [600, 120], [860, 30]].map(([x, y], i) => (
-                <g key={i}>
-                    <circle className="ring" cx={x} cy={y} r="16" />
-                    <circle className="node" cx={x} cy={y} r="5" />
-                </g>
-            ))}
-            {!reduced() && (
-                <circle className="drone" r="7">
-                    <animateMotion dur="9s" repeatCount="indefinite" path={d} />
-                </circle>
-            )}
-        </svg>
-    );
-}
-
-/* Facilities slideshow: big stage that advances by itself (pauses on hover or with the pause button) */
+/* ==========================================================================
+   Facilities: big stage + equal-height index list that sits beside it
+========================================================================== */
 function Facilities() {
     const items = facilities.items;
     const n = items.length;
@@ -282,18 +119,14 @@ function Facilities() {
     const [play, setPlay] = useState(true);
     const [hover, setHover] = useState(false);
     const go = useCallback((v) => setK(((v % n) + n) % n), [n]);
-    const pad = (v) => String(v).padStart(2, '0');
+    if (!n) return null;
 
     return (
-        <>
-            <Rv
-                className="si-stage"
-                onMouseEnter={() => setHover(true)}
-                onMouseLeave={() => setHover(false)}
-            >
+        <div className="si-show si-rv">
+            <div className="si-stage" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
                 {items.map((f, i) => (
                     <figure key={f.name} className={i === k ? 'is-on' : ''}>
-                        <Photo src={f.src} alt={f.name} label={`${f.name} image`} />
+                        <Media src={f.src} alt={f.name} label={`${f.name} image`} />
                         <figcaption>
                             <small>{f.tag}</small>
                             <h3>{f.name}</h3>
@@ -301,45 +134,41 @@ function Facilities() {
                         </figcaption>
                     </figure>
                 ))}
+                <span className="si-bignum" aria-hidden="true">{pad(k + 1)}</span>
                 <div className="si-fctl">
-                    <span>{pad(k + 1)} / {pad(n)}</span>
-                    <button type="button" aria-label="Previous" onClick={() => go(k - 1)}>←</button>
+                    <button type="button" aria-label="Previous" onClick={() => go(k - 1)}>&larr;</button>
                     <button type="button" aria-label={play ? 'Pause slideshow' : 'Play slideshow'} onClick={() => setPlay((p) => !p)}>{play ? '❚❚' : '▶'}</button>
-                    <button type="button" aria-label="Next" onClick={() => go(k + 1)}>→</button>
+                    <button type="button" aria-label="Next" onClick={() => go(k + 1)}>&rarr;</button>
                 </div>
                 <div className={`si-fprog${!play || hover ? ' is-paused' : ''}`} aria-hidden="true">
                     <i key={`${k}-${play}`} onAnimationEnd={() => { if (play) go(k + 1); }} />
                 </div>
-            </Rv>
-            <Rv as="ul" className="si-picker" d={100}>
+            </div>
+            <ol className="si-idx">
                 {items.map((f, i) => (
                     <li key={f.name}>
-                        <button type="button" data-i={pad(i + 1)} className={i === k ? 'is-on' : ''} onMouseEnter={() => setK(i)} onFocus={() => setK(i)} onClick={() => setK(i)}>
-                            <b>{f.name}</b>
-                            <small>{f.tag}</small>
+                        <button type="button" className={i === k ? 'is-on' : ''} onMouseEnter={() => setK(i)} onFocus={() => setK(i)} onClick={() => setK(i)}>
+                            <span className="si-idx-n">{pad(i + 1)}</span>
+                            <span className="si-idx-t"><b>{f.name}</b><small>{f.tag}</small></span>
+                            <Arrow />
                         </button>
                     </li>
                 ))}
-            </Rv>
-        </>
+            </ol>
+        </div>
     );
 }
 
-/* Operating areas drawn as layered airspace plates. Pick a plate or a row to read about it. */
+/* Operating areas drawn as layered airspace plates */
 function Layers({ areas }) {
     const [k, setK] = useState(0);
     const n = areas.length;
+    if (!n) return null;
     const cy = (j) => 96 + (n - 1 - j) * 104;
     const h = cy(0) + 96;
     return (
-        <Rv className="si-lay">
+        <div className="si-lay si-rv">
             <svg viewBox={`0 0 420 ${h}`} role="img" aria-label="Operating areas drawn as layered airspace plates">
-                <defs>
-                    <linearGradient id="si-plate-grad" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0" stopColor="#ffd21f" />
-                        <stop offset="1" stopColor="#ff8a3d" />
-                    </linearGradient>
-                </defs>
                 {areas.map((a, j) => {
                     const y = cy(j);
                     return (
@@ -362,35 +191,13 @@ function Layers({ areas }) {
                     </li>
                 ))}
             </ul>
-        </Rv>
+        </div>
     );
 }
 
-/* WMO weather code -> short text and a mood for the card gradient */
+/* WMO weather code to short text */
 const wx = (c) => (c === 0 ? 'Clear sky' : c <= 3 ? 'Partly cloudy' : c <= 48 ? 'Fog' : c <= 57 ? 'Drizzle' : c <= 67 ? 'Rain' : c <= 82 ? 'Rain showers' : 'Thunderstorm');
-const mood = (c) => (c <= 1 ? 'clear' : c <= 48 ? 'cloud' : c <= 82 ? 'rain' : 'storm');
 const compass = (deg) => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(deg / 45) % 8];
-
-function WxIcon({ m }) {
-    return (
-        <svg className="si-wxicon" viewBox="0 0 64 64" aria-hidden="true">
-            {m === 'clear' && (
-                <g>
-                    <circle className="sun-core" cx="32" cy="32" r="10" />
-                    <g className="spin">{[0, 45, 90, 135, 180, 225, 270, 315].map((a) => <path key={a} d="M32 8 V16" transform={`rotate(${a} 32 32)`} />)}</g>
-                </g>
-            )}
-            {m !== 'clear' && <path d="M18 44 H44 a10 10 0 0 0 1-20 a14 14 0 0 0-27 4 a8 8 0 0 0 0 16 Z" />}
-            {(m === 'rain' || m === 'storm') && (
-                <g>
-                    <path className="drop" d="M22 50 V54" />
-                    <path className="drop" d="M32 50 V54" />
-                    <path className="drop" d="M42 50 V54" />
-                </g>
-            )}
-        </svg>
-    );
-}
 
 function Weather() {
     const [data, setData] = useState(null);
@@ -406,27 +213,23 @@ function Weather() {
 
     const c = data?.current;
     const dly = data?.daily;
-    const m = c ? mood(c.weather_code) : undefined;
     const gmin = dly ? Math.min(...dly.temperature_2m_min) : 0;
     const gmax = dly ? Math.max(...dly.temperature_2m_max) : 1;
     const span = Math.max(1, gmax - gmin);
 
     return (
-        <Rv className="si-card si-wxcard" data-wx={m}>
-            <div className="si-wxtop">
-                <p className="si-label" style={{ color: '#ffd21f' }}>{weather.label}</p>
-                {m && <WxIcon m={m} />}
-            </div>
+        <div className="si-card si-wxcard si-rv">
+            <p className="si-label">{weather.label}</p>
             {failed && <p className="si-muted">The live summary is unavailable right now. Please use the official sources.</p>}
-            {!data && !failed && <p className="si-muted">Loading weather…</p>}
+            {!data && !failed && <p className="si-muted">Loading weather...</p>}
             {c && (
                 <>
                     <div className="si-wxnow">
-                        <strong>{Math.round(c.temperature_2m)}°<small>C</small></strong>
+                        <strong>{Math.round(c.temperature_2m)}&deg;<small>C</small></strong>
                         <span>{wx(c.weather_code)}</span>
                     </div>
                     <dl className="si-wxdl">
-                        <div><dt>Feels like</dt><dd>{Math.round(c.apparent_temperature)}°C</dd></div>
+                        <div><dt>Feels like</dt><dd>{Math.round(c.apparent_temperature)}&deg;C</dd></div>
                         <div><dt>Humidity</dt><dd>{c.relative_humidity_2m}%</dd></div>
                         <div><dt>Wind</dt><dd>{Math.round(c.wind_speed_10m)} km/h {compass(c.wind_direction_10m)}</dd></div>
                         <div><dt>Rain now</dt><dd>{c.precipitation} mm</dd></div>
@@ -438,9 +241,9 @@ function Weather() {
                             return (
                                 <div key={t}>
                                     <small>{new Date(`${t}T12:00:00`).toLocaleDateString('en-MY', { weekday: 'short' })}</small>
-                                    <b>{Math.round(hi)}° <em>{Math.round(lo)}°</em></b>
+                                    <b>{Math.round(hi)}&deg; <em>{Math.round(lo)}&deg;</em></b>
                                     <span className="si-wxbar"><i style={{ left: `${((lo - gmin) / span) * 100}%`, right: `${100 - ((hi - gmin) / span) * 100}%` }} /></span>
-                                    <span>{dly.precipitation_probability_max[i]}% rain</span>
+                                    <span className="si-wxrain">{dly.precipitation_probability_max[i]}% rain</span>
                                 </div>
                             );
                         })}
@@ -448,11 +251,11 @@ function Weather() {
                 </>
             )}
             <p className="si-note">{weather.note}</p>
-        </Rv>
+        </div>
     );
 }
 
-/* Full-screen photo viewer. Esc, click outside or the close button to leave. */
+/* Full-screen viewer for photos and videos. Esc, click outside or the close button to leave. */
 function Lightbox({ item, onClose }) {
     useEffect(() => {
         const key = (e) => { if (e.key === 'Escape') onClose(); };
@@ -463,254 +266,364 @@ function Lightbox({ item, onClose }) {
     }, [onClose]);
     return (
         <div className="si-lb" role="dialog" aria-modal="true" aria-label={item.alt} onClick={onClose}>
-            <button type="button" aria-label="Close" onClick={onClose}>×</button>
-            <img src={item.src} alt={item.alt} onClick={(e) => e.stopPropagation()} onError={onClose} />
+            <button type="button" aria-label="Close" onClick={onClose}>&times;</button>
+            {isVideo(item.src)
+                ? <video src={item.src} controls autoPlay loop playsInline onClick={(e) => e.stopPropagation()} onError={onClose} />
+                : <img src={item.src} alt={item.alt} onClick={(e) => e.stopPropagation()} onError={onClose} />}
             {item.caption && <p>{item.caption}</p>}
         </div>
     );
 }
 
-/* ==========================================================
-   PAGE
-========================================================== */
-
-export default function SiteInfo() {
-    const [active, setActive] = useState('');
-    const [lb, setLb] = useState(null);
-    const tabsRef = useRef(null);
-    useReveal();
-    useStack(setActive);
-    usePointer();
-
-    /* slide the highlight pill under the active tab */
-    useEffect(() => {
-        const box = tabsRef.current;
-        if (!box) return;
-        const ind = box.querySelector('.si-ind');
-        const a = box.querySelector('a.is-active');
-        if (!a) { ind.classList.remove('is-on'); return; }
-        ind.style.setProperty('--ix', `${a.offsetLeft}px`);
-        ind.style.setProperty('--iw', `${a.offsetWidth}px`);
-        ind.classList.add('is-on');
-        const left = a.offsetLeft - (box.clientWidth - a.offsetWidth) / 2;
-        box.scrollTo({ left: Math.max(0, left), behavior: reduced() ? 'auto' : 'smooth' });
-    }, [active]);
-
-    const closeLb = useCallback(() => setLb(null), []);
-    const mapSrc = `https://www.google.com/maps?q=${encodeURIComponent(loc.mapQuery)}&output=embed`;
-    const marquee = Array.from({ length: 8 }, (_, i) => <span key={i}>Perlis Airspace Sandbox</span>);
-
-    return (
-        <div className="si">
-            {/* ---------- hero ---------- */}
-            <section className="si-hero">
-                <div className="si-hero-bg" aria-hidden="true">
-                    <video autoPlay muted loop playsInline preload="auto"><source src={videobg} type="video/mp4" /></video>
+/* ==========================================================================
+   Section bodies. Key = section id in siteInfoData.js.
+   Delete a section in the data file and its body (and menu item) disappears.
+========================================================================== */
+const BODIES = {
+    location: ({ open }) => (
+        <>
+            <div className="si-loc">
+                <div className="si-map si-rv">
+                    <iframe title="Map of the Perlis Airspace Sandbox site" src={`https://www.google.com/maps?q=${encodeURIComponent(loc.mapQuery)}&output=embed`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
                 </div>
-                <div className="si-hero-shade" aria-hidden="true" />
-                <div className="si-hero-tint" aria-hidden="true" />
-                <div className="si-hero-grid" aria-hidden="true" />
-                <div className="si-hero-spot" aria-hidden="true" />
-                <FlightPath />
-                <div className="si-wrap si-hero-in">
-                    <Rv className="si-pill" d={100}><i aria-hidden="true" />{hero.eyebrow}</Rv>
-                    <Rv as="h1" className="si-title" text><W t={hero.title} em={hero.titleEm} d={200} s={60} /></Rv>
-                    <Rv as="p" className="si-lede" d={900}>{hero.text}</Rv>
-                    <div className="si-hstats">
-                        {hero.stats.map((s, i) => (
-                            <Rv key={s.label} d={1100 + i * 120}>
-                                <strong><Count to={s.to} dec={s.dec || 0} />{s.unit}</strong>
-                                <span>{s.label}</span>
-                            </Rv>
-                        ))}
+                <div className="si-loc-cards">
+                    <div className="si-card si-rv" style={D(1)}>
+                        <h3 className="si-card-t">Address</h3>
+                        {loc.address.map((l) => <p key={l} className="si-addr">{l}</p>)}
+                        <dl className="si-dl">
+                            <div><dt>Coordinates</dt><dd><Tbc v={loc.coordinates} /></dd></div>
+                            <div><dt>Postcode</dt><dd><Tbc v={loc.postcode} /></dd></div>
+                        </dl>
+                        <a className="si-link" href={loc.mapLink} target="_blank" rel="noopener noreferrer">Open in Google Maps<Arrow /></a>
+                    </div>
+                    <div className="si-card si-rv" style={D(2)}>
+                        <h3 className="si-card-t">Around the site</h3>
+                        <div className="si-tags">{loc.nearby.map((n) => <span key={n}>{n}</span>)}</div>
                     </div>
                 </div>
-                <a className="si-scroll" href={`#${sections[0].id}`} onClick={(e) => jump(e, sections[0].id)} aria-label="Scroll to content"><i /></a>
-            </section>
-
-            {/* ---------- sticky section bar ---------- */}
-            <div className="si-strip">
-                <a className="si-brand" href={page.homeHref}><i aria-hidden="true" />{page.brand}</a>
-                <nav className="si-tabs" aria-label="Site information sections" ref={tabsRef}>
-                    <span className="si-ind" aria-hidden="true" />
-                    {sections.map((s) => (
-                        <a key={s.id} href={`#${s.id}`} className={active === s.id ? 'is-active' : ''} onClick={(e) => jump(e, s.id)}>{s.label}</a>
-                    ))}
-                </nav>
-                <a className="si-cta" href={page.applyHref}>{page.applyLabel}</a>
-                <div className="si-progress" aria-hidden="true"><i /></div>
             </div>
 
-            <main className="si-stack">
-                {/* ---------- 01 LOCATION & ACCESS ---------- */}
-                <Sec s={sections[0]} i={0} theme="light">
-                    <Rv className="si-map">
-                        <iframe title="Map of the Perlis Airspace Sandbox site" src={mapSrc} loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-                    </Rv>
-                    <div className="si-cols">
-                        <Rv className="si-card" d={80}>
-                            <h3 className="si-card-t">Address</h3>
-                            {loc.address.map((l) => <p key={l} className="si-addr">{l}</p>)}
-                            <dl className="si-dl">
-                                <div><dt>Coordinates</dt><dd><Tbc v={loc.coordinates} /></dd></div>
-                                <div><dt>Postcode</dt><dd><Tbc v={loc.postcode} /></dd></div>
-                            </dl>
-                            <a className="si-link" href={loc.mapLink} target="_blank" rel="noopener noreferrer">Open in Google Maps ↗</a>
-                        </Rv>
-                        <Rv className="si-card" d={180}>
-                            <h3 className="si-card-t">Around the site</h3>
-                            <div className="si-tags">{loc.nearby.map((n) => <span key={n}>{n}</span>)}</div>
-                        </Rv>
+            <div className="si-facts">
+                {loc.facts.map((f, i) => (
+                    <div className="si-fact si-rv" style={D(i)} key={f.label}>
+                        <strong><Count to={f.to} dec={f.dec} />{f.unit}</strong>
+                        <span>{f.label}</span>
                     </div>
+                ))}
+            </div>
 
-                    <div className="si-facts">
-                        {loc.facts.map((f, i) => (
-                            <Rv className="si-fact" d={i * 90} key={f.label}>
-                                <strong><Count to={f.to} dec={f.dec} />{f.unit}</strong>
-                                <span>{f.label}</span>
-                            </Rv>
+            <Sub>Getting there and getting in</Sub>
+            <div className="si-cards">
+                {loc.access.map((a, i) => (
+                    <div className="si-card si-rv" style={D(i)} key={a.title}>
+                        <h4>{a.title}</h4>
+                        <p>{a.text}</p>
+                    </div>
+                ))}
+            </div>
+
+            <div className="si-mosaic">
+                {loc.gallery.map((g, i) => (
+                    <Pic key={g.caption + i} src={g.src} alt={g.caption} caption={g.caption} ratio="4/3" d={i * 80} onOpen={open} />
+                ))}
+            </div>
+        </>
+    ),
+
+    facilities: ({ open }) => (
+        <>
+            <Facilities />
+
+            <div className="si-fac-info">
+                <div>
+                    <h3 className="si-sub">{facilities.provided.title}</h3>
+                    <ul className="si-tiles">
+                        {facilities.provided.items.map((x, i) => (
+                            <li className="si-rv" style={D(i)} key={x}><span aria-hidden="true" />{x}</li>
                         ))}
-                    </div>
-
-                    <Sub>Getting there and getting in</Sub>
-                    <div className="si-cards">
-                        {loc.access.map((a, i) => (
-                            <Rv className="si-card" d={i * 80} key={a.title}>
-                                <h4>{a.title}</h4>
-                                <p>{a.text}</p>
-                            </Rv>
+                    </ul>
+                </div>
+                <div>
+                    <h3 className="si-sub">{facilities.phase1.title}<span className="si-pill">{facilities.phase1.note}</span></h3>
+                    <ol className="si-road">
+                        {facilities.phase1.items.map((x, i) => (
+                            <li className="si-rv" style={D(i)} key={x}><b>{pad(i + 1)}</b><p>{x}</p></li>
                         ))}
+                    </ol>
+                </div>
+            </div>
+
+            <Sub>{facilities.planTitle}</Sub>
+            <div className="si-plan2">
+                <Pic src={facilities.plan.src} alt={facilities.plan.caption} label="Site plan" caption={facilities.plan.caption} ratio="16/10" onOpen={open} />
+                <ol className="si-legend si-rv" style={D(1)}>
+                    {facilities.legend.map((l, i) => <li key={l}><span>{i + 1}</span>{l}</li>)}
+                </ol>
+            </div>
+
+            <div className="si-rend">
+                {facilities.renders.map((r, i) => (
+                    <Pic key={r.caption + i} src={r.src} alt={r.caption} caption={r.caption} ratio="16/10" d={i * 80} onOpen={open} />
+                ))}
+            </div>
+        </>
+    ),
+
+    airspace: ({ open }) => (
+        <>
+            <Sub>Public airspace overview</Sub>
+            <div className="si-cards">
+                {airspace.overview.map((a, i) => (
+                    <div className="si-card si-rv" style={D(i)} key={a.title}>
+                        <h4>{a.title}</h4>
+                        <p>{a.text}</p>
                     </div>
+                ))}
+            </div>
 
-                    <div className="si-mosaic">
-                        {loc.gallery.map((g, i) => (
-                            <Pic key={g.caption} src={g.src} alt={g.caption} label={g.caption} caption={g.caption} ratio={i === 0 ? '16/9' : '4/3'} className={i === 0 ? 'si-m0' : ''} d={i * 90} onOpen={setLb} />
-                        ))}
+            <Sub>Operating areas</Sub>
+            <Layers areas={airspace.areas} />
+
+            <Sub>Flight corridors</Sub>
+            <div className="si-cols">
+                {airspace.corridors.map((c, i) => (
+                    <div key={c.title} className="si-corr">
+                        <Pic src={c.src} alt={c.title} label={c.title} ratio="16/10" d={i * 100} onOpen={open} />
+                        <h4 className="si-cap si-rv" style={D(i + 1)}>{c.title}</h4>
+                        <p className="si-capp si-rv" style={D(i + 2)}>{c.text}</p>
                     </div>
-                </Sec>
+                ))}
+            </div>
 
-                {/* ---------- 02 FACILITIES & INFRASTRUCTURE ---------- */}
-                <Sec s={sections[1]} i={1} theme="dark">
-                    <Facilities />
+            <Sub>At a glance</Sub>
+            <dl className="si-glance-list si-rv">
+                {airspace.glance.map((g) => (
+                    <div key={g.k}><dt>{g.k}</dt><dd><Tbc v={g.v} /></dd></div>
+                ))}
+            </dl>
+        </>
+    ),
 
-                    <div className="si-cols">
-                        <Rv className="si-card">
-                            <h3 className="si-card-t">{facilities.provided.title}</h3>
-                            <ul className="si-checks">{facilities.provided.items.map((x) => <li key={x}>{x}</li>)}</ul>
-                        </Rv>
-                        <Rv className="si-card" d={100}>
-                            <h3 className="si-card-t">{facilities.phase1.title} <small>{facilities.phase1.note}</small></h3>
-                            <ul className="si-checks">{facilities.phase1.items.map((x) => <li key={x}>{x}</li>)}</ul>
-                        </Rv>
+    weather: () => (
+        <div className="si-wxgrid">
+            <Weather />
+            <div className="si-wxlinks">
+                <Sub>Official sources</Sub>
+                {weather.links.map((l, i) => (
+                    <a key={l.title} className="si-card si-linkcard si-rv" style={D(i)} href={l.href} target="_blank" rel="noopener noreferrer">
+                        <h4>{l.title}</h4>
+                        <p>{l.text}</p>
+                        <span>Visit site<Arrow /></span>
+                    </a>
+                ))}
+            </div>
+        </div>
+    ),
+
+    /* Guidelines: everything is plain, always-visible content (no collapsed panels, no reveal fade),
+       so the text can never stay hidden. */
+    guidelines: () => (
+        <>
+            <h3 className="si-sub">{guidelines.stepsTitle}</h3>
+            <div className="si-steps">
+                {guidelines.steps.map((s, i) => (
+                    <div className="si-step" key={s.title}>
+                        <strong>{i + 1}</strong>
+                        <h4>{s.title}</h4>
+                        <p>{s.text}</p>
                     </div>
+                ))}
+            </div>
 
-                    <Pic src={facilities.hangar.src} alt={facilities.hangar.caption} label="Hangar render" caption={facilities.hangar.caption} ratio="16/9" onOpen={setLb} />
-
-                    <Sub>{facilities.planTitle}</Sub>
-                    <Pic src={facilities.plan.src} alt={facilities.plan.caption} label="Site plan" caption={facilities.plan.caption} ratio="16/10" onOpen={setLb} />
-                    <Rv as="ol" className="si-legend" d={100}>
-                        {facilities.legend.map((l, i) => <li key={l}><span>{i + 1}</span>{l}</li>)}
-                    </Rv>
-                </Sec>
-
-                {/* ---------- 03 AIRSPACE & OPERATIONAL INFORMATION ---------- */}
-                <Sec s={sections[2]} i={2} theme="light">
-                    <Sub>Public airspace overview</Sub>
-                    <div className="si-cards">
-                        {airspace.overview.map((a, i) => (
-                            <Rv className="si-card" d={i * 80} key={a.title}>
-                                <h4>{a.title}</h4>
-                                <p>{a.text}</p>
-                            </Rv>
-                        ))}
+            <div className="si-info">
+                {guidelines.groups.map((g) => (
+                    <div className="si-card" key={g.title}>
+                        <h3 className="si-card-t">{g.title}</h3>
+                        <ul className="si-ticks">{g.list.map((x) => <li key={x}>{x}</li>)}</ul>
                     </div>
+                ))}
+            </div>
 
-                    <Sub>Operating areas</Sub>
-                    <Layers areas={airspace.areas} />
+            <h3 className="si-sub si-sub--gap">{guidelines.downloadsTitle}</h3>
+            <div className="si-files">
+                {guidelines.downloads.map((f) => (
+                    f.href
+                        ? <a className="si-file" key={f.title} href={f.href} download><b>{f.title}</b><span>{f.type}</span><i aria-hidden="true">&darr;</i></a>
+                        : <div className="si-file is-soon" key={f.title}><b>{f.title}</b><span>{f.type}</span><em>Coming soon</em></div>
+                ))}
+            </div>
+        </>
+    ),
+};
 
-                    <Sub>Flight corridors</Sub>
-                    <div className="si-cols">
-                        {airspace.corridors.map((c, i) => (
-                            <div key={c.title} className="si-corr">
-                                <Pic src={c.src} alt={c.title} label={c.title} ratio="4/3" d={i * 100} onOpen={setLb} />
-                                <Rv as="h4" className="si-cap" d={i * 100 + 120}>{c.title}</Rv>
-                                <Rv as="p" className="si-capp" d={i * 100 + 180}>{c.text}</Rv>
+/* ==========================================================================
+   PAGE
+========================================================================== */
+export default function SiteInfo() {
+    const rootRef = useRef(null);
+    const [active, setActive] = useState(sections[0]?.id);
+    const [lb, setLb] = useState(null);
+    const [showFab, setShowFab] = useState(false);
+
+    useReveal(rootRef);
+
+    /* scroll: progress bar, hero parallax, active menu item, floating button */
+    useEffect(() => {
+        const root = rootRef.current;
+        const heroEl = root.querySelector('.si-hero');
+        let raf = 0;
+        const update = () => {
+            raf = 0;
+            const y = window.scrollY;
+            const h = root.scrollHeight - window.innerHeight;
+            if (y < 1100 && heroEl) heroEl.style.setProperty('--sy', `${y}`);
+            root.style.setProperty('--progress', h > 0 ? Math.min(1, Math.max(0, y / h)).toFixed(4) : 0);
+            setShowFab(y > 720 && y < h - 700);
+            const line = window.innerHeight * 0.35;
+            let cur = sections[0]?.id;
+            sections.forEach((s) => {
+                const el = document.getElementById(s.id);
+                if (el && el.getBoundingClientRect().top <= line) cur = s.id;
+            });
+            setActive(cur);
+        };
+        const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+        update();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', onScroll);
+        return () => {
+            cancelAnimationFrame(raf);
+            window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', onScroll);
+        };
+    }, []);
+
+    /* keep the active menu item visible on small screens */
+    useEffect(() => {
+        const a = rootRef.current.querySelector('.si-subnav a.is-active');
+        const box = rootRef.current.querySelector('.si-subnav-scroll');
+        if (a && box) box.scrollTo({ left: a.offsetLeft - box.clientWidth / 2 + a.clientWidth / 2, behavior: 'smooth' });
+    }, [active]);
+
+    const goTo = useCallback((id) => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
+    }, []);
+
+    /* pointer effects: magnetic buttons + hero glow */
+    const onMove = useCallback((e) => {
+        const t = e.target;
+        if (!t.closest || reduced()) return;
+        const mag = t.closest('.si-mag');
+        if (mag) {
+            const r = mag.getBoundingClientRect();
+            mag.style.setProperty('--tx', `${((e.clientX - (r.left + r.width / 2)) * 0.22).toFixed(1)}px`);
+            mag.style.setProperty('--ty', `${((e.clientY - (r.top + r.height / 2)) * 0.3).toFixed(1)}px`);
+        }
+        const h = t.closest('.si-hero');
+        if (h) {
+            const r = h.getBoundingClientRect();
+            h.style.setProperty('--hx', `${e.clientX - r.left}px`);
+            h.style.setProperty('--hy', `${e.clientY - r.top}px`);
+        }
+    }, []);
+    const onOut = useCallback((e) => {
+        const t = e.target.closest && e.target.closest('.si-mag');
+        if (t && !t.contains(e.relatedTarget)) ['--tx', '--ty'].forEach((p) => t.style.removeProperty(p));
+    }, []);
+
+    const closeLb = useCallback(() => setLb(null), []);
+    const shown = sections.filter((s) => BODIES[s.id]);
+
+    return (
+        <div className="si" ref={rootRef} onMouseMove={onMove} onMouseOut={onOut}>
+
+            {/* ===================== HERO ===================== */}
+            <section className="si-hero" id="top">
+                <div className="si-hero-media" aria-hidden="true">
+                    {hero.video
+                        ? <video autoPlay muted loop playsInline preload="auto"><source src={hero.video} type="video/mp4" /></video>
+                        : hero.image && <img src={hero.image} alt="" />}
+                </div>
+                <div className="si-grid" aria-hidden="true" />
+                <div className="si-glow" aria-hidden="true" />
+
+                <div className="si-wrap si-hero-copy">
+                    <p className="si-eyebrow"><i />{hero.eyebrow}</p>
+                    <h1 className="si-title si-in" style={{ '--i': 1 }}>{hero.title} <em>{hero.titleEm}</em></h1>
+                    <p className="si-hero-lede si-in" style={{ '--i': 2 }}>{hero.text}</p>
+                    <div className="si-hero-cta si-in" style={{ '--i': 3 }}>
+                        <a className="si-btn si-mag" href={page.applyHref}>{page.applyLabel}<Arrow /></a>
+                        {shown[0] && <button className="si-btn si-btn--ghost si-mag" onClick={() => goTo(shown[0].id)}>Explore the site<Arrow /></button>}
+                    </div>
+                </div>
+
+                <div className="si-wrap si-glance si-in" style={{ '--i': 4 }}>
+                    <div className="si-glance-bar">
+                        <span>At a glance</span>
+                        {hero.note && <span>{hero.note}</span>}
+                    </div>
+                    <div className="si-glance-grid">
+                        {hero.stats.map((s) => (
+                            <div className="si-gl" key={s.label}>
+                                <strong><Count to={s.to} dec={s.dec || 0} />{s.unit}</strong>
+                                <span className="si-gl-label">{s.label}</span>
+                                {s.text && <p className="si-gl-note">{s.text}</p>}
                             </div>
                         ))}
                     </div>
+                </div>
+            </section>
 
-                    <Sub>At a glance</Sub>
-                    <Rv as="dl" className="si-glance">
-                        {airspace.glance.map((g) => (
-                            <div key={g.k}><dt>{g.k}</dt><dd><Tbc v={g.v} /></dd></div>
+            {/* ===================== STICKY MENU (same as Opportunities) ===================== */}
+            <nav className="si-subnav" aria-label="Site information sections">
+                <div className="si-wrap si-subnav-scroll">
+                    <ul>
+                        {shown.map((s) => (
+                            <li key={s.id}>
+                                <a
+                                    href={`#${s.id}`}
+                                    className={active === s.id ? 'is-active' : ''}
+                                    aria-current={active === s.id ? 'true' : undefined}
+                                    onClick={(e) => { e.preventDefault(); goTo(s.id); }}
+                                >{s.label}</a>
+                            </li>
                         ))}
-                    </Rv>
-                </Sec>
+                    </ul>
+                </div>
+                <div className="si-progress" aria-hidden="true"><span /></div>
+            </nav>
 
-                {/* ---------- 04 WEATHER ---------- */}
-                <Sec s={sections[3]} i={3} theme="dusk">
-                    <Weather />
-                    <Sub>Official sources</Sub>
-                    <div className="si-cols">
-                        {weather.links.map((l, i) => (
-                            <Rv key={l.title} d={i * 100}>
-                                <a className="si-card si-linkcard" href={l.href} target="_blank" rel="noopener noreferrer">
-                                    <h4>{l.title}</h4>
-                                    <p>{l.text}</p>
-                                    <span>Visit site ↗</span>
-                                </a>
-                            </Rv>
-                        ))}
-                    </div>
-                </Sec>
+            {/* ===================== TICKER ===================== */}
+            <div className="si-ticker" aria-hidden="true">
+                <div className="si-ticker-track">
+                    {[0, 1].map((k) => (
+                        <ul key={k}>{[...shown, ...shown].map((s, i) => <li key={`${s.id}${i}`}>{s.label}</li>)}</ul>
+                    ))}
+                </div>
+            </div>
 
-                {/* ---------- 05 GUIDELINES & DOWNLOADS ---------- */}
-                <Sec s={sections[4]} i={4} theme="light">
-                    <Sub>How to take part</Sub>
-                    <div className="si-steps">
-                        {guidelines.steps.map((s, i) => (
-                            <Rv className="si-step" d={i * 100} key={s.title}>
-                                <strong>{i + 1}</strong>
-                                <h4>{s.title}</h4>
-                                <p>{s.text}</p>
-                            </Rv>
-                        ))}
-                    </div>
+            {/* ===================== SECTIONS (from siteInfoData.js) ===================== */}
+            {shown.map((s) => {
+                const Body = BODIES[s.id];
+                return <Sec key={s.id} s={s}><Body open={setLb} /></Sec>;
+            })}
 
-                    <Sub>Notes and safety</Sub>
-                    <div>{guidelines.accordion.map((a, i) => <Acc key={a.title} title={a.title} list={a.list} d={i * 80} />)}</div>
-
-                    <Sub>Downloads</Sub>
-                    <div className="si-dl-list">
-                        {guidelines.downloads.map((f, i) => (
-                            <Rv key={f.title} d={i * 80}>
-                                {f.href
-                                    ? <a className="si-file" href={f.href} download><b>{f.title}</b><span>{f.type}</span><i aria-hidden="true">↓</i></a>
-                                    : <div className="si-file is-soon"><b>{f.title}</b><span>{f.type}</span><em>Coming soon</em></div>}
-                            </Rv>
-                        ))}
-                    </div>
-                </Sec>
-
-                {/* ---------- closing call to action: slides over the last section ---------- */}
-                <div className="si-foot">
-                    <div className="si-marq" aria-hidden="true"><div>{marquee}{marquee}</div></div>
-                    <div className="si-wrap si-foot-in">
-                        <Rv as="h2" className="si-h si-h--xl" text><W t="Have a technology" em="to test?" /></Rv>
-                        <Rv className="si-foot-btns" d={300}>
-                            <a className="si-btn" href={page.applyHref}>{page.applyLabel}</a>
-                            <a className="si-btn si-btn--ghost" href={page.homeHref}>Back to home</a>
-                        </Rv>
+            {/* ===================== CLOSING CTA ===================== */}
+            <section className="si-sec si-dark si-cta" id="cta">
+                <div className="si-wrap si-cta-in">
+                    <h2 className="si-h si-rv">{closing.heading} <em>{closing.em}</em></h2>
+                    <div className="si-cta-btns si-rv" style={D(1)}>
+                        <a className="si-btn si-mag" href={page.applyHref}>{page.applyLabel}<Arrow /></a>
+                        <a className="si-btn si-btn--ghost si-mag" href={page.homeHref}>Back to home<Arrow /></a>
                     </div>
                 </div>
-            </main>
+            </section>
 
-            <button
-                type="button"
-                className={`si-top${active ? ' is-on' : ''}`}
-                aria-label="Back to top"
-                onClick={() => window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' })}
-            >↑</button>
+            {/* floating apply button, appears after the hero */}
+            <div className={`si-fab ${showFab ? 'is-on' : ''}`}>
+                <a className="si-btn si-btn--sm" href={page.applyHref} tabIndex={showFab ? 0 : -1}>{page.applyLabel}<Arrow /></a>
+            </div>
 
             {lb && <Lightbox item={lb} onClose={closeLb} />}
         </div>

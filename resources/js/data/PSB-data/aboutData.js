@@ -1,17 +1,16 @@
 /*
-  ABOUT PAGE CONTENT  ->  resources/js/data/aboutData.js
+  ABOUT PAGE CONTENT  ->  resources/js/data/PSB-data/aboutData.js
   Edit this file only. Every section renders itself from the data below.
   Images are file names inside resources/js/images/about/ (missing files show a labelled placeholder).
   A block or section with no items is hidden automatically, so you can leave awards/fellows empty until ready.
 
-  Titles: wrap words in *stars* to make them italic serif accents, e.g. 'Why *Perlis*.'
+  Titles: wrap words in *stars* to make them accent words, e.g. 'Why *Perlis*.'
   Section options: align: 'center' | 'split' (default), eyebrow: small label above the title
   Tone: 'dark' (black) | 'graphite' (soft black) | 'yellow'
 
   Block types:
     collage  items: { kind:'stat', n, unit, label, span, off } | { kind:'img', file, alt, ratio, span, off }
     marquee  items: [{ file, alt }]  (auto-scrolling photo strip; reverse:true, speed:seconds)
-    ticker   items: ['Word', ...]    (giant scrolling words)
     full     file, alt, kicker, caption   (full-bleed parallax photo)
     hscroll  items: [{ title, tag, text, file }]  (draggable cards)
     stats | gallery | defs | image | pairs | tabs | grid | tags | people | logos | cta (cta also takes word)
@@ -92,7 +91,6 @@ const about = {
                 ],
             }],
             blocks: [
-                { type: 'ticker', speed: 34, items: ['BVLOS', 'UTM', 'eVTOL', 'Vertiport', 'Sense and avoid', 'Low-altitude economy'] },
                 {
                     type: 'tabs', items: [
                         { tab: 'BVLOS flight testing', file: 'mission-bvlos.jpg', title: 'BVLOS flight testing', text: 'Conduct safe, structured Beyond Visual Line of Sight flights in real-world conditions.' },
@@ -110,8 +108,8 @@ const about = {
             eyebrow: 'Facilities',
             title: 'A functional *mock-up* aerodrome.',
             aside: [
-                { type: 'defs', title: 'Infrastructure', items: [['', 'Dedicated low-altitude test range. Altitude zones for different operating scenarios. Purpose-built vertiports for take-off and landing. Autonomous charging stations. Maintenance facilities.']] },
-                { type: 'defs', title: 'Talent and collaboration', items: [['', 'Partnerships with government, industry and academia. Training programmes. Public demonstrations. Joint R&D initiatives.']] },
+                { type: 'tags', title: 'Infrastructure', items: ['Dedicated low-altitude test range', 'Altitude zones for different operating scenarios', 'Purpose-built vertiports for take-off and landing', 'Autonomous charging stations', 'Maintenance facilities'] },
+                { type: 'tags', title: 'Talent and collaboration', items: ['Partnerships with government, industry and academia', 'Training programmes', 'Public demonstrations', 'Joint R&D initiatives'] },
             ],
             blocks: [
                 {
@@ -123,16 +121,6 @@ const about = {
                         { tab: 'Flight simulator', file: 'flight-simulator.jpg', title: 'Flight simulator', text: 'Operator training and mission rehearsal before real flights.' },
                         { tab: 'Radar, comms and UTMS', file: 'radar-utms.jpg', title: 'Radar, communication system and UTMS', text: 'Surveillance, communication links and Unmanned Traffic Management for the whole airspace.' },
                         { tab: 'Main building', file: 'hangar-interior.jpg', title: 'Phase 1 main building', text: 'The hangar and operations building planned for Phase 1 (architect render).' },
-                    ],
-                },
-                {
-                    type: 'marquee', reverse: true, speed: 60, ratio: '4 / 3', items: [
-                        { file: 'vertiport.jpg', alt: 'Vertiport' },
-                        { file: 'drone-hub.jpg', alt: 'Drone hub' },
-                        { file: 'flight-simulator.jpg', alt: 'Flight simulator' },
-                        { file: 'radar-utms.jpg', alt: 'Radar and UTMS' },
-                        { file: 'research-maintenance.jpg', alt: 'Research and maintenance' },
-                        { file: 'hangar-interior.jpg', alt: 'Hangar interior' },
                     ],
                 },
             ],
@@ -222,7 +210,6 @@ const about = {
                 },
             ],
             blocks: [
-                { type: 'ticker', speed: 30, items: ['2026', 'Foundation', '2027', 'Validation', '2028', 'Ecosystem', '2029', 'Integration', '2030+'] },
                 {
                     type: 'tabs', items: [
                         {
@@ -345,23 +332,25 @@ const about = {
             eyebrow: 'Partners',
             title: 'Strategic *partners.*',
             lead: 'No single entity can do this alone. A collaborative ecosystem is the key to Malaysia’s low-altitude future.',
-            aside: [{
-                type: 'logos', groups: [
-                    { title: 'Supported by', items: ['UniMAP', 'MRANTI', 'NAICO', 'MIGHT', 'CAAM', 'MOF'] },
-                    { title: 'Managed and designed by', items: ['Vertiport Malaysia', 'Araken'] },
-                    { title: 'Collaborators', items: ['EHANG', 'TCAB', 'MHS Aviation'] },
-                    { title: 'Also credited', items: ['FUTURISE', 'MCMC', 'STRIDE', 'SIRIM'] },
-                ],
-            }],
-            blocks: [{
-                type: 'grid', cols: 3, items: [
-                    { title: 'University', tag: 'Research, talent and innovation', text: 'We create knowledge and future talent.' },
-                    { title: 'Industry', tag: 'Deployment and commercialisation', text: 'We turn innovation into real solutions and market value.' },
-                    { title: 'Government', tag: 'National coordination and support', text: 'We provide policy, funding and national direction.' },
-                    { title: 'Agencies', tag: 'Real operational use cases', text: 'We are the real users, driving real-world impact.' },
-                    { title: 'Regulator', tag: 'Safety, governance and compliance', text: 'We ensure safety, trust and responsible growth.' },
-                ],
-            }],
+            blocks: [
+                {
+                    type: 'grid', cols: 3, items: [
+                        { title: 'University', tag: 'Research, talent and innovation', text: 'We create knowledge and future talent.' },
+                        { title: 'Industry', tag: 'Deployment and commercialisation', text: 'We turn innovation into real solutions and market value.' },
+                        { title: 'Government', tag: 'National coordination and support', text: 'We provide policy, funding and national direction.' },
+                        { title: 'Agencies', tag: 'Real operational use cases', text: 'We are the real users, driving real-world impact.' },
+                        { title: 'Regulator', tag: 'Safety, governance and compliance', text: 'We ensure safety, trust and responsible growth.' },
+                    ],
+                },
+                {
+                    type: 'logos', groups: [
+                        { title: 'Supported by', items: ['UniMAP', 'MRANTI', 'NAICO', 'MIGHT', 'CAAM', 'MOF'] },
+                        { title: 'Managed and designed by', items: ['Vertiport Malaysia', 'Araken'] },
+                        { title: 'Collaborators', items: ['EHANG', 'TCAB', 'MHS Aviation'] },
+                        { title: 'Also credited', items: ['FUTURISE', 'MCMC', 'STRIDE', 'SIRIM'] },
+                    ],
+                },
+            ],
         },
         {
             id: 'join', tone: 'dark', align: 'center',

@@ -17,6 +17,15 @@ import "../../../css/admin-PSB-css/admin-media-center.css";
    create / edit, preview, publish / unpublish, schedule, reorder (drag),
    delete to Trash, History tab (audit_logs for this record).
 
+   LIVE PREVIEW (same panel as the Opportunities editor). It appears in two places:
+     • the list screens  - the panel shows the row you select
+     • the editor        - the panel shows the record you are editing
+   The panel has two views
+     • Draft preview  - the public page built from what is on screen (unsaved edits too in the editor)
+     • Live site      - the real public page in a frame; reloads after publishing
+   The Live site view opens /media-centre/<module>/<slug> once the record is published,
+   and the module list (/media-centre/<module>) before that.
+
    SAMPLE DATA: the page works today (changes stay on screen only). Return an Inertia prop
    named `mediaCentre` and it switches to LIVE mode:
 
@@ -29,6 +38,7 @@ import "../../../css/admin-PSB-css/admin-media-center.css";
            'categories' => [...],  // { id, type: news | press | article, name }
            'media'      => [...],  // media_assets: { id, name, type, alt, size, url? }
            'history'    => [...],  // audit_logs rows: { id, key: "post:12", user, action, label, at, changes }
+           'liveBase'   => '/media-centre',  // optional, public Media Centre address
        ],
    ]);
 
@@ -50,6 +60,7 @@ const API = {
 };
 const HOME_PINS = `${BASE}/home/news-events`;
 const LIBRARY = `${BASE}/media-library`;
+const DEFAULT_LIVE_BASE = "/media-centre";
 const PAGE_SIZE = 8;
 const ALBUM_ITEM_LIMIT = 60;
 
@@ -181,6 +192,12 @@ const short = (v) => {
 };
 const diffOf = (a, b) => (a ? Object.keys(FIELD_LABEL).filter((k) => JSON.stringify(a[k]) !== JSON.stringify(b[k])).map((k) => ({ field: FIELD_LABEL[k], from: short(a[k]), to: short(b[k]) })) : []);
 
+/* the public address the "Live site" view opens */
+function publicUrl(base, module, rec) {
+    const root = `${base}/${module.route}`;
+    return rec && rec.id && rec.slug && module.kind !== "album" && rec.status === "published" ? `${root}/${rec.slug}` : root;
+}
+
 /* drawn thumbnail for a media asset (real files would use their own URL) */
 function thumbOf(item) {
     if (item?.url) return item.url;
@@ -281,11 +298,13 @@ function Icon({ name, size = 18 }) {
         image: (<><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" /></>),
         external: <path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5" />,
         unlink: (<><path d="M9 15 15 9" /><path d="M11 6l1.5-1.5a4 4 0 0 1 5.7 5.7L16.7 11.7M13 18l-1.5 1.5a4 4 0 0 1-5.7-5.7L7.3 12.3" /><path d="M3 3l18 18" /></>),
-        edit: (<><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="m13.5 6.5 4 4" /></>),
+        edit: (<><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></>),
         back: <path d="M15 5l-7 7 7 7" />,
         calendar: (<><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></>),
         video: (<><rect x="3" y="6" width="13" height="12" rx="2" /><path d="m16 10 5-3v10l-5-3z" /></>),
         archive: (<><rect x="3" y="4" width="18" height="5" rx="1" /><path d="M5 9v10h14V9M10 13h4" /></>),
+        refresh: (<><path d="M21 12a9 9 0 1 1-3-6.7" /><polyline points="21 3 21 9 15 9" /></>),
+        panel: (<><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M14 4v16" /></>),
     };
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -516,7 +535,7 @@ function MediaPicker({ state, media, onClose, onUpload }) {
     const list = media.filter((m) => (type === "all" || m.type === type) && (!q || m.name.toLowerCase().includes(q) || (m.alt || "").toLowerCase().includes(q)));
 
     return (
-        <div className="mc-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="mc-overlay is-top" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
             <div className="mc-dialog mc-picker" role="dialog" aria-modal="true" aria-labelledby="mc-picker-title">
                 <header className="mc-dialog-head">
                     <div>
@@ -558,7 +577,7 @@ function MediaPicker({ state, media, onClose, onUpload }) {
     );
 }
 
-/* ------------------------------ dialogs, preview, history ------------------------------ */
+/* ------------------------------ dialogs, history ------------------------------ */
 
 function ConfirmDialog({ dlg, onClose, notify }) {
     const [at, setAt] = useState("");
@@ -596,105 +615,7 @@ function ConfirmDialog({ dlg, onClose, notify }) {
     );
 }
 
-/* **bold**, *italic*, "## " heading and "- " list, the same rules the public page uses */
-function Rich({ text }) {
-    const inline = (s) => s.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((p, i) => (p.startsWith("**") && p.length > 4 ? <strong key={i}>{p.slice(2, -2)}</strong> : p.startsWith("*") && p.length > 2 ? <em key={i}>{p.slice(1, -1)}</em> : p));
-    return text.split(/\n{2,}/).filter(Boolean).map((block, i) => {
-        if (block.startsWith("## ")) return <h3 key={i}>{inline(block.slice(3))}</h3>;
-        const lines = block.split("\n");
-        if (lines.every((l) => l.startsWith("- "))) return <ul key={i}>{lines.map((l, j) => <li key={j}>{inline(l.slice(2))}</li>)}</ul>;
-        return <p key={i}>{inline(block)}</p>;
-    });
-}
-
-/* A simplified picture of the public page, built from the unsaved form */
-function PreviewModal({ module, rec, onClose }) {
-    const { media, categories, rows } = useMc();
-    const [device, setDevice] = useState("desktop");
-
-    useEffect(() => {
-        const onKey = (e) => e.key === "Escape" && onClose();
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [onClose]);
-
-    const mediaOf = (id) => media.find((m) => m.id === id);
-    const cover = mediaOf(rec.coverId);
-    const category = categories.find((c) => c.id === rec.categoryId);
-    const linkedEvent = module.kind === "album" && rec.eventId ? rows("event").find((e) => e.id === rec.eventId) : null;
-
-    return (
-        <div className="mc-overlay is-wide" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="mc-dialog mc-preview" role="dialog" aria-modal="true" aria-labelledby="mc-preview-title">
-                <header className="mc-dialog-head">
-                    <div>
-                        <h2 id="mc-preview-title">Preview of the {module.noun}</h2>
-                        <p>Built from what you see on screen, including unsaved changes. Layout is simplified.</p>
-                    </div>
-                    <div className="mc-preview-tools">
-                        <div className="mc-seg" role="group" aria-label="Device">
-                            <button type="button" className={device === "desktop" ? "is-on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
-                            <button type="button" className={device === "mobile" ? "is-on" : ""} onClick={() => setDevice("mobile")}>Mobile</button>
-                        </div>
-                        <button type="button" className="mc-iconbtn" aria-label="Close preview" onClick={onClose}><Icon name="close" size={18} /></button>
-                    </div>
-                </header>
-
-                <div className={`mc-pv-frame is-${device}`}>
-                    <article className="mc-pv">
-                        {cover && module.kind !== "album" && <img className="mc-pv-cover" src={thumbOf(cover)} alt={cover.alt || ""} />}
-                        <div className="mc-pv-body">
-                            <p className="mc-pv-tag">{module.kind === "post" ? [TYPE_LABEL[rec.type], category?.name].filter(Boolean).join(" · ") : module.kind === "event" ? rec.eventType || "Event" : "Gallery"}</p>
-                            <h1>{rec.title || "Untitled"}</h1>
-
-                            {module.kind === "post" && (
-                                <>
-                                    <p className="mc-pv-meta">{rec.status === "published" && rec.publishedAt ? formatDate(rec.publishedAt, false) : "Not published yet"} · {rec.authorName || "You"}</p>
-                                    {rec.excerpt && <p className="mc-pv-lead">{rec.excerpt}</p>}
-                                    {rec.body ? <Rich text={rec.body} /> : <p className="mc-pv-none">No body text yet.</p>}
-                                    {rec.externalUrl && <span className="mc-pv-btn">{rec.type === "social" ? "View the original post" : "Read the original"}</span>}
-                                </>
-                            )}
-
-                            {module.kind === "event" && (
-                                <>
-                                    <div className="mc-pv-when">
-                                        <strong>{rec.startAt ? formatDate(rec.startAt) : "Date to be set"}</strong>
-                                        {rec.endAt && <span>to {formatDate(rec.endAt)}</span>}
-                                        <span>{rec.venue || "Venue to be set"}</span>
-                                    </div>
-                                    {rec.description ? <Rich text={rec.description} /> : <p className="mc-pv-none">No description yet.</p>}
-                                    {rec.registrationUrl && <span className="mc-pv-btn">Register</span>}
-                                </>
-                            )}
-
-                            {module.kind === "album" && (
-                                <>
-                                    {rec.description && <p className="mc-pv-lead">{rec.description}</p>}
-                                    {linkedEvent && <p className="mc-pv-meta">From the event: {linkedEvent.title}</p>}
-                                    <div className="mc-pv-grid">
-                                        {rec.items.map((it) => {
-                                            const m = mediaOf(it.mediaId);
-                                            return (
-                                                <figure key={it.id}>
-                                                    {m ? <img src={thumbOf(m)} alt={m.alt || ""} /> : <span className="mc-pv-video"><Icon name="video" size={22} /></span>}
-                                                    <figcaption>{it.caption || (it.videoUrl ? "Video" : "")}</figcaption>
-                                                </figure>
-                                            );
-                                        })}
-                                    </div>
-                                    {rec.items.length === 0 && <p className="mc-pv-none">No photos or videos yet.</p>}
-                                </>
-                            )}
-                        </div>
-                    </article>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-const ACTION_PILL = { CREATE: "warn", UPDATE: "info", PUBLISH: "dark", UNPUBLISH: "off", DELETE: "danger", RESTORE: "ok" };
+const ACTION_PILL = { CREATE: "warn", UPDATE: "info", PUBLISH: "ok", UNPUBLISH: "off", DELETE: "danger", RESTORE: "ok" };
 const ACTION_LABEL = { CREATE: "Created", UPDATE: "Updated", PUBLISH: "Published", UNPUBLISH: "Unpublished", DELETE: "Deleted", RESTORE: "Restored" };
 
 function HistoryPanel({ entries }) {
@@ -711,7 +632,7 @@ function HistoryPanel({ entries }) {
             </header>
 
             {entries.length === 0 ? (
-                <p className="mc-empty mc-empty-pad">No history yet. It starts when you save.</p>
+                <p className="mc-empty">No history yet. It starts when you save.</p>
             ) : (
                 <ul className="mc-history">
                     {entries.map((h) => {
@@ -744,6 +665,159 @@ function HistoryPanel({ entries }) {
 }
 
 /* ====================================================================
+   PREVIEW  (draft preview + the real public page)
+==================================================================== */
+
+/* **bold**, *italic*, "## " heading and "- " list, the same rules the public page uses */
+function Rich({ text }) {
+    const inline = (s) => s.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g).map((p, i) => (p.startsWith("**") && p.length > 4 ? <strong key={i}>{p.slice(2, -2)}</strong> : p.startsWith("*") && p.length > 2 ? <em key={i}>{p.slice(1, -1)}</em> : p));
+    return text.split(/\n{2,}/).filter(Boolean).map((block, i) => {
+        if (block.startsWith("## ")) return <h3 key={i}>{inline(block.slice(3))}</h3>;
+        const lines = block.split("\n");
+        if (lines.every((l) => l.startsWith("- "))) return <ul key={i}>{lines.map((l, j) => <li key={j}>{inline(l.slice(2))}</li>)}</ul>;
+        return <p key={i}>{inline(block)}</p>;
+    });
+}
+
+/* A simplified picture of the public page, built from the unsaved form */
+function DraftPreview({ module, rec }) {
+    const { media, categories, rows } = useMc();
+    const mediaOf = (id) => media.find((m) => m.id === id);
+    const cover = mediaOf(rec.coverId);
+    const category = categories.find((c) => c.id === rec.categoryId);
+    const linkedEvent = module.kind === "album" && rec.eventId ? rows("event").find((e) => e.id === rec.eventId) : null;
+
+    return (
+        <div className="mc-pv-scroll">
+            <article className="mc-pv">
+                {cover && module.kind !== "album" && <img className="mc-pv-cover" src={thumbOf(cover)} alt={cover.alt || ""} />}
+                <div className="mc-pv-body">
+                    <p className="mc-pv-tag">{module.kind === "post" ? [TYPE_LABEL[rec.type], category?.name].filter(Boolean).join(" · ") : module.kind === "event" ? rec.eventType || "Event" : "Gallery"}</p>
+                    <h1>{rec.title || "Untitled"}</h1>
+
+                    {module.kind === "post" && (
+                        <>
+                            <p className="mc-pv-meta">{rec.status === "published" && rec.publishedAt ? formatDate(rec.publishedAt, false) : "Not published yet"} · {rec.authorName || "You"}</p>
+                            {rec.excerpt && <p className="mc-pv-lead">{rec.excerpt}</p>}
+                            {rec.body ? <Rich text={rec.body} /> : <p className="mc-pv-none">No body text yet.</p>}
+                            {rec.externalUrl && <span className="mc-pv-btn">{rec.type === "social" ? "View the original post" : "Read the original"}</span>}
+                        </>
+                    )}
+
+                    {module.kind === "event" && (
+                        <>
+                            <div className="mc-pv-when">
+                                <strong>{rec.startAt ? formatDate(rec.startAt) : "Date to be set"}</strong>
+                                {rec.endAt && <span>to {formatDate(rec.endAt)}</span>}
+                                <span>{rec.venue || "Venue to be set"}</span>
+                            </div>
+                            {rec.description ? <Rich text={rec.description} /> : <p className="mc-pv-none">No description yet.</p>}
+                            {rec.registrationUrl && <span className="mc-pv-btn">Register</span>}
+                        </>
+                    )}
+
+                    {module.kind === "album" && (
+                        <>
+                            {rec.description && <p className="mc-pv-lead">{rec.description}</p>}
+                            {linkedEvent && <p className="mc-pv-meta">From the event: {linkedEvent.title}</p>}
+                            <div className="mc-pv-grid">
+                                {rec.items.map((it) => {
+                                    const m = mediaOf(it.mediaId);
+                                    return (
+                                        <figure key={it.id}>
+                                            {m ? <img src={thumbOf(m)} alt={m.alt || ""} /> : <span className="mc-pv-video"><Icon name="video" size={22} /></span>}
+                                            <figcaption>{it.caption || (it.videoUrl ? "Video" : "")}</figcaption>
+                                        </figure>
+                                    );
+                                })}
+                            </div>
+                            {rec.items.length === 0 && <p className="mc-pv-none">No photos or videos yet.</p>}
+                        </>
+                    )}
+                </div>
+            </article>
+        </div>
+    );
+}
+
+/* Same panel as the Opportunities editor: Draft preview / Live site, Desktop / Mobile */
+function LivePanel({ module, rec, liveUrl, reloadKey, onReload, onClose }) {
+    const [view, setView] = useState("draft"); // draft | live
+    const [device, setDevice] = useState("desktop");
+    const isAlbum = module.kind === "album";
+    const published = rec.status === "published";
+
+    return (
+        <aside className="mc-live" aria-label="Live preview">
+            <header className="mc-live-head">
+                <div className="mc-seg" role="tablist" aria-label="Preview type">
+                    <button type="button" role="tab" aria-selected={view === "draft"} className={view === "draft" ? "is-on" : ""} onClick={() => setView("draft")}>Draft preview</button>
+                    <button type="button" role="tab" aria-selected={view === "live"} className={view === "live" ? "is-on" : ""} onClick={() => setView("live")}>Live site</button>
+                </div>
+                <div className="mc-live-tools">
+                    <div className="mc-seg is-small" role="group" aria-label="Device">
+                        <button type="button" className={device === "desktop" ? "is-on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
+                        <button type="button" className={device === "mobile" ? "is-on" : ""} onClick={() => setDevice("mobile")}>Mobile</button>
+                    </div>
+                    {view === "live" && <button type="button" className="mc-iconbtn" aria-label="Reload live page" title="Reload live page" onClick={onReload}><Icon name="refresh" size={16} /></button>}
+                    <a className="mc-iconbtn" href={liveUrl} target="_blank" rel="noreferrer" aria-label="Open live page in a new tab" title="Open live page in a new tab"><Icon name="external" size={16} /></a>
+                    <button type="button" className="mc-iconbtn" aria-label="Hide preview" title="Hide preview" onClick={onClose}><Icon name="close" size={16} /></button>
+                </div>
+            </header>
+
+            <p className="mc-live-note">
+                {view === "draft"
+                    ? "Built from what you see on screen, including unsaved edits. Layout is simplified."
+                    : isAlbum
+                        ? "The real public gallery. Albums appear there as soon as you save."
+                        : published
+                            ? "The real public page, as visitors see it now. It updates after you publish."
+                            : `The real public ${module.label} page. This ${module.noun} is not on it until you publish.`}
+            </p>
+
+            <div className={`mc-frame is-${device}`}>
+                {view === "draft" ? (
+                    <DraftPreview module={module} rec={rec} />
+                ) : (
+                    <iframe key={reloadKey} className="mc-iframe" src={liveUrl} title={`Live ${module.label} page`} loading="lazy" />
+                )}
+            </div>
+        </aside>
+    );
+}
+
+/* the same panel on the list screens, driven by the row you select */
+function ListPreview({ module, rec, onClose }) {
+    const { liveBase } = useMc();
+    const [reloadKey, setReloadKey] = useState(0);
+
+    if (!rec) {
+        return (
+            <aside className="mc-live" aria-label="Live preview">
+                <header className="mc-live-head">
+                    <strong className="mc-live-title">Preview</strong>
+                    <div className="mc-live-tools">
+                        <button type="button" className="mc-iconbtn" aria-label="Hide preview" title="Hide preview" onClick={onClose}><Icon name="close" size={16} /></button>
+                    </div>
+                </header>
+                <p className="mc-empty">Nothing to preview yet. Add a {module.noun} and it shows here.</p>
+            </aside>
+        );
+    }
+
+    return (
+        <LivePanel
+            module={module}
+            rec={rec}
+            liveUrl={publicUrl(liveBase, module, rec)}
+            reloadKey={reloadKey}
+            onReload={() => setReloadKey((k) => k + 1)}
+            onClose={onClose}
+        />
+    );
+}
+
+/* ====================================================================
    LIST SCREENS
 ==================================================================== */
 
@@ -771,7 +845,7 @@ const SORTERS = {
 
 /* posts (news, press releases, articles) and events */
 function ListView({ module, onNew, onEdit }) {
-    const { rows, askDelete, remove, pin, preview, categories, media } = useMc();
+    const { rows, askDelete, remove, pin, categories, media } = useMc();
     const isEvent = module.kind === "event";
     const [query, setQuery] = useState("");
     const [status, setStatus] = useState("all");
@@ -779,6 +853,8 @@ function ListView({ module, onNew, onEdit }) {
     const [category, setCategory] = useState("all");
     const [sort, setSort] = useState(isEvent ? "start" : "date");
     const [page, setPage] = useState(1);
+    const [showPreview, setShowPreview] = useState(true);
+    const [selectedId, setSelectedId] = useState(null);
 
     const all = rows(module.kind).filter((r) => isEvent || module.types.includes(r.type));
     const statuses = isEvent ? EVENT_STATUSES : POST_STATUSES;
@@ -798,6 +874,10 @@ function ListView({ module, onNew, onEdit }) {
     const filtered = q || status !== "all" || type !== "all" || category !== "all";
     const reset = (fn) => (v) => { fn(v); setPage(1); };
 
+    /* the row shown in the preview: the one clicked, else the first on this page */
+    const selected = visible.find((r) => r.id === selectedId) || visible[0] || null;
+    const select = (r) => { setSelectedId(r.id); setShowPreview(true); };
+
     const dateCell = (r) => {
         if (isEvent) return r.startAt ? [formatDate(r.startAt), r.venue || "No venue yet"] : ["Date not set", r.venue || "No venue yet"];
         if (r.status === "published") return [`Published ${formatDate(r.publishedAt, false)}`, `by ${r.authorName}`];
@@ -806,156 +886,179 @@ function ListView({ module, onNew, onEdit }) {
     };
 
     return (
-        <section className="mc-card">
-            <header className="mc-card-head">
-                <div>
-                    <span className="mc-card-no">{all.length} {all.length === 1 ? module.noun : `${module.noun}s`}</span>
-                    <h2>{module.label}</h2>
-                    <p>{module.hint}.</p>
-                </div>
-                <button type="button" className="mc-btn-dark" onClick={onNew}><Icon name="plus" size={16} /> {module.add}</button>
-            </header>
+        <div className={`mc-split ${showPreview ? "has-preview" : ""}`}>
+            <div className="mc-pane">
+                <section className="mc-card">
+                    <header className="mc-card-head">
+                        <div>
+                            <span className="mc-card-no">{all.length} {all.length === 1 ? module.noun : `${module.noun}s`}</span>
+                            <h2>{module.label}</h2>
+                            <p>{module.hint}. Select a row to see it in the preview.</p>
+                        </div>
+                        <div className="mc-actions">
+                            <button type="button" className={`mc-btn-outline ${showPreview ? "is-on" : ""}`} onClick={() => setShowPreview((v) => !v)} aria-pressed={showPreview}><Icon name="panel" size={16} /> {showPreview ? "Hide preview" : "Show preview"}</button>
+                            <button type="button" className="mc-btn-dark" onClick={onNew}><Icon name="plus" size={16} /> {module.add}</button>
+                        </div>
+                    </header>
 
-            <div className="mc-filters" role="group" aria-label="Filter by status">
-                <button type="button" className={`mc-chip ${status === "all" ? "is-on" : ""}`} onClick={() => reset(setStatus)("all")}>All <b>{all.length}</b></button>
-                {statuses.map((s) => (
-                    <button key={s} type="button" className={`mc-chip ${status === s ? "is-on" : ""}`} onClick={() => reset(setStatus)(s)}>{STATUS[s].label} <b>{counts[s]}</b></button>
-                ))}
-            </div>
+                    <div className="mc-filters" role="group" aria-label="Filter by status">
+                        <button type="button" className={`mc-chip ${status === "all" ? "is-on" : ""}`} onClick={() => reset(setStatus)("all")}>All <b>{all.length}</b></button>
+                        {statuses.map((s) => (
+                            <button key={s} type="button" className={`mc-chip ${status === s ? "is-on" : ""}`} onClick={() => reset(setStatus)(s)}>{STATUS[s].label} <b>{counts[s]}</b></button>
+                        ))}
+                    </div>
 
-            <div className="mc-toolbar">
-                <label className="mc-search">
-                    <Icon name="search" size={16} />
-                    <input type="search" value={query} onChange={(e) => reset(setQuery)(e.target.value)} placeholder={isEvent ? "Search by title or venue" : "Search by title or address"} aria-label={`Search ${module.noun}s`} />
-                </label>
-                {!isEvent && module.types.length > 1 && (
-                    <select className="mc-input mc-select" value={type} onChange={(e) => reset(setType)(e.target.value)} aria-label="Type">
-                        <option value="all">All types</option>
-                        {module.types.map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
-                    </select>
-                )}
-                {!isEvent && (
-                    <select className="mc-input mc-select" value={category} onChange={(e) => reset(setCategory)(e.target.value)} aria-label="Category">
-                        <option value="all">All categories</option>
-                        {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                )}
-                <select className="mc-input mc-select" value={sort} onChange={(e) => reset(setSort)(e.target.value)} aria-label="Sort by">
-                    {isEvent && <option value="start">Event date</option>}
-                    {!isEvent && <option value="date">Publish date</option>}
-                    <option value="updated">Recently edited</option>
-                    <option value="title">Title A to Z</option>
-                </select>
-            </div>
+                    <div className="mc-toolbar">
+                        <label className="mc-search">
+                            <Icon name="search" size={16} />
+                            <input type="search" value={query} onChange={(e) => reset(setQuery)(e.target.value)} placeholder={isEvent ? "Search by title or venue" : "Search by title or address"} aria-label={`Search ${module.noun}s`} />
+                        </label>
+                        {!isEvent && module.types.length > 1 && (
+                            <select className="mc-input mc-select" value={type} onChange={(e) => reset(setType)(e.target.value)} aria-label="Type">
+                                <option value="all">All types</option>
+                                {module.types.map((t) => <option key={t} value={t}>{TYPE_LABEL[t]}</option>)}
+                            </select>
+                        )}
+                        {!isEvent && (
+                            <select className="mc-input mc-select" value={category} onChange={(e) => reset(setCategory)(e.target.value)} aria-label="Category">
+                                <option value="all">All categories</option>
+                                {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </select>
+                        )}
+                        <select className="mc-input mc-select" value={sort} onChange={(e) => reset(setSort)(e.target.value)} aria-label="Sort by">
+                            {isEvent && <option value="start">Event date</option>}
+                            {!isEvent && <option value="date">Publish date</option>}
+                            <option value="updated">Recently edited</option>
+                            <option value="title">Title A to Z</option>
+                        </select>
+                    </div>
 
-            {visible.length === 0 ? (
-                <div className="mc-empty mc-empty-pad">
-                    {filtered ? (
-                        <>No {module.noun}s match. <button type="button" className="mc-linkbtn" onClick={() => { setQuery(""); setStatus("all"); setType("all"); setCategory("all"); }}>Clear filters</button></>
+                    {visible.length === 0 ? (
+                        <div className="mc-empty">
+                            {filtered ? (
+                                <>No {module.noun}s match. <button type="button" className="mc-linkbtn" onClick={() => { setQuery(""); setStatus("all"); setType("all"); setCategory("all"); }}>Clear filters</button></>
+                            ) : (
+                                <>No {module.noun}s yet. <button type="button" className="mc-linkbtn" onClick={onNew}>{module.add}</button></>
+                            )}
+                        </div>
                     ) : (
-                        <>No {module.noun}s yet. <button type="button" className="mc-linkbtn" onClick={onNew}>{module.add}</button></>
+                        <ul className="mc-rows">
+                            {visible.map((r) => {
+                                const cover = media.find((m) => m.id === r.coverId);
+                                const [d1, d2] = dateCell(r);
+                                const cat = categories.find((c) => c.id === r.categoryId);
+                                const isSelected = Boolean(showPreview && selected && selected.id === r.id);
+                                return (
+                                    <li key={r.id} className={`mc-row ${isSelected ? "is-selected" : ""}`} aria-current={isSelected ? "true" : undefined} onClick={() => select(r)}>
+                                        <span className="mc-thumb">{cover ? <img src={thumbOf(cover)} alt="" /> : <Icon name="image" size={18} />}</span>
+                                        <div className="mc-cell mc-cell-title">
+                                            <button type="button" className="mc-title-btn" onClick={(e) => { e.stopPropagation(); onEdit(r); }}>{r.title || "Untitled"}</button>
+                                            <small>/{r.slug}</small>
+                                        </div>
+                                        <div className="mc-cell mc-cell-type">
+                                            <strong>{isEvent ? r.eventType : TYPE_LABEL[r.type]}</strong>
+                                            <small>{isEvent ? "" : cat?.name || "No category"}</small>
+                                        </div>
+                                        <div className="mc-cell mc-cell-status">
+                                            <StatusPill status={r.status} />
+                                            {r.pinned && <span className="mc-pill is-dark"><Icon name="pin" size={11} /> On Home</span>}
+                                        </div>
+                                        <div className="mc-cell mc-cell-date"><strong>{d1}</strong><small>{d2}</small></div>
+                                        <div className="mc-row-tools" onClick={(e) => e.stopPropagation()}>
+                                            <button type="button" className="mc-iconbtn" aria-label={`Edit ${r.title}`} title="Edit" onClick={() => onEdit(r)}><Icon name="edit" size={15} /></button>
+                                            <button type="button" className={`mc-iconbtn ${isSelected ? "is-active" : ""}`} aria-label={`Preview ${r.title}`} title="Show in preview" onClick={() => select(r)}><Icon name="eye" size={15} /></button>
+                                            {canPin && (
+                                                <button type="button" className={`mc-iconbtn ${r.pinned ? "is-active" : ""}`} aria-pressed={r.pinned} aria-label={r.pinned ? `Unpin ${r.title} from the Home page` : `Pin ${r.title} to the Home page`} title={r.pinned ? "Unpin from the Home page" : "Pin to the Home page"} onClick={() => pin(module.kind, r, !r.pinned)}><Icon name="pin" size={15} /></button>
+                                            )}
+                                            <button type="button" className="mc-iconbtn is-danger" aria-label={`Delete ${r.title}`} title="Delete (moves to Trash)" onClick={() => askDelete({ what: r.title, onConfirm: () => remove(module.kind, r) })}><Icon name="trash" size={15} /></button>
+                                        </div>
+                                    </li>
+                                );
+                            })}
+                        </ul>
                     )}
-                </div>
-            ) : (
-                <ul className="mc-rows">
-                    {visible.map((r) => {
-                        const cover = media.find((m) => m.id === r.coverId);
-                        const [d1, d2] = dateCell(r);
-                        const cat = categories.find((c) => c.id === r.categoryId);
-                        return (
-                            <li key={r.id} className="mc-row">
-                                <span className="mc-thumb">{cover ? <img src={thumbOf(cover)} alt="" /> : <Icon name="image" size={18} />}</span>
-                                <div className="mc-cell mc-cell-title">
-                                    <button type="button" className="mc-title-btn" onClick={() => onEdit(r)}>{r.title || "Untitled"}</button>
-                                    <small>/{r.slug}</small>
-                                </div>
-                                <div className="mc-cell mc-cell-type">
-                                    <strong>{isEvent ? r.eventType : TYPE_LABEL[r.type]}</strong>
-                                    <small>{isEvent ? "" : cat?.name || "No category"}</small>
-                                </div>
-                                <div className="mc-cell mc-cell-status">
-                                    <StatusPill status={r.status} />
-                                    {r.pinned && <span className="mc-pill is-dark"><Icon name="pin" size={11} /> On Home</span>}
-                                </div>
-                                <div className="mc-cell mc-cell-date"><strong>{d1}</strong><small>{d2}</small></div>
-                                <div className="mc-row-tools">
-                                    <button type="button" className="mc-iconbtn" aria-label={`Edit ${r.title}`} title="Edit" onClick={() => onEdit(r)}><Icon name="edit" size={15} /></button>
-                                    <button type="button" className="mc-iconbtn" aria-label={`Preview ${r.title}`} title="Preview" onClick={() => preview(module, r)}><Icon name="eye" size={15} /></button>
-                                    {canPin && (
-                                        <button type="button" className={`mc-iconbtn ${r.pinned ? "is-active" : ""}`} aria-pressed={r.pinned} aria-label={r.pinned ? `Unpin ${r.title} from the Home page` : `Pin ${r.title} to the Home page`} title={r.pinned ? "Unpin from the Home page" : "Pin to the Home page"} onClick={() => pin(module.kind, r, !r.pinned)}><Icon name="pin" size={15} /></button>
-                                    )}
-                                    <button type="button" className="mc-iconbtn is-danger" aria-label={`Delete ${r.title}`} title="Delete (moves to Trash)" onClick={() => askDelete({ what: r.title, onConfirm: () => remove(module.kind, r) })}><Icon name="trash" size={15} /></button>
-                                </div>
-                            </li>
-                        );
-                    })}
-                </ul>
-            )}
 
-            <Pager page={current} pages={pages} total={shown.length} onPage={setPage} />
-        </section>
+                    <Pager page={current} pages={pages} total={shown.length} onPage={setPage} />
+                </section>
+            </div>
+
+            {showPreview && <ListPreview module={module} rec={selected} onClose={() => setShowPreview(false)} />}
+        </div>
     );
 }
 
 /* gallery albums: the order here is the order on the public gallery */
 function AlbumList({ module, onNew, onEdit }) {
-    const { rows, reorder, remove, preview, media, askDelete } = useMc();
+    const { rows, reorder, remove, media } = useMc();
     const [query, setQuery] = useState("");
+    const [showPreview, setShowPreview] = useState(true);
+    const [selectedId, setSelectedId] = useState(null);
     const all = rows("album");
     const q = query.trim().toLowerCase();
     const shown = q ? all.filter((a) => a.title.toLowerCase().includes(q)) : all;
     const events = rows("event");
 
+    const selected = shown.find((a) => a.id === selectedId) || shown[0] || null;
+    const select = (a) => { setSelectedId(a.id); setShowPreview(true); };
+
     return (
-        <section className="mc-card">
-            <header className="mc-card-head">
-                <div>
-                    <span className="mc-card-no">{all.length} {all.length === 1 ? "album" : "albums"}</span>
-                    <h2>{module.label}</h2>
-                    <p>{module.hint}. Drag to set the order on the public gallery.</p>
-                </div>
-                <button type="button" className="mc-btn-dark" onClick={onNew}><Icon name="plus" size={16} /> {module.add}</button>
-            </header>
+        <div className={`mc-split ${showPreview ? "has-preview" : ""}`}>
+            <div className="mc-pane">
+                <section className="mc-card">
+                    <header className="mc-card-head">
+                        <div>
+                            <span className="mc-card-no">{all.length} {all.length === 1 ? "album" : "albums"}</span>
+                            <h2>{module.label}</h2>
+                            <p>{module.hint}. Drag to set the order on the public gallery. Select an album to see it in the preview.</p>
+                        </div>
+                        <div className="mc-actions">
+                            <button type="button" className={`mc-btn-outline ${showPreview ? "is-on" : ""}`} onClick={() => setShowPreview((v) => !v)} aria-pressed={showPreview}><Icon name="panel" size={16} /> {showPreview ? "Hide preview" : "Show preview"}</button>
+                            <button type="button" className="mc-btn-dark" onClick={onNew}><Icon name="plus" size={16} /> {module.add}</button>
+                        </div>
+                    </header>
 
-            <div className="mc-toolbar">
-                <label className="mc-search">
-                    <Icon name="search" size={16} />
-                    <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search albums" aria-label="Search albums" />
-                </label>
-            </div>
-            {q && <p className="mc-hint mc-hint-pad">Reordering is off while a search is active.</p>}
+                    <div className="mc-toolbar">
+                        <label className="mc-search">
+                            <Icon name="search" size={16} />
+                            <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search albums" aria-label="Search albums" />
+                        </label>
+                    </div>
+                    {q && <p className="mc-hint mc-hint-pad">Reordering is off while a search is active.</p>}
 
-            <div className="mc-block">
-                <Orderable
-                    items={shown}
-                    disabled={Boolean(q)}
-                    nameOf={(a) => a.title}
-                    onMove={(from, to) => reorder(moveIn(all.map((a) => a.id), from, to))}
-                    onRemove={(i) => remove("album", shown[i])}
-                    empty={q ? "No albums match." : "No albums yet. Create one to show photos and videos."}
-                >
-                    {(a) => {
-                        const cover = media.find((m) => m.id === a.coverId);
-                        const ev = events.find((e) => e.id === a.eventId);
-                        const videos = a.items.filter((i) => i.videoUrl || media.find((m) => m.id === i.mediaId)?.type === "video").length;
-                        return (
-                            <div className="mc-album-row">
-                                <span className="mc-thumb">{cover ? <img src={thumbOf(cover)} alt="" /> : <Icon name="image" size={18} />}</span>
-                                <div className="mc-pin-text">
-                                    <strong>{a.title}</strong>
-                                    <small>{a.items.length} item{a.items.length === 1 ? "" : "s"}{videos ? ` · ${videos} video${videos === 1 ? "" : "s"}` : ""}{ev ? ` · ${ev.title}` : ""}</small>
+                    <Orderable
+                        items={shown}
+                        disabled={Boolean(q)}
+                        nameOf={(a) => a.title}
+                        onMove={(from, to) => reorder(moveIn(all.map((a) => a.id), from, to))}
+                        onRemove={(i) => remove("album", shown[i])}
+                        empty={q ? "No albums match." : "No albums yet. Create one to show photos and videos."}
+                    >
+                        {(a) => {
+                            const cover = media.find((m) => m.id === a.coverId);
+                            const ev = events.find((e) => e.id === a.eventId);
+                            const videos = a.items.filter((i) => i.videoUrl || media.find((m) => m.id === i.mediaId)?.type === "video").length;
+                            const isSelected = Boolean(showPreview && selected && selected.id === a.id);
+                            return (
+                                <div className={`mc-album-row ${isSelected ? "is-selected" : ""}`} onClick={() => select(a)}>
+                                    <span className="mc-thumb">{cover ? <img src={thumbOf(cover)} alt="" /> : <Icon name="image" size={18} />}</span>
+                                    <div className="mc-pin-text">
+                                        <strong>{a.title}</strong>
+                                        <small>{a.items.length} item{a.items.length === 1 ? "" : "s"}{videos ? ` · ${videos} video${videos === 1 ? "" : "s"}` : ""}{ev ? ` · ${ev.title}` : ""}</small>
+                                    </div>
+                                    <span className="mc-hist-time">Edited {timeAgo(a.updatedAt)}</span>
+                                    <div className="mc-row-tools" onClick={(e) => e.stopPropagation()}>
+                                        <button type="button" className="mc-btn-small" onClick={() => onEdit(a)}><Icon name="edit" size={13} /> Edit</button>
+                                        <button type="button" className={`mc-iconbtn ${isSelected ? "is-active" : ""}`} aria-label={`Preview ${a.title}`} title="Show in preview" onClick={() => select(a)}><Icon name="eye" size={15} /></button>
+                                    </div>
                                 </div>
-                                <span className="mc-hist-time">Edited {timeAgo(a.updatedAt)}</span>
-                                <div className="mc-row-tools">
-                                    <button type="button" className="mc-btn-small" onClick={() => onEdit(a)}><Icon name="edit" size={13} /> Edit</button>
-                                    <button type="button" className="mc-iconbtn" aria-label={`Preview ${a.title}`} title="Preview" onClick={() => preview(module, a)}><Icon name="eye" size={15} /></button>
-                                </div>
-                            </div>
-                        );
-                    }}
-                </Orderable>
+                            );
+                        }}
+                    </Orderable>
+                </section>
             </div>
-        </section>
+
+            {showPreview && <ListPreview module={module} rec={selected} onClose={() => setShowPreview(false)} />}
+        </div>
     );
 }
 
@@ -1060,7 +1163,8 @@ function AlbumFields({ form, set, errors }) {
     );
 }
 
-function SidePanel({ kind, form, set, module }) {
+/* publishing facts and Home page pin, kept inside the form card (the preview takes the right column) */
+function PublishBlocks({ kind, form, set, module }) {
     const canPin = module.key === "news" || kind === "event";
     const facts = kind === "album"
         ? [["Items", `${form.items.length}`], ["Last edited", form.updatedAt ? `${formatDate(form.updatedAt)} by ${form.updatedBy}` : "Never"]]
@@ -1068,52 +1172,53 @@ function SidePanel({ kind, form, set, module }) {
             ? [["Starts", form.startAt ? formatDate(form.startAt) : "Not set"], ["Last edited", form.updatedAt ? `${formatDate(form.updatedAt)} by ${form.updatedBy}` : "Never"]]
             : [["Published", form.publishedAt ? formatDate(form.publishedAt) : "Not yet"], ["Scheduled for", form.scheduledAt ? formatDate(form.scheduledAt) : "None"], ["Author", form.authorName || "You"], ["Last edited", form.updatedAt ? `${formatDate(form.updatedAt)} by ${form.updatedBy}` : "Never"]];
 
+    const note = kind === "album"
+        ? "Albums appear on the public gallery as soon as you save."
+        : form.status === "published"
+            ? "Live on the public site. Saving changes updates it straight away."
+            : form.status === "scheduled"
+                ? "Goes live automatically at the scheduled time."
+                : form.status === "cancelled"
+                    ? "Marked as cancelled. Publish again to reopen it."
+                    : form.status === "archived"
+                        ? "Hidden from the public site. Publish again to bring it back."
+                        : "Not visible to visitors until you publish.";
+
     return (
-        <aside className="mc-side">
-            <section className="mc-card mc-side-card">
-                <BlockHead title={kind === "album" ? "Album" : "Publishing"} aside={kind !== "album" && <StatusPill status={form.status} />} />
-                {kind === "album" ? (
-                    <p className="mc-hint">Albums appear on the public gallery as soon as you save.</p>
-                ) : form.status === "published" ? (
-                    <p className="mc-hint">Live on the public site. Saving changes updates it straight away.</p>
-                ) : form.status === "scheduled" ? (
-                    <p className="mc-hint">Goes live automatically at the scheduled time.</p>
-                ) : form.status === "cancelled" ? (
-                    <p className="mc-hint">Marked as cancelled. Publish again to reopen it.</p>
-                ) : form.status === "archived" ? (
-                    <p className="mc-hint">Hidden from the public site. Publish again to bring it back.</p>
-                ) : (
-                    <p className="mc-hint">Not visible to visitors until you publish.</p>
-                )}
+        <>
+            <div className="mc-block">
+                <BlockHead title={kind === "album" ? "Album" : "Publishing"} text={note} aside={kind !== "album" && <StatusPill status={form.status} />} />
                 <dl className="mc-facts">
                     {facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}
                 </dl>
-            </section>
+            </div>
 
             {canPin && (
-                <section className="mc-card mc-side-card">
-                    <BlockHead title="Home page" />
+                <div className="mc-block">
+                    <BlockHead title="Home page" text={`Pinned items show at the top of ${kind === "event" ? "Upcoming events" : "Latest news"}.`} />
                     <label className="mc-visible">
                         <span>{form.pinned ? "Pinned to the Home page" : "Not pinned"}</span>
                         <Toggle checked={Boolean(form.pinned)} label="Pin to the Home page" onChange={(v) => set({ pinned: v })} />
                     </label>
-                    <p className="mc-hint">Pinned items show at the top of {kind === "event" ? "Upcoming events" : "Latest news"}. Set the order under <a className="mc-link" href={HOME_PINS}>Home Page <Icon name="external" size={11} /></a>.</p>
-                </section>
+                    <p className="mc-hint">Set the order under <a className="mc-link" href={HOME_PINS}>Home Page <Icon name="external" size={11} /></a>.</p>
+                </div>
             )}
-        </aside>
+        </>
     );
 }
 
 function Editor({ module, initial, onClose }) {
     const { kind } = module;
     const ctx = useMc();
-    const { rows, history, commit, remove, askDelete, confirm, notify, preview: openPreview } = ctx;
+    const { rows, history, commit, remove, askDelete, confirm, notify, liveBase } = ctx;
 
     const [saved, setSaved] = useState(() => clone(initial));
     const [form, setForm] = useState(() => clone(initial));
     const [tab, setTab] = useState("content");
     const [submitted, setSubmitted] = useState(false);
     const [menu, setMenu] = useState(false);
+    const [showPreview, setShowPreview] = useState(true);
+    const [reloadKey, setReloadKey] = useState(0);
     const [slugTouched, setSlugTouched] = useState(Boolean(initial.id));
     const busyRef = useRef(false);
     const menuRef = useRef(null);
@@ -1162,6 +1267,7 @@ function Editor({ module, initial, onClose }) {
         commit(kind, form, action, at, (rec) => {
             busyRef.current = false;
             setSubmitted(false);
+            setReloadKey((k) => k + 1);
             notify("ok", action === "schedule" && at ? `Scheduled for ${formatDate(at)}.` : DONE[action]);
             if (ctx.live) { onClose(); return; }
             setSaved(clone(rec));
@@ -1183,6 +1289,7 @@ function Editor({ module, initial, onClose }) {
         const needed = action === "unpublish" || action === "archive" || action === "cancel" ? {} : strict ? allErrors : Object.fromEntries(Object.entries(allErrors).filter(([k]) => LIGHT_KEYS.includes(k)));
         if (Object.keys(needed).length) {
             setSubmitted(true);
+            setTab("content");
             notify("error", `Fix ${Object.keys(needed).length} field${Object.keys(needed).length === 1 ? "" : "s"} before ${action === "save" ? "saving" : action === "schedule" ? "scheduling" : "publishing"}.`);
             jumpToFirstError();
             return;
@@ -1203,6 +1310,7 @@ function Editor({ module, initial, onClose }) {
     const canPublish = !isAlbum && status !== "published";
     const saveLabel = isAlbum ? "Save album" : status === "published" ? "Save changes" : "Save draft";
     const Fields = isAlbum ? AlbumFields : kind === "event" ? EventFields : PostFields;
+    const liveUrl = publicUrl(liveBase, module, saved);
 
     return (
         <div className="mc-edit">
@@ -1218,12 +1326,10 @@ function Editor({ module, initial, onClose }) {
                 </div>
 
                 <div className="mc-actions">
-                    <button type="button" className="mc-btn-outline" onClick={() => openPreview(module, form)}><Icon name="eye" size={16} /> Preview</button>
+                    <button type="button" className={`mc-btn-outline ${showPreview ? "is-on" : ""}`} onClick={() => setShowPreview((v) => !v)} aria-pressed={showPreview}><Icon name="panel" size={16} /> {showPreview ? "Hide preview" : "Show preview"}</button>
                     <button type="button" className={isAlbum || !canPublish ? "mc-btn-dark" : "mc-btn-outline"} onClick={() => start("save")} disabled={!dirty && !isNew}><Icon name="save" size={16} /> {saveLabel}</button>
                     {canPublish && (
-                        <button type="button" className="mc-btn-dark" onClick={() => start("publish")}>
-                            <span className="mc-btn-icon"><Icon name="upload" size={16} /></span> {status === "scheduled" ? "Publish now" : "Publish"}
-                        </button>
+                        <button type="button" className="mc-btn-dark" onClick={() => start("publish")}><Icon name="upload" size={16} /> {status === "scheduled" ? "Publish now" : "Publish"}</button>
                     )}
                     <div className="mc-more" ref={menuRef}>
                         <button type="button" className="mc-iconbtn is-round" aria-label="More options" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((v) => !v)}><Icon name="more" size={18} /></button>
@@ -1233,6 +1339,7 @@ function Editor({ module, initial, onClose }) {
                                 {!isAlbum && (status === "published" || status === "scheduled") && <button type="button" role="menuitem" onClick={() => start("unpublish")}><Icon name="unlink" size={16} /> Unpublish</button>}
                                 {kind === "post" && status === "published" && <button type="button" role="menuitem" onClick={() => start("archive")}><Icon name="archive" size={16} /> Archive</button>}
                                 {kind === "event" && status === "published" && <button type="button" role="menuitem" onClick={() => start("cancel")}><Icon name="close" size={16} /> Cancel event</button>}
+                                <a role="menuitem" href={liveUrl} target="_blank" rel="noreferrer"><Icon name="external" size={16} /> Open live page</a>
                                 <button type="button" role="menuitem" disabled={isNew} onClick={() => { setMenu(false); askDelete({ what: form.title || `this ${module.noun}`, onConfirm: () => { remove(kind, form); onClose(); } }); }}><Icon name="trash" size={16} /> Delete</button>
                             </div>
                         )}
@@ -1251,18 +1358,23 @@ function Editor({ module, initial, onClose }) {
             </div>
 
             {tab === "content" ? (
-                <div className="mc-layout">
-                    <section className="mc-card">
-                        <header className="mc-card-head">
-                            <div>
-                                <span className="mc-card-no">{isNew ? "New" : "Editing"} {module.noun}</span>
-                                <h2>{module.label}</h2>
-                                <p>{isAlbum ? "Changes go live when you save." : "Save a draft at any time. Publishing needs every field below completed."}</p>
-                            </div>
-                        </header>
-                        <Fields form={form} set={set} errors={errors} module={module} onTitle={onTitle} onSlug={onSlug} />
-                    </section>
-                    <SidePanel kind={kind} form={form} set={set} module={module} />
+                <div className={`mc-split ${showPreview ? "has-preview" : ""}`}>
+                    <div className="mc-pane">
+                        <section className="mc-card">
+                            <header className="mc-card-head">
+                                <div>
+                                    <span className="mc-card-no">{isNew ? "New" : "Editing"} {module.noun}</span>
+                                    <h2>{module.label}</h2>
+                                    <p>{isAlbum ? "Changes go live when you save." : "Save a draft at any time. Publishing needs every field below completed."}</p>
+                                </div>
+                            </header>
+                            <Fields form={form} set={set} errors={errors} module={module} onTitle={onTitle} onSlug={onSlug} />
+                            <PublishBlocks kind={kind} form={form} set={set} module={module} />
+                        </section>
+                    </div>
+                    {showPreview && (
+                        <LivePanel module={module} rec={form} liveUrl={liveUrl} reloadKey={reloadKey} onReload={() => setReloadKey((k) => k + 1)} onClose={() => setShowPreview(false)} />
+                    )}
                 </div>
             ) : (
                 <HistoryPanel entries={entries} />
@@ -1273,7 +1385,7 @@ function Editor({ module, initial, onClose }) {
                     <span className="mc-savebar-text"><i /> Unsaved changes</span>
                     <div>
                         <button type="button" className="mc-btn-ghost" onClick={() => { setForm(clone(saved)); setSubmitted(false); notify("info", "Changes discarded."); }}>Discard</button>
-                        <button type="button" className="mc-btn-yellow" onClick={() => start("save")}>{saveLabel}</button>
+                        <button type="button" className="mc-btn-dark" onClick={() => start("save")}>{saveLabel}</button>
                     </div>
                 </div>
             )}
@@ -1288,6 +1400,7 @@ function Editor({ module, initial, onClose }) {
 export default function AdminPSBMediaCentre() {
     const { props, url } = usePage();
     const live = Boolean(props.mediaCentre?.posts);
+    const liveBase = props.mediaCentre?.liveBase || DEFAULT_LIVE_BASE;
 
     const seed = useRef(live ? props.mediaCentre : sample).current;
     const [local, setLocal] = useState(() => ({ posts: clone(seed.posts), events: clone(seed.events), albums: clone(seed.albums), history: clone(seed.history || []) }));
@@ -1307,7 +1420,6 @@ export default function AdminPSBMediaCentre() {
     const [editing, setEditing] = useState(null);
     const [dlg, setDlg] = useState(null);
     const [picker, setPicker] = useState(null);
-    const [previewing, setPreviewing] = useState(null);
     const [toast, setToast] = useState(null);
 
     const module = MODULES[active];
@@ -1383,17 +1495,16 @@ export default function AdminPSBMediaCentre() {
     const askDelete = (info) => setDlg({ icon: "trash", danger: true, title: `Delete “${info.what}”?`, text: "It moves to Content Trash, where only the Super Admin can restore or purge it. It disappears from the public site straight away.", keep: "Keep it", label: "Move to Trash", onConfirm: info.onConfirm });
 
     const ctx = {
-        live, media, categories, history, rows, notify, commit, remove, pin, reorder, askDelete,
+        live, liveBase, media, categories, history, rows, notify, commit, remove, pin, reorder, askDelete,
         confirm: (d) => setDlg(d),
         pickMedia: (opts) => setPicker(opts),
-        preview: (m, rec) => setPreviewing({ module: m, rec }),
     };
 
     const countFor = (m) => rows(m.kind).filter((r) => m.kind !== "post" || m.types.includes(r.type)).length;
 
     return (
         <Ctx.Provider value={ctx}>
-            <div className="psb-media">
+            <div className="mc">
                 {editing ? (
                     <Editor key={editing.id ?? "new"} module={module} initial={editing} onClose={() => setEditing(null)} />
                 ) : (
@@ -1409,14 +1520,17 @@ export default function AdminPSBMediaCentre() {
                             <p className="mc-note"><Icon name="alert" size={16} /><span>Sample data. Every control works, but nothing is stored until your controller sends the <b>mediaCentre</b> prop.</span></p>
                         )}
 
-                        <div className="mc-tabs" role="tablist" aria-label="Media Centre modules">
-                            {MODULES.map((m, i) => (
-                                <button key={m.key} type="button" role="tab" aria-selected={active === i} className={active === i ? "is-active" : ""} onClick={() => setActive(i)}>
-                                    {m.label}
-                                    <span className="mc-badge">{countFor(m)}</span>
-                                </button>
-                            ))}
-                        </div>
+                        <nav className="mc-sections" aria-label="Media Centre modules">
+                            {MODULES.map((m, i) => {
+                                const n = countFor(m);
+                                return (
+                                    <button key={m.key} type="button" className={`mc-section-pill ${active === i ? "is-active" : ""}`} aria-current={active === i ? "true" : undefined} onClick={() => setActive(i)}>
+                                        <span className="mc-section-no">{i + 1}</span>
+                                        <span className="mc-section-text"><strong>{m.label}</strong><small>{n} {m.noun}{n === 1 ? "" : "s"}</small></span>
+                                    </button>
+                                );
+                            })}
+                        </nav>
 
                         {module.kind === "album" ? (
                             <AlbumList key={module.key} module={module} onNew={() => setEditing(blankFor(module))} onEdit={(r) => setEditing(clone(r))} />
@@ -1428,7 +1542,6 @@ export default function AdminPSBMediaCentre() {
 
                 {dlg && <ConfirmDialog dlg={dlg} notify={notify} onClose={() => setDlg(null)} />}
                 {picker && <MediaPicker state={picker} media={media} onClose={() => setPicker(null)} onUpload={uploadMedia} />}
-                {previewing && <PreviewModal module={previewing.module} rec={previewing.rec} onClose={() => setPreviewing(null)} />}
 
                 {toast && (
                     <div className={`mc-toast is-${toast.tone}`} role="status">

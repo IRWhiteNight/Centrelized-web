@@ -5,18 +5,23 @@ import "../../../css/admin-PSB-css/admin-site-information.css";
 /* ====================================================================
    PSB ADMIN → SITE INFORMATION            /admin/psb/site-information/*
 
+   Same look and the same live preview panel as the Opportunities editor,
+   with its own stylesheet (admin-site-information.css, classes start with "si-").
+
    Site map (PSB workspace → "Site Information"), one page for all five modules:
      1  Location and Access (map, coordinates)  → psb_locations
      2  Facilities and Infrastructure           → psb_facilities (+ media_assets cover)
      3  Airspace and Operational Information    → psb_airspace_zones (+ documents chart)
      4  Weather Information and links           → psb_weather_links
      5  Guidelines and Downloads                → documents (+ media_assets file)
-   Common screens from the document: list with search and filter, create / edit,
-   preview, reorder (drag) where the public page shows an ordered list (facilities),
-   delete to Trash, History tab (audit_logs for this record).
-   The ERD (ERD-4 / ERD-5) has no draft / status column on these tables, so changes go
-   live when saved. The only visibility switch is documents.is_public.
-   Media is always chosen from media_assets (never stored inside the content).
+   Screens: list with search and filter, create / edit, live preview, reorder (drag)
+   for facilities, delete to Trash, History tab (audit_logs for this record).
+   The ERD has no draft / status column on these tables, so changes go live when saved.
+   The only visibility switch is documents.is_public.
+
+   LIVE PREVIEW: the panel on the right has two views (same as Opportunities)
+     • Draft preview  - the public page built from what is on screen (unsaved edits too)
+     • Live site      - the real public page in a frame; reloads after saving
 
    SAMPLE DATA: the page works today (changes stay on screen only). Return an Inertia prop
    named `siteInfo` and it switches to LIVE mode:
@@ -31,16 +36,19 @@ import "../../../css/admin-PSB-css/admin-site-information.css";
            'documents'    => [...],  // documents for this site (all categories)
            'media'        => [...],  // media_assets: { id, name, type: image|video|document, alt, size, url? }
            'history'      => [...],  // audit_logs rows: { id, key: "facility:3", user, action, label, at, changes }
+           'liveUrl'      => '/site-information',   // optional public page address
+           'liveUrls'     => ['location' => '/site-information/location'], // optional, per module
        ],
    ]);
 
    Map the five sidebar routes (/admin/psb/site-information/location, /facilities, /airspace,
-   /weather, /downloads) to this same component. LIVE mode requests are listed in API below.
-   The controller must write audit_logs and check the site scope (RBAC).
+   /weather, /downloads) to this same component. The controller must write audit_logs and
+   check the site scope (RBAC).
 ==================================================================== */
 
 const BASE = "/admin/psb"; // keep in sync with psbRoutes.js
 const SI = `${BASE}/site-information`;
+const DEFAULT_LIVE_URL = "/site-information";
 const API = {
     location: `${SI}/locations`, //        POST (new) · PUT /:id · DELETE /:id   body { record }
     facility: `${SI}/facilities`, //       same, plus PUT /reorder { ids }
@@ -189,6 +197,7 @@ const hostOf = (u) => { try { return new URL(u).host; } catch { return u; } };
 const isEmbed = (u) => /^https:\/\/\S+$/i.test((u || "").trim());
 const validCoords = (lat, lng) => lat !== "" && lng !== "" && lat != null && lng != null && !Number.isNaN(Number(lat)) && !Number.isNaN(Number(lng));
 const mapsLink = (lat, lng) => `https://www.google.com/maps?q=${Number(lat)},${Number(lng)}`;
+const lines = (t) => (t || "").split("\n").filter(Boolean);
 
 function formatDate(iso, withTime = true) {
     if (!iso) return "";
@@ -301,6 +310,8 @@ function Icon({ name, size = 18 }) {
         cloud: <path d="M7 18a4 4 0 0 1-.6-8A6 6 0 0 1 18 9.5 4.3 4.3 0 0 1 17.5 18z" />,
         layers: (<><path d="m12 3 9 5-9 5-9-5z" /><path d="m3 13 9 5 9-5" /></>),
         building: (<><path d="M4 21V8l8-5 8 5v13z" /><path d="M9 21v-6h6v6" /></>),
+        refresh: (<><path d="M21 12a9 9 0 1 1-3-6.7" /><polyline points="21 3 21 9 15 9" /></>),
+        panel: (<><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M14 4v16" /></>),
     };
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -347,7 +358,7 @@ function SelectField({ label, hint, value, onChange, options, error }) {
     return (
         <div className={`si-field ${error ? "has-error" : ""}`}>
             <div className="si-field-top"><label htmlFor={id}>{label}</label></div>
-            <select id={id} className="si-input si-select is-block" value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
+            <select id={id} className="si-input si-select" value={value ?? ""} onChange={(e) => onChange(e.target.value)}>
                 {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
             {hint && !error && <p className="si-hint">{hint}</p>}
@@ -435,7 +446,7 @@ function MediaField({ label, hint, mediaId, onChange, accept = "any", error }) {
 
     return (
         <div className={`si-field ${error ? "has-error" : ""}`}>
-            <div className="si-field-top"><label>{label}</label></div>
+            <div className="si-field-top"><span className="si-label">{label}</span></div>
             <div className="si-media">
                 <span className="si-media-thumb">{asset ? <img src={thumbOf(asset)} alt="" /> : <Icon name={accept === "document" ? "file" : "image"} size={22} />}</span>
                 <div className="si-media-text">
@@ -482,7 +493,7 @@ function MediaPicker({ state, media, onClose, onUpload }) {
     const list = media.filter((m) => (type === "all" || m.type === type) && (!q || m.name.toLowerCase().includes(q) || (m.alt || "").toLowerCase().includes(q)));
 
     return (
-        <div className="si-overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+        <div className="si-overlay is-top" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
             <div className="si-dialog si-picker" role="dialog" aria-modal="true" aria-labelledby="si-picker-title">
                 <header className="si-dialog-head">
                     <div>
@@ -525,7 +536,7 @@ function MediaPicker({ state, media, onClose, onUpload }) {
     );
 }
 
-/* ------------------------------ map, dialogs, preview, history ------------------------------ */
+/* ------------------------------ map, dialogs, history ------------------------------ */
 
 function MapFrame({ rec }) {
     if (isEmbed(rec.mapEmbedUrl)) {
@@ -569,96 +580,7 @@ function ConfirmDialog({ dlg, onClose }) {
     );
 }
 
-/* A simplified picture of the public page, built from the unsaved form */
-function PreviewModal({ module, rec, onClose }) {
-    const { media, rows } = useSi();
-    const [device, setDevice] = useState("desktop");
-    const { kind } = module;
-
-    useEffect(() => {
-        const onKey = (e) => e.key === "Escape" && onClose();
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [onClose]);
-
-    const mediaOf = (id) => media.find((m) => m.id === id);
-    const lines = (t) => (t || "").split("\n").filter(Boolean);
-    const title = rec[TITLE[kind]] || "Untitled";
-    const cover = kind === "facility" ? mediaOf(rec.coverId) : null;
-    const loc = kind === "facility" ? rows("location").find((l) => l.id === rec.locationId) : null;
-    const chart = kind === "zone" ? rows("document").find((d) => d.id === rec.chartDocumentId) : null;
-    const file = kind === "document" ? mediaOf(rec.mediaId) : null;
-    const tag = kind === "location" ? "Location and access" : kind === "facility" ? LABEL.facilityType[rec.facilityType] || "Facility" : kind === "zone" ? "Airspace" : kind === "weather" ? "Weather" : LABEL.docCategory[rec.docCategory] || "Download";
-
-    return (
-        <div className="si-overlay is-wide" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="si-dialog si-preview" role="dialog" aria-modal="true" aria-labelledby="si-preview-title">
-                <header className="si-dialog-head">
-                    <div>
-                        <h2 id="si-preview-title">Preview of the {module.noun}</h2>
-                        <p>Built from what you see on screen, including unsaved changes. Layout is simplified.</p>
-                    </div>
-                    <div className="si-preview-tools">
-                        <div className="si-seg" role="group" aria-label="Device">
-                            <button type="button" className={device === "desktop" ? "is-on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
-                            <button type="button" className={device === "mobile" ? "is-on" : ""} onClick={() => setDevice("mobile")}>Mobile</button>
-                        </div>
-                        <button type="button" className="si-iconbtn" aria-label="Close preview" onClick={onClose}><Icon name="close" size={18} /></button>
-                    </div>
-                </header>
-
-                <div className={`si-pv-frame is-${device}`}>
-                    <article className="si-pv">
-                        {cover && <img className="si-pv-cover" src={thumbOf(cover)} alt={cover.alt || ""} />}
-                        <div className="si-pv-body">
-                            <p className="si-pv-tag">{tag}</p>
-                            <h1>{title}</h1>
-
-                            {kind === "location" && (
-                                <>
-                                    {lines(rec.address).map((l, i) => <p key={i} className="si-pv-lead">{l}</p>)}
-                                    <MapFrame rec={rec} />
-                                    {rec.accessNotes ? lines(rec.accessNotes).map((l, i) => <p key={i}>{l}</p>) : <p className="si-pv-none">No access notes yet.</p>}
-                                </>
-                            )}
-                            {kind === "facility" && (
-                                <>
-                                    {loc && <p className="si-pv-meta">Located at {loc.name}</p>}
-                                    {rec.description ? <p>{rec.description}</p> : <p className="si-pv-none">No description yet.</p>}
-                                </>
-                            )}
-                            {kind === "zone" && (
-                                <>
-                                    {rec.description && <p className="si-pv-lead">{rec.description}</p>}
-                                    <div className="si-pv-when"><strong>Operating hours</strong><span>{rec.operatingHours || "Not stated"}</span></div>
-                                    <h3>Restrictions</h3>
-                                    {rec.restrictions ? lines(rec.restrictions).map((l, i) => <p key={i}>{l}</p>) : <p className="si-pv-none">No restrictions listed.</p>}
-                                    {chart && <span className="si-pv-btn">Download chart: {chart.title}</span>}
-                                </>
-                            )}
-                            {kind === "weather" && (
-                                <>
-                                    <p className="si-pv-meta">{rec.sourceName}</p>
-                                    {rec.summary && <p>{rec.summary}</p>}
-                                    <span className="si-pv-btn">Open {hostOf(rec.url) || "link"}</span>
-                                </>
-                            )}
-                            {kind === "document" && (
-                                <>
-                                    <p className="si-pv-meta">{rec.versionLabel || "No version"} · {file ? `${file.name} (${file.size})` : "No file chosen"}</p>
-                                    <p className={rec.isPublic ? "" : "si-pv-none"}>{rec.isPublic ? "Visible on the public Downloads page." : "Hidden. Visitors cannot see this document."}</p>
-                                    <span className="si-pv-btn">Download</span>
-                                </>
-                            )}
-                        </div>
-                    </article>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-const ACTION_PILL = { CREATE: "warn", UPDATE: "info", PUBLISH: "dark", UNPUBLISH: "off", DELETE: "danger", RESTORE: "ok" };
+const ACTION_PILL = { CREATE: "warn", UPDATE: "info", PUBLISH: "ok", UNPUBLISH: "off", DELETE: "danger", RESTORE: "ok" };
 const ACTION_LABEL = { CREATE: "Created", UPDATE: "Updated", PUBLISH: "Published", UNPUBLISH: "Unpublished", DELETE: "Deleted", RESTORE: "Restored" };
 
 function HistoryPanel({ entries }) {
@@ -673,7 +595,7 @@ function HistoryPanel({ entries }) {
                 </div>
             </header>
             {entries.length === 0 ? (
-                <p className="si-empty si-empty-pad">No history yet. It starts when you save.</p>
+                <p className="si-empty">No history yet. It starts when you save.</p>
             ) : (
                 <ul className="si-history">
                     {entries.map((h) => {
@@ -704,6 +626,142 @@ function HistoryPanel({ entries }) {
 }
 
 /* ====================================================================
+   LIVE PREVIEW PANEL  (draft preview + the real public page)
+==================================================================== */
+
+/* The public page for one module, built from the records on screen (unsaved edits included) */
+function DraftPreview({ module, records, activeId }) {
+    const { media, rows } = useSi();
+    const { kind } = module;
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const box = ref.current;
+        if (!box || activeId === null || activeId === undefined) return;
+        const target = box.querySelector(`[data-id="${activeId}"]`);
+        if (target) box.scrollTo({ top: Math.max(0, target.offsetTop - 16), behavior: "smooth" });
+    }, [activeId]);
+
+    const mediaOf = (id) => media.find((m) => m.id === id);
+
+    return (
+        <div className="si-pv-scroll" ref={ref}>
+            <div className="si-pv">
+                <section className="si-pv-sec">
+                    <header className="si-pv-head">
+                        <h2>{module.label}</h2>
+                        <p>{module.hint}.</p>
+                    </header>
+
+                    {records.length === 0 && <p className="si-pv-none">Nothing to show yet.</p>}
+
+                    <div className={`si-pv-list is-${kind}`}>
+                        {records.map((r) => {
+                            const rid = r.id ?? "new";
+                            const cover = kind === "facility" ? mediaOf(r.coverId) : null;
+                            const loc = kind === "facility" ? rows("location").find((l) => l.id === r.locationId) : null;
+                            const chart = kind === "zone" ? rows("document").find((d) => d.id === r.chartDocumentId) : null;
+                            const file = kind === "document" ? mediaOf(r.mediaId) : null;
+                            const hidden = kind === "document" && !r.isPublic;
+                            const cls = `si-pv-item ${activeId === rid ? "is-active" : ""} ${hidden ? "is-hidden" : ""}`;
+                            const name = r[TITLE[kind]] || "Untitled";
+
+                            return (
+                                <article key={rid} data-id={rid} className={cls} style={cover ? { backgroundImage: `linear-gradient(180deg, rgba(11,26,40,.35), rgba(11,26,40,.92)), url("${thumbOf(cover)}")` } : undefined}>
+                                    {kind === "location" && (
+                                        <>
+                                            <strong>{name}</strong>
+                                            {lines(r.address).map((l, i) => <p key={i} className="si-pv-lead">{l}</p>)}
+                                            <MapFrame rec={r} />
+                                            {lines(r.accessNotes).map((l, i) => <p key={i}>{l}</p>)}
+                                        </>
+                                    )}
+                                    {kind === "facility" && (
+                                        <>
+                                            <span className="si-pv-tag">{LABEL.facilityType[r.facilityType] || "Facility"}</span>
+                                            <strong>{name}</strong>
+                                            <p>{r.description}</p>
+                                            {loc && <small>Located at {loc.name}</small>}
+                                        </>
+                                    )}
+                                    {kind === "zone" && (
+                                        <>
+                                            <strong>{name}</strong>
+                                            {r.description && <p>{r.description}</p>}
+                                            <div className="si-pv-when"><b>Operating hours</b><span>{r.operatingHours || "Not stated"}</span></div>
+                                            {lines(r.restrictions).map((l, i) => <p key={i}>{l}</p>)}
+                                            {chart && <span className="si-pv-chip"><Icon name="file" size={12} /> {chart.title}</span>}
+                                        </>
+                                    )}
+                                    {kind === "weather" && (
+                                        <>
+                                            <span className="si-pv-tag">{r.sourceName || "Source"}</span>
+                                            <strong>{name}</strong>
+                                            {r.summary && <p>{r.summary}</p>}
+                                            {r.url && <span className="si-pv-btn">Open {hostOf(r.url)}</span>}
+                                        </>
+                                    )}
+                                    {kind === "document" && (
+                                        <>
+                                            <div className="si-pv-top">
+                                                <span className="si-pv-tag">{LABEL.docCategory[r.docCategory] || "Download"}{r.versionLabel ? ` · ${r.versionLabel}` : ""}</span>
+                                                {hidden && <span className="si-pill is-off">Hidden</span>}
+                                            </div>
+                                            <strong>{name}</strong>
+                                            <small>{file ? `${file.name} (${file.size})` : "No file chosen"}</small>
+                                            <span className="si-pv-btn">Download</span>
+                                        </>
+                                    )}
+                                </article>
+                            );
+                        })}
+                    </div>
+                </section>
+            </div>
+        </div>
+    );
+}
+
+function LivePanel({ module, records, activeId, liveUrl, reloadKey, onReload, onClose, saved }) {
+    const [view, setView] = useState("draft"); // draft | live
+    const [device, setDevice] = useState("desktop");
+
+    return (
+        <aside className="si-preview" aria-label="Live preview">
+            <header className="si-preview-head">
+                <div className="si-seg" role="tablist" aria-label="Preview type">
+                    <button type="button" role="tab" aria-selected={view === "draft"} className={view === "draft" ? "is-on" : ""} onClick={() => setView("draft")}>Draft preview</button>
+                    <button type="button" role="tab" aria-selected={view === "live"} className={view === "live" ? "is-on" : ""} onClick={() => setView("live")}>Live site</button>
+                </div>
+                <div className="si-preview-tools">
+                    <div className="si-seg is-small" role="group" aria-label="Device">
+                        <button type="button" className={device === "desktop" ? "is-on" : ""} onClick={() => setDevice("desktop")}>Desktop</button>
+                        <button type="button" className={device === "mobile" ? "is-on" : ""} onClick={() => setDevice("mobile")}>Mobile</button>
+                    </div>
+                    {view === "live" && <button type="button" className="si-iconbtn" aria-label="Reload live page" title="Reload live page" onClick={onReload}><Icon name="refresh" size={16} /></button>}
+                    <a className="si-iconbtn" href={liveUrl} target="_blank" rel="noreferrer" aria-label="Open live page in a new tab" title="Open live page in a new tab"><Icon name="external" size={16} /></a>
+                    <button type="button" className="si-iconbtn" aria-label="Hide preview" title="Hide preview" onClick={onClose}><Icon name="close" size={16} /></button>
+                </div>
+            </header>
+
+            <p className="si-preview-note">
+                {view === "draft"
+                    ? "Built from what you see on screen, including unsaved edits. Layout is simplified."
+                    : saved ? "The real public page, as visitors see it now. It updates when you save." : "The real public page. It will not show your changes until you save."}
+            </p>
+
+            <div className={`si-preview-frame is-${device}`}>
+                {view === "draft" ? (
+                    <DraftPreview module={module} records={records} activeId={activeId} />
+                ) : (
+                    <iframe key={reloadKey} className="si-iframe" src={liveUrl} title={`Live ${module.label} page`} loading="lazy" />
+                )}
+            </div>
+        </aside>
+    );
+}
+
+/* ====================================================================
    LIST SCREEN
 ==================================================================== */
 
@@ -720,7 +778,7 @@ function infoOf(kind, r, { media, rows }) {
 function RowBody({ module, r, onEdit }) {
     const ctx = useSi();
     const { kind } = module;
-    const { askDelete, remove, preview, setVisibility, rows } = ctx;
+    const { askDelete, remove, focusPreview, setVisibility, rows } = ctx;
     const info = infoOf(kind, r, ctx);
     const name = r[TITLE[kind]] || "Untitled";
 
@@ -740,7 +798,7 @@ function RowBody({ module, r, onEdit }) {
             )}
             <div className="si-row-tools">
                 <button type="button" className="si-iconbtn" aria-label={`Edit ${name}`} title="Edit" onClick={() => onEdit(r)}><Icon name="edit" size={15} /></button>
-                <button type="button" className="si-iconbtn" aria-label={`Preview ${name}`} title="Preview" onClick={() => preview(module, r)}><Icon name="eye" size={15} /></button>
+                <button type="button" className="si-iconbtn" aria-label={`Show ${name} in the preview`} title="Show in preview" onClick={() => focusPreview(r)}><Icon name="eye" size={15} /></button>
                 {!module.ordered && (
                     <button type="button" className="si-iconbtn is-danger" aria-label={`Delete ${name}`} title="Delete (moves to Trash)" onClick={() => askDelete({ what: name, extra: usageText(kind, r, rows), onConfirm: () => remove(kind, r) })}><Icon name="trash" size={15} /></button>
                 )}
@@ -776,15 +834,15 @@ function ListView({ module, onNew, onEdit }) {
                     <h2>{module.label}</h2>
                     <p>{module.hint}.</p>
                 </div>
-                <button type="button" className="si-btn-dark" onClick={onNew}><Icon name="plus" size={16} /> {module.add}</button>
+                <button type="button" className="si-btn-dark is-small" onClick={onNew}><Icon name="plus" size={15} /> {module.add}</button>
             </header>
 
             {filterKey && (
-                <div className="si-filters" role="group" aria-label="Filter by type">
-                    <button type="button" className={`si-chip ${filter === "all" ? "is-on" : ""}`} onClick={() => setFilter("all")}>All <b>{all.length}</b></button>
+                <div className="si-chips" role="group" aria-label="Filter by type">
+                    <button type="button" className={filter === "all" ? "is-on" : ""} onClick={() => setFilter("all")}>All <b>{all.length}</b></button>
                     {filterOptions.map(([v, l]) => {
                         const n = all.filter((r) => r[filterKey] === v).length;
-                        return n || filter === v ? <button key={v} type="button" className={`si-chip ${filter === v ? "is-on" : ""}`} onClick={() => setFilter(v)}>{l} <b>{n}</b></button> : null;
+                        return n || filter === v ? <button key={v} type="button" className={filter === v ? "is-on" : ""} onClick={() => setFilter(v)}>{l} <b>{n}</b></button> : null;
                     })}
                 </div>
             )}
@@ -805,20 +863,18 @@ function ListView({ module, onNew, onEdit }) {
             {module.ordered && filtered && <p className="si-hint si-hint-pad">Reordering is off while a search or filter is active.</p>}
 
             {module.ordered ? (
-                <div className="si-block">
-                    <Orderable
-                        items={shown}
-                        disabled={filtered}
-                        nameOf={(r) => r[TITLE[kind]]}
-                        onMove={(from, to) => reorder(moveIn(all.map((r) => r.id), from, to))}
-                        onRemove={(i) => remove(kind, shown[i])}
-                        empty={filtered ? "Nothing matches." : `No ${module.noun}s yet. ${module.add} to get started.`}
-                    >
-                        {(r) => <RowBody module={module} r={r} onEdit={onEdit} />}
-                    </Orderable>
-                </div>
+                <Orderable
+                    items={shown}
+                    disabled={filtered}
+                    nameOf={(r) => r[TITLE[kind]]}
+                    onMove={(from, to) => reorder(moveIn(all.map((r) => r.id), from, to))}
+                    onRemove={(i) => remove(kind, shown[i])}
+                    empty={filtered ? "Nothing matches." : `No ${module.noun}s yet. ${module.add} to get started.`}
+                >
+                    {(r) => <RowBody module={module} r={r} onEdit={onEdit} />}
+                </Orderable>
             ) : shown.length === 0 ? (
-                <div className="si-empty si-empty-pad">
+                <div className="si-empty">
                     {filtered ? (
                         <>No {module.noun}s match. <button type="button" className="si-linkbtn" onClick={clear}>Clear filters</button></>
                     ) : (
@@ -861,37 +917,29 @@ function FieldFor({ fd, form, set, errors }) {
     return <Field label={fd.label} hint={fd.hint} value={value} error={error} max={fd.max} rows={fd.type === "textarea" ? fd.rows : undefined} type={fd.type === "number" ? "number" : "text"} placeholder={fd.placeholder} onChange={(v) => set({ [fd.key]: v })} />;
 }
 
-function SidePanel({ module, form }) {
+/* record details at the bottom of the form (replaces the old side panel) */
+function DetailsBlock({ module, form }) {
     const { media } = useSi();
     const { kind } = module;
     const file = kind === "document" ? media.find((m) => m.id === form.mediaId) : null;
 
     return (
-        <aside className="si-side">
-            {kind === "location" && (
-                <section className="si-card si-side-card">
-                    <BlockHead title="Map preview" />
-                    <MapFrame rec={form} />
-                </section>
-            )}
-            <section className="si-card si-side-card">
-                <BlockHead title="Details" aside={kind === "document" ? <span className={`si-pill is-${form.isPublic ? "ok" : "off"}`}>{form.isPublic ? "Public" : "Hidden"}</span> : null} />
-                <p className="si-hint">{kind === "document" ? (form.isPublic ? "Visitors can download this document now." : "Hidden from visitors until you switch it on.") : "Changes go live on the public site as soon as you save."}</p>
-                <dl className="si-facts">
-                    {kind === "document" && <div><dt>Published</dt><dd>{form.publishedAt ? formatDate(form.publishedAt) : "Not yet"}</dd></div>}
-                    {file && <div><dt>File</dt><dd>{file.name} ({file.size})</dd></div>}
-                    {kind === "weather" && form.url && /^https?:\/\//i.test(form.url) && <div><dt>Link</dt><dd><a className="si-link" href={form.url} target="_blank" rel="noreferrer">{hostOf(form.url)} <Icon name="external" size={11} /></a></dd></div>}
-                    <div><dt>Last edited</dt><dd>{form.updatedAt ? `${formatDate(form.updatedAt)} by ${form.updatedBy}` : "Never"}</dd></div>
-                </dl>
-            </section>
-        </aside>
+        <div className="si-block">
+            <BlockHead title="Details" aside={kind === "document" ? <span className={`si-pill is-${form.isPublic ? "ok" : "off"}`}>{form.isPublic ? "Public" : "Hidden"}</span> : null} text={kind === "document" ? (form.isPublic ? "Visitors can download this document now." : "Hidden from visitors until you switch it on.") : "Changes go live on the public site as soon as you save."} />
+            <dl className="si-facts">
+                {kind === "document" && <div><dt>Published</dt><dd>{form.publishedAt ? formatDate(form.publishedAt) : "Not yet"}</dd></div>}
+                {file && <div><dt>File</dt><dd>{file.name} ({file.size})</dd></div>}
+                {kind === "weather" && form.url && /^https?:\/\//i.test(form.url) && <div><dt>Link</dt><dd><a className="si-link" href={form.url} target="_blank" rel="noreferrer">{hostOf(form.url)} <Icon name="external" size={11} /></a></dd></div>}
+                <div><dt>Last edited</dt><dd>{form.updatedAt ? `${formatDate(form.updatedAt)} by ${form.updatedBy}` : "Never"}</dd></div>
+            </dl>
+        </div>
     );
 }
 
 function Editor({ module, initial, onClose }) {
     const { kind } = module;
     const ctx = useSi();
-    const { history, commit, remove, askDelete, notify, preview, rows } = ctx;
+    const { history, commit, remove, askDelete, notify, rows, showPreview, setShowPreview, liveUrlFor, reloadKey, reload } = ctx;
 
     const [saved, setSaved] = useState(() => clone(initial));
     const [form, setForm] = useState(() => clone(initial));
@@ -910,6 +958,12 @@ function Editor({ module, initial, onClose }) {
     const name = form[TITLE[kind]];
 
     const set = (patch) => setForm((f) => ({ ...f, ...patch }));
+
+    /* the page as visitors would see it: the saved list with this record swapped for the form */
+    const previewRecords = useMemo(() => {
+        const list = rows(kind);
+        return form.id && list.some((r) => r.id === form.id) ? list.map((r) => (r.id === form.id ? form : r)) : [...list, form];
+    }, [rows, kind, form]);
 
     useEffect(() => {
         const close = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenu(false); };
@@ -938,7 +992,7 @@ function Editor({ module, initial, onClose }) {
         if (errorCount) {
             setSubmitted(true);
             notify("error", `Fix ${errorCount} field${errorCount === 1 ? "" : "s"} before saving.`);
-            setTimeout(() => document.querySelector(".si-field.has-error")?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+            setTimeout(() => document.querySelector(".si-edit .si-field.has-error")?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
             return;
         }
         busyRef.current = true;
@@ -946,6 +1000,7 @@ function Editor({ module, initial, onClose }) {
             busyRef.current = false;
             setSubmitted(false);
             notify("ok", "Saved. Visitors now see these changes.");
+            reload();
             if (ctx.live) { onClose(); return; }
             setSaved(clone(rec));
             setForm(clone(rec));
@@ -958,6 +1013,8 @@ function Editor({ module, initial, onClose }) {
         window.addEventListener("keydown", onKey);
         return () => window.removeEventListener("keydown", onKey);
     });
+
+    const withPreview = tab === "content" && showPreview;
 
     return (
         <div className="si-edit">
@@ -972,13 +1029,14 @@ function Editor({ module, initial, onClose }) {
                 </div>
 
                 <div className="si-actions">
-                    <button type="button" className="si-btn-outline" onClick={() => preview(module, form)}><Icon name="eye" size={16} /> Preview</button>
+                    <button type="button" className={`si-btn-outline ${showPreview ? "is-on" : ""}`} onClick={() => setShowPreview(!showPreview)} aria-pressed={showPreview}><Icon name="panel" size={16} /> {showPreview ? "Hide preview" : "Show preview"}</button>
                     <button type="button" className="si-btn-dark" onClick={save} disabled={!dirty && !isNew}><span className="si-btn-icon"><Icon name="save" size={16} /></span> Save</button>
                     <div className="si-more" ref={menuRef}>
                         <button type="button" className="si-iconbtn is-round" aria-label="More options" aria-haspopup="menu" aria-expanded={menu} onClick={() => setMenu((v) => !v)}><Icon name="more" size={18} /></button>
                         {menu && (
                             <div className="si-menu" role="menu">
                                 <button type="button" role="menuitem" disabled={isNew} onClick={() => { setMenu(false); askDelete({ what: name || `this ${module.noun}`, extra: usageText(kind, form, rows), onConfirm: () => { remove(kind, form); onClose(); } }); }}><Icon name="trash" size={16} /> Delete</button>
+                                <a role="menuitem" href={liveUrlFor(module)} target="_blank" rel="noreferrer"><Icon name="external" size={16} /> Open live page</a>
                             </div>
                         )}
                     </div>
@@ -996,29 +1054,34 @@ function Editor({ module, initial, onClose }) {
             </div>
 
             {tab === "content" ? (
-                <div className="si-layout">
-                    <section className="si-card">
-                        <header className="si-card-head">
-                            <div>
-                                <span className="si-card-no">{isNew ? "New" : "Editing"} {module.noun}</span>
-                                <h2>{module.label}</h2>
-                                <p>Changes go live when you save.</p>
-                            </div>
-                        </header>
-                        {SCHEMA[kind].map((blk) => (
-                            <div className="si-block" key={blk.title}>
-                                <BlockHead title={blk.title} text={blk.text} />
-                                <div className="si-fields">
-                                    {blk.fields.map((fd) => (
-                                        <div key={fd.key} className={fd.half ? "" : "is-full"}>
-                                            <FieldFor fd={fd} form={form} set={set} errors={errors} />
-                                        </div>
-                                    ))}
+                <div className={`si-split ${withPreview ? "has-preview" : ""}`}>
+                    <div className="si-main">
+                        <section className="si-card">
+                            <header className="si-card-head">
+                                <div>
+                                    <span className="si-card-no">{isNew ? "New" : "Editing"} {module.noun}</span>
+                                    <h2>{module.label}</h2>
+                                    <p>Changes go live when you save.</p>
                                 </div>
-                            </div>
-                        ))}
-                    </section>
-                    <SidePanel module={module} form={form} />
+                            </header>
+                            {SCHEMA[kind].map((blk) => (
+                                <div className="si-block" key={blk.title}>
+                                    <BlockHead title={blk.title} text={blk.text} />
+                                    <div className="si-fields">
+                                        {blk.fields.map((fd) => (
+                                            <div key={fd.key} className={fd.half ? "" : "is-full"}>
+                                                <FieldFor fd={fd} form={form} set={set} errors={errors} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                            <DetailsBlock module={module} form={form} />
+                        </section>
+                    </div>
+                    {withPreview && (
+                        <LivePanel module={module} records={previewRecords} activeId={form.id ?? "new"} liveUrl={liveUrlFor(module)} reloadKey={reloadKey} onReload={reload} onClose={() => setShowPreview(false)} saved={!dirty} />
+                    )}
                 </div>
             ) : (
                 <HistoryPanel entries={entries} />
@@ -1029,7 +1092,7 @@ function Editor({ module, initial, onClose }) {
                     <span className="si-savebar-text"><i /> Unsaved changes</span>
                     <div>
                         <button type="button" className="si-btn-ghost" onClick={() => { setForm(clone(saved)); setSubmitted(false); notify("info", "Changes discarded."); }}>Discard</button>
-                        <button type="button" className="si-btn-yellow" onClick={save}>Save</button>
+                        <button type="button" className="si-btn-dark is-small" onClick={save}>Save</button>
                     </div>
                 </div>
             )}
@@ -1062,11 +1125,15 @@ export default function AdminPSBSiteInformation() {
     const [editing, setEditing] = useState(null);
     const [dlg, setDlg] = useState(null);
     const [picker, setPicker] = useState(null);
-    const [previewing, setPreviewing] = useState(null);
     const [toast, setToast] = useState(null);
+    const [showPreview, setShowPreview] = useState(true);
+    const [reloadKey, setReloadKey] = useState(0);
+    const [activeId, setActiveId] = useState(null);
 
     const module = MODULES[active];
     const notify = (tone, text) => setToast({ tone, text });
+    const reload = () => setReloadKey((k) => k + 1);
+    const liveUrlFor = (m) => props.siteInfo?.liveUrls?.[m.route] || props.siteInfo?.liveUrl || DEFAULT_LIVE_URL;
 
     useEffect(() => {
         if (!toast) return undefined;
@@ -1101,7 +1168,7 @@ export default function AdminPSBSiteInformation() {
 
     const remove = (kind, rec) => {
         if (live) {
-            router.delete(`${API[kind]}/${rec.id}`, { preserveScroll: true, onSuccess: () => notify("ok", `“${rec[TITLE[kind]]}” moved to Trash.`), onError: () => notify("error", "Something went wrong. Nothing was deleted.") });
+            router.delete(`${API[kind]}/${rec.id}`, { preserveScroll: true, onSuccess: () => { notify("ok", `“${rec[TITLE[kind]]}” moved to Trash.`); reload(); }, onError: () => notify("error", "Something went wrong. Nothing was deleted.") });
             return;
         }
         const key = KEY[kind];
@@ -1116,7 +1183,7 @@ export default function AdminPSBSiteInformation() {
     };
 
     const setVisibility = (rec, isPublic) => {
-        if (live) { router.post(`${API.document}/${rec.id}/visibility`, { isPublic }, { preserveScroll: true, onSuccess: () => notify("ok", isPublic ? "Now public." : "Now hidden.") }); return; }
+        if (live) { router.post(`${API.document}/${rec.id}/visibility`, { isPublic }, { preserveScroll: true, onSuccess: () => { notify("ok", isPublic ? "Now public." : "Now hidden."); reload(); } }); return; }
         const now = new Date().toISOString();
         setLocal((l) => ({
             ...l,
@@ -1127,7 +1194,7 @@ export default function AdminPSBSiteInformation() {
     };
 
     const reorder = (ids) => {
-        if (live) { router.put(`${API.facility}/reorder`, { ids }, { preserveScroll: true }); return; }
+        if (live) { router.put(`${API.facility}/reorder`, { ids }, { preserveScroll: true, onSuccess: reload }); return; }
         setLocal((l) => ({ ...l, facilities: ids.map((id) => l.facilities.find((f) => f.id === id)) }));
         notify("ok", "Facility order saved.");
     };
@@ -1142,10 +1209,12 @@ export default function AdminPSBSiteInformation() {
 
     const askDelete = (info) => setDlg({ title: `Delete “${info.what}”?`, text: `It moves to Content Trash, where only the Super Admin can restore or purge it. It disappears from the public site straight away.${info.extra || ""}`, onConfirm: info.onConfirm });
 
+    const focusPreview = (rec) => { setShowPreview(true); setActiveId(rec.id); };
+
     const ctx = {
         live, media, history, rows, notify, commit, remove, reorder, setVisibility, askDelete,
         pickMedia: (opts) => setPicker(opts),
-        preview: (m, rec) => setPreviewing({ module: m, rec }),
+        focusPreview, showPreview, setShowPreview, liveUrlFor, reloadKey, reload,
     };
 
     return (
@@ -1160,6 +1229,10 @@ export default function AdminPSBSiteInformation() {
                                 <h1>Site Information</h1>
                                 <p>Create, update and remove the location, facilities, airspace details, weather links and downloads shown on the Perlis Airspace Sandbox website.</p>
                             </div>
+                            <div className="si-actions">
+                                <button type="button" className={`si-btn-outline ${showPreview ? "is-on" : ""}`} onClick={() => setShowPreview(!showPreview)} aria-pressed={showPreview}><Icon name="panel" size={16} /> {showPreview ? "Hide preview" : "Show preview"}</button>
+                                <a className="si-btn-outline" href={liveUrlFor(module)} target="_blank" rel="noreferrer"><Icon name="external" size={16} /> Open live page</a>
+                            </div>
                         </div>
 
                         {!live && (
@@ -1168,20 +1241,26 @@ export default function AdminPSBSiteInformation() {
 
                         <div className="si-tabs" role="tablist" aria-label="Site Information modules">
                             {MODULES.map((m, i) => (
-                                <button key={m.key} type="button" role="tab" aria-selected={active === i} className={active === i ? "is-active" : ""} onClick={() => setActive(i)}>
+                                <button key={m.key} type="button" role="tab" aria-selected={active === i} className={active === i ? "is-active" : ""} onClick={() => { setActive(i); setActiveId(null); }}>
                                     {m.label}
                                     <span className="si-badge">{rows(m.kind).length}</span>
                                 </button>
                             ))}
                         </div>
 
-                        <ListView key={module.key} module={module} onNew={() => setEditing(blankFor(module.kind))} onEdit={(r) => setEditing(clone(r))} />
+                        <div className={`si-split ${showPreview ? "has-preview" : ""}`}>
+                            <div className="si-main">
+                                <ListView key={module.key} module={module} onNew={() => setEditing(blankFor(module.kind))} onEdit={(r) => setEditing(clone(r))} />
+                            </div>
+                            {showPreview && (
+                                <LivePanel module={module} records={rows(module.kind)} activeId={activeId} liveUrl={liveUrlFor(module)} reloadKey={reloadKey} onReload={reload} onClose={() => setShowPreview(false)} saved />
+                            )}
+                        </div>
                     </>
                 )}
 
                 {dlg && <ConfirmDialog dlg={dlg} onClose={() => setDlg(null)} />}
                 {picker && <MediaPicker state={picker} media={media} onClose={() => setPicker(null)} onUpload={uploadMedia} />}
-                {previewing && <PreviewModal module={previewing.module} rec={previewing.rec} onClose={() => setPreviewing(null)} />}
 
                 {toast && (
                     <div className={`si-toast is-${toast.tone}`} role="status">

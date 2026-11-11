@@ -105,7 +105,6 @@ export default function FAQ() {
     const [cat, setCat] = useState('all');
     const [open, setOpen] = useState(() => new Set());
     const [copied, setCopied] = useState('');
-    const [solid, setSolid] = useState(false);
     const searchRef = useRef(null);
 
     const visible = useMemo(() => categories
@@ -120,14 +119,6 @@ export default function FAQ() {
     const popular = categories.flatMap((c) => c.items).filter((it) => it.popular);
 
     useReveal(`${cat}|${query}`);
-
-    /* top bar state */
-    useEffect(() => {
-        const on = () => setSolid(window.scrollY > 80);
-        on();
-        window.addEventListener('scroll', on, { passive: true });
-        return () => window.removeEventListener('scroll', on);
-    }, []);
 
     /* "/" focuses the search box */
     useEffect(() => {
@@ -185,12 +176,6 @@ export default function FAQ() {
 
     return (
         <div className="faq">
-            {/* ---------- top bar ---------- */}
-            <header className={`faq-bar${solid ? ' is-solid' : ''}`}>
-                <a className="faq-brand" href={routes.home}><i aria-hidden="true" />{page.brand}</a>
-                <a className="faq-cta-btn" href={routes.apply}>{page.applyLabel}</a>
-            </header>
-
             {/* ---------- hero ---------- */}
             <section className="faq-hero">
                 <div className="faq-glow" aria-hidden="true" />

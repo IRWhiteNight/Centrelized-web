@@ -1,11 +1,22 @@
 /* ==========================================================================
-   MEDIA CENTRE — CONTENT FILE
+   MEDIA CENTRE: CONTENT FILE
    Everything on the Media Centre page is edited HERE. You never touch the JSX.
 
-   HOW TO ADD A PHOTO
+   PHOTO / VIDEO GALLERY
+     ADD     copy any line inside `gallery.items` and change it. Order here = order on the page.
+     UPDATE  edit the text / image of that line.
+     DELETE  delete that one line.
+     Every item needs: type, album, title, description, image.
+       type:        'photo' | 'video'
+       album:       any name (filter tabs are built automatically)
+       description: 1-2 sentences, shown on the card and in the full-screen viewer
+       image:       a key from `images` below, or a direct path such as '/images/media/x.jpg'
+     `id` is optional (it is generated for you).
+
+   HOW TO ADD A NEW PHOTO FILE
      1. Drop the file in  src/images/media/
      2. Add one import line below, and one line in the `images` object
-     3. Add an item to `gallery.items` (or use the key as `image` in news/events/articles)
+     3. Use its key as `image` in a gallery / news / events / articles item
 
    HOW TO ADD A VIDEO
      Add an item with  type: 'video'  and ONE of:
@@ -64,7 +75,6 @@ export const links = {
     contact: '/contact',
     opportunities: '/opportunities',
     innovation: '/innovation',
-    mediaKit: '#',
 };
 
 /* ==========================================================================
@@ -76,23 +86,15 @@ export const page = {
     description: 'News, press releases, events, galleries and stories from the Perlis Airspace Sandbox.',
 };
 
-export const hero = {
-    eyebrow: 'Perlis Airspace Sandbox / Media Centre',
-    titleLines: ['Stories from', 'the low-altitude', 'sky.'],
-    highlight: 'the low-altitude',
-    lede: 'Project updates, official statements, events, photos and film from the national low-altitude airspace testbed in Perlis.',
-    primaryButton: 'Latest news',
-    secondaryButton: 'Browse the gallery',
-    // image keys shown in the hero film-strip (they scroll sideways, endlessly)
-    strip: ['render-exterior', 'city-evtol', 'render-hangar', 'site-aerial', 'poster-sandbox', 'render-helipad', 'sky-infra', 'corridor-terrain'],
-};
-
+/* tone = background of the section. Text colour switches automatically:
+   'light' / 'yellow' -> dark text,  'dark' / 'graphite' -> light text. */
 export const sections = [
-    { id: 'news', label: 'News & Project Updates' },
-    { id: 'press', label: 'Press Releases' },
-    { id: 'events', label: 'Events & Activities' },
-    { id: 'gallery', label: 'Photo & Video Gallery' },
-    { id: 'articles', label: 'Articles & Social Media' },
+    { id: 'news', label: 'News & Project Updates', tone: 'light' },
+    { id: 'press', label: 'Press Releases', tone: 'dark' },
+    { id: 'events', label: 'Events & Activities', tone: 'yellow' },
+    { id: 'gallery', label: 'Photo & Video Gallery', tone: 'light' },
+    { id: 'articles', label: 'Articles', tone: 'graphite' },
+    { id: 'social', label: 'Social Media', tone: 'light' },
 ];
 
 export const ticker = [
@@ -106,7 +108,7 @@ export const ticker = [
 
 /* ==========================================================================
    01 NEWS & PROJECT UPDATES
-   - `featured: true` puts one story in the big hero card (use only one)
+   - `featured: true` puts one story in the big lead card (use only one)
    - `body` is a list of paragraphs shown when the story is opened
 ========================================================================== */
 
@@ -165,26 +167,26 @@ export const news = {
 
 /* ==========================================================================
    02 PRESS RELEASES
-   type: 'Announcement' | 'Statement' | 'Media advisory'   file: link to a PDF (or '')
+   type: 'Announcement' | 'Statement' | 'Media advisory'
 ========================================================================== */
 
 export const press = {
     heading: 'Press releases',
-    lede: 'Official statements for journalists and partners. Download the full release or the media kit.',
+    lede: 'Official statements for journalists and partners, newest first. Open any release to read the summary.',
     types: ['All', 'Announcement', 'Statement', 'Media advisory'],
     items: [
-        { id: 'p1', title: 'Perlis Airspace Sandbox announces site selection', date: '2026-10-28', type: 'Announcement', summary: 'The sandbox will be developed at Sungai Batu Pahat, Perlis, as a national low-altitude testbed.', file: '' },
-        { id: 'p2', title: 'Statement on safety and airspace coordination', date: '2026-10-12', type: 'Statement', summary: 'How flight testing will be coordinated with regulators, airports and local authorities.', file: '' },
-        { id: 'p3', title: 'Media advisory: site visit for journalists', date: '2026-09-26', type: 'Media advisory', summary: 'Accredited media are invited to a guided tour of the proposed site and briefing.', file: '' },
-        { id: 'p4', title: 'UniMAP and partners sign collaboration framework', date: '2026-09-10', type: 'Announcement', summary: 'A framework for academia, industry and government cooperation on AAM validation.', file: '' },
-        { id: 'p5', title: 'Vertiport Malaysia Perlis joins the programme', date: '2026-08-22', type: 'Announcement', summary: 'The vertiport operator confirms participation in the sandbox development.', file: '' },
-        { id: 'p6', title: 'Statement on the Low Altitude Economy ambition', date: '2026-08-04', type: 'Statement', summary: 'Position on jobs, investment and national competitiveness from low-altitude airspace.', file: '' },
+        { id: 'p1', title: 'Perlis Airspace Sandbox announces site selection', date: '2026-10-28', type: 'Announcement', summary: 'The sandbox will be developed at Sungai Batu Pahat, Perlis, as a national low-altitude testbed.' },
+        { id: 'p2', title: 'Statement on safety and airspace coordination', date: '2026-10-12', type: 'Statement', summary: 'How flight testing will be coordinated with regulators, airports and local authorities.' },
+        { id: 'p3', title: 'Media advisory: site visit for journalists', date: '2026-09-26', type: 'Media advisory', summary: 'Accredited media are invited to a guided tour of the proposed site and briefing.' },
+        { id: 'p4', title: 'UniMAP and partners sign collaboration framework', date: '2026-09-10', type: 'Announcement', summary: 'A framework for academia, industry and government cooperation on AAM validation.' },
+        { id: 'p5', title: 'Vertiport Malaysia Perlis joins the programme', date: '2026-08-22', type: 'Announcement', summary: 'The vertiport operator confirms participation in the sandbox development.' },
+        { id: 'p6', title: 'Statement on the Low Altitude Economy ambition', date: '2026-08-04', type: 'Statement', summary: 'Position on jobs, investment and national competitiveness from low-altitude airspace.' },
     ],
     kit: {
-        title: 'Media kit',
-        text: 'Logos, approved photography, boilerplate and spokesperson contact.',
-        items: ['Logo pack (PNG, SVG)', 'Approved photo set', 'Fact sheet', 'Boilerplate text'],
-        button: 'Download media kit',
+        title: 'Press office',
+        text: 'For interviews, quotes, approved photography and site visits, contact our communications office.',
+        items: ['Interviews and spokesperson quotes', 'Approved photography on request', 'Background briefing', 'Guided site visits for accredited media'],
+        button: 'Email the press office',
     },
     contact: { label: 'Media enquiries', name: 'Communications Office', email: 'media@example.com' },
 };
@@ -209,43 +211,41 @@ export const events = {
 
 /* ==========================================================================
    04 PHOTO & VIDEO GALLERY
-   type: 'photo' | 'video'     album: any name (tabs are built automatically)
-   size: 'normal' | 'tall' | 'wide'  (how big the tile is in the mosaic)
-   Order here = order on the page. Newest / best first is a good habit.
+   One line = one card. Add, edit or delete lines freely (see the guide at the top).
 ========================================================================== */
 
 export const gallery = {
     heading: 'Photo & video gallery',
-    lede: 'Renders, site photography and film. Click any tile to open it full screen — use the arrow keys to move through.',
+    lede: 'Renders, site photography and film. Click any card to open it full screen, then use the arrow keys to move through.',
     items: [
-        { id: 'g1', type: 'video', album: 'Films', size: 'wide', title: 'The Next Infrastructure Is in the Sky', caption: 'Why low-altitude airspace is the new economic layer.', image: 'sky-infra', duration: '2:14', youtube: '', mp4: '' },
-        { id: 'g2', type: 'photo', album: 'Renders', size: 'tall', title: 'Hangar interior', caption: 'Open-span hangar with eVTOL on the apron and a control mezzanine.', image: 'render-hangar' },
-        { id: 'g3', type: 'photo', album: 'Renders', size: 'normal', title: 'Main building, aerial view', caption: 'Concept render of the sandbox main building and car park.', image: 'render-exterior' },
-        { id: 'g4', type: 'photo', album: 'Renders', size: 'normal', title: 'Entrance & gate', caption: 'Street-level view of the visitor entrance.', image: 'render-entrance' },
-        { id: 'g5', type: 'photo', album: 'Renders', size: 'normal', title: 'Helipad apron', caption: 'Marked helipad in front of the hangar doors.', image: 'render-helipad' },
-        { id: 'g6', type: 'photo', album: 'Site', size: 'wide', title: 'Site from above', caption: 'Aerial photograph of the sandbox site and surrounding paddy fields.', image: 'site-aerial' },
-        { id: 'g7', type: 'photo', album: 'Site', size: 'normal', title: 'Site boundary', caption: 'Surveyed boundary of the sandbox land.', image: 'site-boundary' },
-        { id: 'g8', type: 'photo', album: 'Site', size: 'tall', title: 'Northern field', caption: 'Ground-level view towards the limestone hills.', image: 'site-field-2' },
-        { id: 'g9', type: 'photo', album: 'Site', size: 'normal', title: 'Cleared ground', caption: 'Open land ready for utilities planning.', image: 'site-field-3' },
-        { id: 'g10', type: 'photo', album: 'Site', size: 'normal', title: 'Access track', caption: 'Existing access track along the field edge.', image: 'site-field-1' },
-        { id: 'g11', type: 'photo', album: 'Site', size: 'normal', title: 'Western edge', caption: 'View along the western boundary.', image: 'site-field-4' },
-        { id: 'g12', type: 'video', album: 'Films', size: 'normal', title: 'Walk the site', caption: 'A short tour of the proposed sandbox land.', image: 'site-aerial', duration: '1:32', youtube: '', mp4: '' },
-        { id: 'g13', type: 'photo', album: 'Plans', size: 'normal', title: 'Site plan', caption: 'Main building, vertiport, drone training area and lake.', image: 'site-plan' },
-        { id: 'g14', type: 'photo', album: 'Plans', size: 'wide', title: 'Four-phase roadmap', caption: 'From foundation to sustainability and future mobility.', image: 'roadmap-phases' },
-        { id: 'g15', type: 'photo', album: 'Plans', size: 'normal', title: 'Corridor terrain study', caption: 'Terrain and coastline along the test corridors.', image: 'corridor-terrain' },
-        { id: 'g16', type: 'photo', album: 'Vision', size: 'tall', title: 'Long-term vision', caption: 'From low altitude economy up to autonomous airspace.', image: 'vision-pyramid' },
-        { id: 'g17', type: 'photo', album: 'Vision', size: 'normal', title: 'Future city mobility', caption: 'eVTOL operations over a connected city.', image: 'city-evtol' },
-        { id: 'g18', type: 'video', album: 'Films', size: 'normal', title: 'Sandbox in 60 seconds', caption: 'The mission, the site and the roadmap in one minute.', image: 'poster-sandbox', duration: '1:00', youtube: '', mp4: '' },
+        { id: 'g1', type: 'video', album: 'Films', title: 'The Next Infrastructure Is in the Sky', description: 'Why low-altitude airspace is the new economic layer.', image: 'sky-infra', duration: '2:14', youtube: '', mp4: '' },
+        { id: 'g2', type: 'photo', album: 'Renders', title: 'Hangar interior', description: 'Open-span hangar with eVTOL on the apron and a control mezzanine.', image: 'render-hangar' },
+        { id: 'g3', type: 'photo', album: 'Renders', title: 'Main building, aerial view', description: 'Concept render of the sandbox main building and car park.', image: 'render-exterior' },
+        { id: 'g4', type: 'photo', album: 'Renders', title: 'Entrance & gate', description: 'Street-level view of the visitor entrance.', image: 'render-entrance' },
+        { id: 'g5', type: 'photo', album: 'Renders', title: 'Helipad apron', description: 'Marked helipad in front of the hangar doors.', image: 'render-helipad' },
+        { id: 'g6', type: 'photo', album: 'Site', title: 'Site from above', description: 'Aerial photograph of the sandbox site and surrounding paddy fields.', image: 'site-aerial' },
+        { id: 'g7', type: 'photo', album: 'Site', title: 'Site boundary', description: 'Surveyed boundary of the sandbox land.', image: 'site-boundary' },
+        { id: 'g8', type: 'photo', album: 'Site', title: 'Northern field', description: 'Ground-level view towards the limestone hills.', image: 'site-field-2' },
+        { id: 'g9', type: 'photo', album: 'Site', title: 'Cleared ground', description: 'Open land ready for utilities planning.', image: 'site-field-3' },
+        { id: 'g10', type: 'photo', album: 'Site', title: 'Access track', description: 'Existing access track along the field edge.', image: 'site-field-1' },
+        { id: 'g11', type: 'photo', album: 'Site', title: 'Western edge', description: 'View along the western boundary.', image: 'site-field-4' },
+        { id: 'g12', type: 'video', album: 'Films', title: 'Walk the site', description: 'A short tour of the proposed sandbox land.', image: 'site-aerial', duration: '1:32', youtube: '', mp4: '' },
+        { id: 'g13', type: 'photo', album: 'Plans', title: 'Site plan', description: 'Main building, vertiport, drone training area and lake.', image: 'site-plan' },
+        { id: 'g14', type: 'photo', album: 'Plans', title: 'Four-phase roadmap', description: 'From foundation to sustainability and future mobility.', image: 'roadmap-phases' },
+        { id: 'g15', type: 'photo', album: 'Plans', title: 'Corridor terrain study', description: 'Terrain and coastline along the test corridors.', image: 'corridor-terrain' },
+        { id: 'g16', type: 'photo', album: 'Vision', title: 'Long-term vision', description: 'From low altitude economy up to autonomous airspace.', image: 'vision-pyramid' },
+        { id: 'g17', type: 'photo', album: 'Vision', title: 'Future city mobility', description: 'eVTOL operations over a connected city.', image: 'city-evtol' },
+        { id: 'g18', type: 'video', album: 'Films', title: 'Sandbox in 60 seconds', description: 'The mission, the site and the roadmap in one minute.', image: 'poster-sandbox', duration: '1:00', youtube: '', mp4: '' },
     ],
 };
 
 /* ==========================================================================
-   05 ARTICLES & SOCIAL MEDIA
+   05 ARTICLES  +  06 SOCIAL MEDIA (social posts are listed in `articles.social.posts`)
 ========================================================================== */
 
 export const articles = {
-    heading: 'Articles & social media',
-    lede: 'Longer reads, expert views and the conversation online.',
+    heading: 'Articles & expert views',
+    lede: 'Longer reads and opinions from the programme team and partners.',
     items: [
         { id: 'a1', title: 'Why the next infrastructure is in the sky', author: 'Programme team', date: '2026-10-30', readTime: 6, tag: 'Opinion', image: 'sky-infra', summary: 'Roads connected cities, the internet connected people. Low-altitude airspace connects what comes next.', link: '#' },
         { id: 'a2', title: 'What a sandbox gives regulators that a lab cannot', author: 'COE-UAS', date: '2026-10-16', readTime: 5, tag: 'Explainer', image: 'ecosystem-apps', summary: 'Real operational data is the evidence policy needs. Here is how a sandbox produces it.', link: '#' },
@@ -255,7 +255,7 @@ export const articles = {
     ],
     social: {
         title: 'On social media',
-        lede: 'Sample posts shown below — connect your real feeds or paste the latest posts here.',
+        lede: 'Follow the sandbox for site photos, event updates and new films.',
         platforms: [
             { name: 'Facebook', handle: '@perlisairspacesandbox', url: '#' },
             { name: 'Instagram', handle: '@perlis.airspace', url: '#' },

@@ -1,386 +1,539 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@inertiajs/react";
-import { useAboutContent } from "../../Components/COEUAS-Components/aboutContent";
-import { SHOW_SLOT_HINTS } from "../../Components/COEUAS-Components/homeContent";
-import { BASE } from "../../Components/COEUAS-Components/siteMapCOEUAS";
+import { useAboutContent } from "../../data/COEUAS-data/aboutContent";
+import { BASE } from "../../data/COEUAS-data/siteMapCOEUAS";
 import "../../../css/COE-UAS-css/about.css";
 
 /* ------------------------------------------------------------------
-   About.jsx is layout and motion only.
-   All text, links and media come from aboutContent.js (later: the CMS).
-   Motion in this page:
-   - hero radar canvas, word-by-word headline, counting stats
-   - each section opens from a rounded card to full width (clip-path)
-   - a light sweep crosses the screen whenever the chapter changes
-   - scrolling bands between sections, scroll-linked parallax (--p)
-   - timeline that draws itself, org chart that grows, tabbed pillars
+   About.jsx = layout and motion only. No text lives here.
+   Place at: resources/js/Pages/COEUAS/About.jsx
+   All content comes from aboutContent.js (later: the CMS).
+
+   Same structure as the People page: hero + sticky section menu +
+   ticker + full-width sections made of blocks.
+
+   ADDING A NEW BLOCK TYPE: write one small component below and add it
+   to the BLOCKS map. Nothing else changes.
 ------------------------------------------------------------------- */
 
-const to = (h = "/") =>
-  h === "/" ? BASE : h.startsWith("/") && !h.startsWith(BASE + "/") && h !== BASE ? BASE + h : h;
-
 const reduced = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const clamp = (n, a = 0, b = 1) => Math.min(b, Math.max(a, n));
-const delay = (n, base = 0.05) => ({ "--d": `${base + n * 0.1}s` });
-const lines = (s) => s.split("\n").map((t, n) => <span key={n}>{n > 0 && <br />}{t}</span>);
+const D = (i) => ({ "--d": i * 80 });
+const pad = (n) => String(n + 1).padStart(2, "0");
+const ok = (x) => x && x.visible !== false;
+const list = (a) => (Array.isArray(a) ? a.filter(ok) : []);
+const plain = (t = "") => t.replace(/\*/g, "");
 
-const tilt = (e) => {
-  const r = e.currentTarget.getBoundingClientRect();
-  const x = (e.clientX - r.left) / r.width - 0.5, y = (e.clientY - r.top) / r.height - 0.5;
-  e.currentTarget.style.setProperty("--gx", `${(x + 0.5) * 100}%`);
-  e.currentTarget.style.setProperty("--gy", `${(y + 0.5) * 100}%`);
-  e.currentTarget.style.transform = `perspective(900px) rotateY(${x * 9}deg) rotateX(${-y * 9}deg)`;
+/* stable React key: the item's id when it has one */
+const keyOf = (x, i) => {
+  if (x && x.id) return x.id;
+  const label = typeof x === "string" ? x : x && (x.title || x.label || x.name || x.tab || x.year);
+  return `${label || ""}-${i}`;
 };
-const untilt = (e) => (e.currentTarget.style.transform = "");
 
-/* Image slot: shows the file, or a labelled placeholder while it is missing. */
-function Media({ m, className = "" }) {
-  const [failed, setFailed] = useState(false);
-  const src = m && m.src;
-  const live = !!src && !failed;
-  useEffect(() => setFailed(false), [src]);
+/* "/people" -> "/coeuas/people"; full URLs and anchors stay as they are */
+const isExternal = (h = "") => /^(https?:|mailto:|tel:|#)/.test(h);
+const to = (h = "/") => {
+  if (!h || h === "/") return BASE;
+  if (isExternal(h)) return h;
+  return h.startsWith(BASE + "/") || h === BASE ? h : BASE + (h.startsWith("/") ? h : "/" + h);
+};
+
+function A({ href, className, children, ...rest }) {
+  const h = to(href);
+  return isExternal(h)
+    ? <a href={h} className={className} {...rest}>{children}</a>
+    : <Link href={h} className={className} {...rest}>{children}</Link>;
+}
+
+/* *accent* words in a title */
+const Title = ({ text = "" }) => text.split("*").map((p, i) => (i % 2 ? <em key={i}>{p}</em> : p));
+
+const Arrow = () => (
+  <svg className="ab-arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+    <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+/* adds .in to every .ab-rv once it scrolls into view (re-runs when sections change) */
+function useReveal(rootRef, dep) {
+  useEffect(() => {
+    const nodes = rootRef.current ? rootRef.current.querySelectorAll(".ab-rv:not(.in)") : [];
+    if (reduced() || !("IntersectionObserver" in window)) {
+      nodes.forEach((n) => n.classList.add("in"));
+      return undefined;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.08, rootMargin: "0px 0px -5% 0px" });
+    nodes.forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, [rootRef, dep]);
+}
+
+/* number that counts up the first time it is seen */
+function Counter({ value, suffix = "", delay = 0 }) {
+  const target = Number(value) || 0;
+  const ref = useRef(null);
+  const [v, setV] = useState(reduced() ? target : 0);
+  const dec = (String(target).split(".")[1] || "").length;
+  useEffect(() => {
+    if (reduced()) { setV(target); return undefined; }
+    let raf = 0, timer = 0;
+    const run = () => {
+      const t0 = performance.now();
+      const tick = (t) => {
+        const p = Math.min(1, (t - t0) / 1500);
+        setV(target * (p === 1 ? 1 : 1 - Math.pow(2, -10 * p)));
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    };
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { io.disconnect(); timer = setTimeout(run, delay); }
+    }, { threshold: 0.4 });
+    io.observe(ref.current);
+    return () => { io.disconnect(); clearTimeout(timer); cancelAnimationFrame(raf); };
+  }, [target, delay]);
+  return <span ref={ref}>{dec ? v.toFixed(dec) : Math.round(v)}{suffix && <small>{suffix}</small>}</span>;
+}
+
+/* a statistic: text as written, a plain number (years), or a count-up */
+function Num({ s, delay = 0 }) {
+  if (s.text) return <>{s.text}</>;
+  if (s.plain) return <>{s.n}{s.suffix && <small>{s.suffix}</small>}</>;
+  return <Counter value={s.n} suffix={s.suffix} delay={delay} />;
+}
+
+/* Image slot: shows the file, or a neutral placeholder while it is missing. */
+function Pic({ file, alt, className = "", ratio, base, hints }) {
+  const [bad, setBad] = useState(false);
+  useEffect(() => setBad(false), [file]);
+  const src = file ? (/^(https?:|\/)/.test(file) ? file : base + file) : "";
   return (
-    <div className={`ab-media ${className} ${live ? "is-live" : ""}`}>
-      {live ? (
-        <img src={src} alt={m.alt || ""} loading="lazy" onError={() => setFailed(true)} />
-      ) : (
-        <div className={`ab-ph ${SHOW_SLOT_HINTS ? "" : "quiet"}`}>
-          {SHOW_SLOT_HINTS && (<><b>Image slot</b>{m && m.note && <em>{m.note}</em>}{src && <code>{src}</code>}</>)}
-        </div>
-      )}
+    <figure className={`ab-pic ${className}`} style={ratio ? { aspectRatio: ratio } : undefined}>
+      {src && !bad
+        ? <img src={src} alt={alt || ""} loading="lazy" decoding="async" onError={() => setBad(true)} />
+        : <div className={`ab-ph ${hints ? "" : "quiet"}`}>{hints && (<><b aria-hidden="true">+</b><span>Add image</span><code>{file || "no file set"}</code></>)}</div>}
+    </figure>
+  );
+}
+
+/* roving arrow-key navigation for tab lists */
+const arrowNav = (e, cur, len, set) => {
+  if (!["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"].includes(e.key)) return;
+  e.preventDefault();
+  const n = (cur + (e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : -1) + len) % len;
+  set(n);
+  const tabs = e.currentTarget.querySelectorAll('[role="tab"]');
+  if (tabs[n]) tabs[n].focus();
+};
+
+/* ==========================================================================
+   BLOCKS  (one component per block type, all registered in BLOCKS below)
+========================================================================== */
+
+function SplitBlock({ b, base, hints }) {
+  const hasPic = b.file !== undefined;
+  const points = list(b.points);
+  return (
+    <div className={`ab-split ${b.reverse ? "rev" : ""} ${hasPic ? "" : "solo"}`}>
+      <div className="ab-split-txt">
+        {b.title && <h3>{b.title}</h3>}
+        {list(b.paragraphs).map((p, i) => <p key={keyOf(p, i)}>{p}</p>)}
+        {points.length > 0 && <ul className="ab-chips">{points.map((p, i) => <li key={keyOf(p, i)}>{p}</li>)}</ul>}
+      </div>
+      {hasPic && <Pic file={b.file} alt={b.alt} ratio={b.ratio || "4 / 3"} className="ab-split-pic" base={base} hints={hints} />}
     </div>
   );
 }
 
-function Count({ to: target, suffix, on }) {
-  const [v, setV] = useState(0);
-  useEffect(() => {
-    if (!on) return;
-    if (reduced()) { setV(target); return; }
-    let raf, s;
-    const tick = (t) => {
-      s = s || t;
-      const p = Math.min((t - s) / 1600, 1);
-      setV(Math.round(target * (1 - Math.pow(1 - p, 4))));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [on, target]);
-  return <>{v}{suffix}</>;
+function StatsBlock({ b }) {
+  return (
+    <div className="ab-stats">
+      {list(b.items).map((s, i) => (
+        <div className="ab-stat" key={keyOf(s, i)}>
+          <strong><Num s={s} />{s.unit && <small>{s.unit}</small>}</strong>
+          <span>{s.label}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
-/* Radar: rings, a rotating sweep and blips that light up when the sweep passes. */
-function Radar() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const c = ref.current, x = c.getContext("2d");
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    let w, h, t = 0, raf, vis = true;
-    const size = () => { w = c.clientWidth; h = c.clientHeight; c.width = w * dpr; c.height = h * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0); };
-    size(); window.addEventListener("resize", size);
-    const blips = Array.from({ length: 10 }, () => ({ a: Math.random() * 6.283, r: 0.15 + Math.random() * 0.8, hit: -99 }));
-    const still = reduced();
-    const draw = () => {
-      if (vis) {
-        t += 0.012;
-        x.clearRect(0, 0, w, h);
-        const wide = w > 760;
-        const cx = wide ? w * 0.72 : w * 0.5, cy = wide ? h * 0.5 : h * 0.72, R = Math.min(w * (wide ? 0.34 : 0.7), h * 0.46);
-        for (let i = 1; i <= 5; i++) { x.beginPath(); x.arc(cx, cy, (R * i) / 5, 0, 7); x.strokeStyle = `rgba(41,151,255,${0.07 + i * 0.03})`; x.stroke(); }
-        x.strokeStyle = "rgba(41,151,255,.14)";
-        x.beginPath(); x.moveTo(cx - R, cy); x.lineTo(cx + R, cy); x.moveTo(cx, cy - R); x.lineTo(cx, cy + R); x.stroke();
-        const a = t % 6.283;
-        for (let k = 0; k < 30; k++) {
-          x.beginPath(); x.moveTo(cx, cy); x.arc(cx, cy, R, a - 0.035 * (k + 1), a - 0.035 * k); x.closePath();
-          x.fillStyle = `rgba(41,151,255,${(1 - k / 30) * 0.2})`; x.fill();
-        }
-        x.strokeStyle = "#8fd0ff"; x.beginPath(); x.moveTo(cx, cy); x.lineTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); x.stroke();
-        blips.forEach((b) => {
-          let d = Math.abs(a - b.a); d = Math.min(d, 6.283 - d);
-          if (d < 0.05) b.hit = t;
-          const f = Math.exp(-(t - b.hit) * 1.4);
-          if (f < 0.03) return;
-          const px = cx + Math.cos(b.a) * R * b.r, py = cy + Math.sin(b.a) * R * b.r;
-          x.shadowColor = "#2997ff"; x.shadowBlur = 16; x.fillStyle = `rgba(143,208,255,${f})`;
-          x.beginPath(); x.arc(px, py, 3 + f * 2, 0, 7); x.fill(); x.shadowBlur = 0;
-        });
-      }
-      if (!still) raf = requestAnimationFrame(draw);
-    };
-    const io = new IntersectionObserver(([e]) => { vis = e.isIntersecting; });
-    io.observe(c);
-    draw();
-    return () => { cancelAnimationFrame(raf); io.disconnect(); window.removeEventListener("resize", size); };
-  }, []);
-  return <canvas ref={ref} className="ab-radar" aria-hidden="true" />;
+function CardsBlock({ b, base, hints }) {
+  return (
+    <div className="ab-cards" style={{ "--cols": b.cols || 3 }}>
+      {list(b.items).map((x, i) => {
+        const points = list(x.list);
+        const inner = (
+          <>
+            {x.file && <Pic file={x.file} alt={x.title} ratio="16 / 10" className="ab-card-pic" base={base} hints={hints} />}
+            {x.tag && <em className="ab-tag">{x.tag}</em>}
+            <h4>{x.title}</h4>
+            {x.text && <p>{x.text}</p>}
+            {points.length > 0 && <ul className="ab-ticks">{points.map((li, k) => <li key={keyOf(li, k)}>{li}</li>)}</ul>}
+            {x.href && <span className="ab-go">{x.linkLabel || "Learn more"}<Arrow /></span>}
+          </>
+        );
+        return x.href
+          ? <A key={keyOf(x, i)} href={x.href} id={x.id} className="ab-card is-link">{inner}</A>
+          : <article key={keyOf(x, i)} id={x.id} className="ab-card">{inner}</article>;
+      })}
+    </div>
+  );
 }
+
+function TabsBlock({ b }) {
+  const items = useMemo(() => list(b.items), [b.items]);
+  const [i, setI] = useState(0);
+  const t = items[i] || items[0];
+
+  /* a link like /about#strategy-training opens that tab */
+  useEffect(() => {
+    const read = () => {
+      const n = items.findIndex((x) => x.id === window.location.hash.replace("#", ""));
+      if (n >= 0) setI(n);
+    };
+    read();
+    window.addEventListener("hashchange", read);
+    return () => window.removeEventListener("hashchange", read);
+  }, [items]);
+
+  if (!t) return null;
+  const points = list(t.points);
+  return (
+    <div className="ab-tabs">
+      <div className="ab-tabs-rail" role="tablist" aria-label={b.label || "Strategy"} onKeyDown={(e) => arrowNav(e, i, items.length, setI)}>
+        {items.map((x, k) => (
+          <button key={keyOf(x, k)} id={x.id} role="tab" aria-selected={i === k} tabIndex={i === k ? 0 : -1} className={i === k ? "is-on" : ""} onClick={() => setI(k)}>
+            <span>{pad(k)}</span>{x.tab}
+          </button>
+        ))}
+      </div>
+      <div className="ab-tabs-panel ab-hi" key={t.id || i} role="tabpanel" aria-labelledby={t.id}>
+        <span className="ab-bignum" aria-hidden="true">{pad(i)}</span>
+        <div className="ab-pop">
+          {t.title && <h3>{t.title}</h3>}
+          {t.text && <p>{t.text}</p>}
+          {t.href && <A className="ab-link" href={t.href}>{t.linkLabel || "Learn more"}<Arrow /></A>}
+        </div>
+        {points.length > 0 && (
+          <ul className="ab-ticks ab-pop" style={D(1)}>{points.map((p, k) => <li key={keyOf(p, k)}>{p}</li>)}</ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TimelineBlock({ b }) {
+  return (
+    <ol className="ab-tl">
+      {list(b.items).map((m, i) => (
+        <li className={`ab-tl-i ${m.current ? "is-now" : ""}`} key={keyOf(m, i)} style={D(i)} aria-current={m.current ? "step" : undefined}>
+          <strong>{m.year}</strong>
+          <i aria-hidden="true" />
+          <div className="ab-tl-c"><h4>{m.title}</h4><p>{m.text}</p></div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function OrgBlock({ b }) {
+  const nodes = list(b.nodes);
+  const links = list(b.links);
+  return (
+    <div className="ab-org">
+      <div className="ab-org-root ab-hi">
+        {b.rootLabel && <span className="ab-org-eyebrow">{b.rootLabel}</span>}
+        <h3>{b.root}</h3>
+        {b.rootText && <p>{b.rootText}</p>}
+        {b.note && <span className="ab-org-note">{b.note}</span>}
+        {links.length > 0 && (
+          <div className="ab-org-links">
+            {links.map((l, i) => <A key={keyOf(l, i)} className={`ab-btn ab-btn--sm ${i ? "ab-btn--ghost" : ""}`} href={l.href}>{l.label}<Arrow /></A>)}
+          </div>
+        )}
+      </div>
+      <ol className="ab-org-list">
+        {nodes.map((n, i) => (
+          <li className="ab-org-node" key={keyOf(n, i)}>
+            <span className="ab-org-n" aria-hidden="true">{pad(i)}</span>
+            <div><h4>{n.title}</h4><p>{n.text}</p></div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function TagsBlock({ b }) {
+  return (
+    <div className="ab-tags">
+      {b.title && <h3 className="ab-sub">{b.title}</h3>}
+      <ul className="ab-chips">{list(b.items).map((x, i) => <li key={keyOf(x, i)}>{x}</li>)}</ul>
+    </div>
+  );
+}
+
+function TeamBlock({ b, base, hints }) {
+  return (
+    <div className="ab-team">
+      {b.title && <h3 className="ab-sub">{b.title}</h3>}
+      <div>
+        {list(b.items).map((p, i) => {
+          const inner = (
+            <>
+              <Pic file={p.file} alt={p.name} ratio="4 / 5" base={base} hints={hints} />
+              <h4>{p.name}</h4>{p.role && <p>{p.role}</p>}
+            </>
+          );
+          return p.href
+            ? <A key={keyOf(p, i)} href={p.href} className="ab-person">{inner}</A>
+            : <div key={keyOf(p, i)} className="ab-person">{inner}</div>;
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GalleryBlock({ b, base, hints }) {
+  return (
+    <div className="ab-gal">
+      {list(b.items).map((g, i) => <Pic key={keyOf(g, i)} file={g.file} alt={g.alt} ratio="4 / 3" base={base} hints={hints} />)}
+    </div>
+  );
+}
+
+function CtaBlock({ b }) {
+  return (
+    <div className="ab-cta-bar ab-hi">
+      <p>{b.text}</p>
+      <A className="ab-btn ab-mag" href={b.href}>{b.label}<Arrow /></A>
+    </div>
+  );
+}
+
+const BLOCKS = {
+  split: SplitBlock,
+  stats: StatsBlock,
+  cards: CardsBlock,
+  tabs: TabsBlock,
+  timeline: TimelineBlock,
+  org: OrgBlock,
+  tags: TagsBlock,
+  people: TeamBlock,
+  gallery: GalleryBlock,
+  cta: CtaBlock,
+};
+
+/* ==========================================================================
+   SECTION
+========================================================================== */
+
+const Section = memo(function Section({ s, n, base, hints }) {
+  const blocks = list(s.blocks).filter((b) => BLOCKS[b.type]);
+  return (
+    <section id={s.id} className={`ab-sec ab-${s.tone || "dark"} ab-sec-${s.id}`}>
+      <div className="ab-wrap">
+        <header className="ab-head">
+          <p className="ab-kicker ab-rv"><span>{pad(n)}</span>{s.eyebrow || s.nav}</p>
+          <h2 className="ab-h ab-rv" style={D(1)} aria-label={plain(s.title)}><Title text={s.title} /></h2>
+          {s.lede && <p className="ab-lede ab-rv" style={D(2)}>{s.lede}</p>}
+        </header>
+        {blocks.length > 0 && (
+          <div className="ab-main">
+            {blocks.map((b, i) => {
+              const C = BLOCKS[b.type];
+              return (
+                <div className={`ab-blk ab-blk--${b.type} ab-rv`} style={D(Math.min(i, 3))} key={keyOf(b, i)} id={b.id}>
+                  <C b={b} base={base} hints={hints} />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+});
+
+/* ==========================================================================
+   PAGE
+========================================================================== */
 
 export default function About({ content: override }) {
   const { content: c } = useAboutContent(override);
-  const list = c.sections.filter((s) => s.visible);
-  const root = useRef(null);
-  const bar = useRef(null);
-  const [seen, setSeen] = useState({});
-  const [active, setActive] = useState(list[0] ? list[0].id : "");
-  const [tab, setTab] = useState(0);
-  const key = list.map((s) => s.id).join();
+  const base = c.mediaBase || "/";
+  const hints = !!c.showSlotHints;
+  const h = c.hero || {};
+  const sections = list(c.sections).filter((s) => list(s.blocks).length > 0);
+  const menu = sections.filter((s) => s.nav);
+  const ticker = list(c.ticker);
+  const stats = list(h.stats);
+  const heroLines = Array.isArray(h.titleLines) ? h.titleLines : [];
 
-  const scrollTo = (id) => {
-    const el = document.getElementById("about-" + id);
+  const navKey = sections.map((s) => `${s.id}${s.nav ? "+" : "-"}`).join();
+  const revealKey = sections.map((s) => `${s.id}:${list(s.blocks).length}`).join();
+
+  const rootRef = useRef(null);
+  const [active, setActive] = useState(menu[0] ? menu[0].id : "");
+  const [heroFail, setHeroFail] = useState(false);
+
+  useReveal(rootRef, revealKey);
+
+  const goTo = useCallback((id) => {
+    const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: reduced() ? "auto" : "smooth", block: "start" });
-  };
+  }, []);
 
+  /* open #hash links (e.g. /about#history) once the page has painted */
   useEffect(() => {
-    const el = root.current;
-    if (!el) return;
-    const secs = [...el.querySelectorAll(".ab-sec")];
+    const id = window.location.hash.replace("#", "");
+    if (!id) return undefined;
+    const timer = setTimeout(() => goTo(id), 350);
+    return () => clearTimeout(timer);
+  }, [goTo]);
 
-    const reveal = new IntersectionObserver((es) => {
-      const add = {};
-      es.forEach((e) => { if (e.isIntersecting) add[e.target.dataset.id] = true; });
-      if (Object.keys(add).length) setSeen((s) => ({ ...s, ...add }));
-    }, { root: el, rootMargin: "0px 0px -12% 0px", threshold: 0 });
-    const mid = new IntersectionObserver((es) => {
-      es.forEach((e) => { if (e.isIntersecting) setActive(e.target.dataset.id); });
-    }, { root: el, rootMargin: "-50% 0px -50% 0px", threshold: 0 });
-    secs.forEach((s) => { reveal.observe(s); mid.observe(s); });
-
-    /* scroll-linked values, written straight to the DOM (no re-render) */
+  /* scroll: progress bar, hero parallax, active menu item */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    const heroEl = root.querySelector(".ab-hero");
     let raf = 0;
     const update = () => {
       raf = 0;
-      const vh = el.clientHeight, max = el.scrollHeight - vh;
-      if (bar.current) bar.current.style.transform = `scaleX(${max > 0 ? el.scrollTop / max : 0})`;
-      secs.forEach((s) => {
-        const r = s.getBoundingClientRect();
-        s.style.setProperty("--p", ((r.top + r.height / 2 - vh / 2) / vh).toFixed(3));
+      const y = window.scrollY;
+      const max = root.scrollHeight - window.innerHeight;
+      if (y < 1100 && heroEl) heroEl.style.setProperty("--sy", `${y}`);
+      root.style.setProperty("--progress", max > 0 ? Math.min(1, Math.max(0, y / max)).toFixed(4) : 0);
+      const line = window.innerHeight * 0.35;
+      let cur = menu[0] ? menu[0].id : "";
+      menu.forEach((s) => {
+        const el = document.getElementById(s.id);
+        if (el && el.getBoundingClientRect().top <= line) cur = s.id;
       });
-      const tl = el.querySelector(".ab-tl");
-      if (tl) {
-        const r = tl.getBoundingClientRect();
-        tl.style.setProperty("--tl", clamp((vh * 0.65 - r.top) / r.height).toFixed(3));
-        tl.querySelectorAll(".ab-ms").forEach((m) => {
-          const mr = m.getBoundingClientRect();
-          m.classList.toggle("lit", mr.top + mr.height * 0.4 < vh * 0.65);
-        });
-      }
+      setActive(cur);
     };
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
     update();
-    return () => { reveal.disconnect(); mid.disconnect(); el.removeEventListener("scroll", onScroll); window.removeEventListener("resize", onScroll); cancelAnimationFrame(raf); };
-  }, [key]);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navKey]);
 
-  const glow = (e) => {
-    root.current.style.setProperty("--mx", e.clientX + "px");
-    root.current.style.setProperty("--my", e.clientY + "px");
-  };
+  /* keep the active menu item visible on small screens */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const a = root.querySelector(".ab-subnav a.is-active");
+    const box = root.querySelector(".ab-subnav-scroll");
+    if (a && box) box.scrollTo({ left: a.offsetLeft - box.clientWidth / 2 + a.clientWidth / 2, behavior: "smooth" });
+  }, [active]);
 
-  const RENDER = {
-    hero: (d = c.hero) => (
-      <>
-        <Radar />
-        <div className="ab-in ab-hero">
-          <p className="eyebrow rv">{d.eyebrow}</p>
-          <h1 aria-label={d.headline}>
-            {d.headline.split(" ").map((w, n) => (
-              <span className="w" key={n}><b style={{ "--d": `${0.1 + n * 0.08}s` }}>{w}</b></span>
-            ))}
-          </h1>
-          <p className="lead rv" style={{ "--d": "0.8s" }}>{d.lead}</p>
-          <div className="row rv" style={{ "--d": "0.95s" }}>
-            <button className="btn" onClick={() => scrollTo(d.primary.target)}>{d.primary.label}</button>
-            <Link className="btn ghost" href={to(d.secondary.href)}>{d.secondary.label}</Link>
-          </div>
-          <div className="ab-hstats">
-            {d.stats.map((s, n) => (
-              <div className="rv" style={delay(n, 1)} key={s.label}>
-                <strong><Count to={s.value} suffix={s.suffix} on={!!seen.hero} /></strong><span>{s.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="ab-cue" aria-hidden="true"><i /></div>
-      </>
-    ),
+  /* pointer effect: magnetic buttons */
+  const onMove = useCallback((e) => {
+    if (reduced()) return;
+    const t = e.target;
+    const mag = t.closest && t.closest(".ab-mag");
+    if (mag) {
+      const r = mag.getBoundingClientRect();
+      mag.style.setProperty("--tx", `${((e.clientX - (r.left + r.width / 2)) * 0.2).toFixed(1)}px`);
+      mag.style.setProperty("--ty", `${((e.clientY - (r.top + r.height / 2)) * 0.3).toFixed(1)}px`);
+    }
+  }, []);
 
-    background: (d = c.background) => (
-      <div className="ab-in ab-split">
-        <div>
-          <p className="eyebrow rv">{d.eyebrow}</p>
-          <h2 className="rv">{d.title}</h2>
-          {d.text.map((t, n) => <p className="lead rv" style={delay(n, 0.1)} key={n}>{t}</p>)}
-          <ul className="chips rv" style={{ "--d": ".4s" }}>{d.points.map((p) => <li key={p}>{p}</li>)}</ul>
-        </div>
-        <div className="ab-collage">
-          <div className="rv" style={{ "--d": ".15s" }}>
-            <div className="ab-tilt ab-main" onMouseMove={tilt} onMouseLeave={untilt}>
-              <Media m={d.media} className="fill" />
-              <span className="ab-ring" />
-            </div>
-          </div>
-          <div className="ab-pair">
-            {d.gallery.map((g, n) => <div className="rv" style={delay(n, 0.35)} key={n}><Media m={g} className="ab-thumb" /></div>)}
-          </div>
-        </div>
-      </div>
-    ),
+  const onOut = useCallback((e) => {
+    const t = e.target.closest && e.target.closest(".ab-mag");
+    if (t && !t.contains(e.relatedTarget)) ["--tx", "--ty"].forEach((p) => t.style.removeProperty(p));
+  }, []);
 
-    direction: (d = c.direction) => (
-      <div className="ab-in">
-        <h2 className="rv">{d.title}</h2>
-        <div className="ab-trio">
-          {d.cards.map((k, n) => (
-            <div className="rv" style={delay(n)} key={k.id}>
-              <div className="ab-card ab-tilt" onMouseMove={tilt} onMouseLeave={untilt}>
-                <span className="ab-tag">{k.tag}</span>
-                <h3>{k.title}</h3>
-                {k.text && <p>{k.text}</p>}
-                {k.list && <ul>{k.list.map((li, i) => <li key={li} style={{ "--i": i }}>{li}</li>)}</ul>}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="ab-banner rv" style={{ "--d": ".45s" }}>
-          <b>{d.directionTitle}</b><span>{d.directionText}</span>
-        </div>
-      </div>
-    ),
-
-    history: (d = c.history) => (
-      <div className="ab-in">
-        <p className="eyebrow rv">{d.eyebrow}</p>
-        <h2 className="rv">{d.title}</h2>
-        <p className="lead rv" style={{ "--d": ".1s" }}>{d.text}</p>
-        <div className="ab-tl">
-          <div className="ab-track"><i /></div>
-          {d.items.map((m, n) => (
-            <div className="ab-ms" key={m.year + n}>
-              <div className="ab-dot" />
-              <div className="ab-msc">
-                <strong>{m.year}</strong>
-                <h3>{m.title}</h3>
-                <p>{m.text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <Link className="link rv" href={to(d.cta.href)}>{d.cta.label}</Link>
-      </div>
-    ),
-
-    organisation: (d = c.organisation) => (
-      <div className="ab-in">
-        <p className="eyebrow rv">{d.eyebrow}</p>
-        <h2 className="rv">{d.title}</h2>
-        <div className="ab-org">
-          <div className="ab-node ab-root rv">{d.root}</div>
-          <div className="ab-stem" />
-          <div className="ab-kids">
-            {d.nodes.map((n, i) => (
-              <div className="ab-kid rv" style={delay(i, 0.5)} key={n.title}>
-                <div className="ab-node"><h3>{n.title}</h3><p>{n.text}</p></div>
-              </div>
-            ))}
-          </div>
-          <p className="ab-prev rv" style={{ "--d": ".9s" }}>{d.previous}</p>
-        </div>
-        <div className="row rv" style={{ "--d": ".6s" }}>
-          <Link className="btn" href={to(d.cta.href)}>{d.cta.label}</Link>
-          <Link className="btn ghost" href={to(d.chartCta.href)}>{d.chartCta.label}</Link>
-        </div>
-      </div>
-    ),
-
-    strategy: (d = c.strategy) => {
-      const t = d.tabs[tab] || d.tabs[0];
-      return (
-        <div className="ab-in">
-          <p className="eyebrow rv">{d.eyebrow}</p>
-          <h2 className="rv">{d.title}</h2>
-          <div className="ab-tabs rv" style={{ "--d": ".15s" }}>
-            <div className="ab-tablist" role="tablist" style={{ "--n": d.tabs.length, "--k": tab }}>
-              <span className="ab-mark" />
-              {d.tabs.map((x, n) => (
-                <button key={x.id} role="tab" aria-selected={n === tab} className={n === tab ? "act" : ""} onClick={() => setTab(n)}>
-                  <small>0{n + 1}</small>{x.label}
-                </button>
-              ))}
-            </div>
-            <div className="ab-panel" key={t.id} role="tabpanel">
-              <span className="ab-big" aria-hidden="true">0{tab + 1}</span>
-              <h3>{t.label}</h3>
-              <p className="lead">{t.text}</p>
-              <ul>{t.points.map((p, i) => <li key={p} style={{ "--i": i }}>{p}</li>)}</ul>
-              <Link className="link" href={to(t.href)}>Learn more</Link>
-            </div>
-          </div>
-        </div>
-      );
-    },
-
-    awards: (d = c.awards) => (
-      <div className="ab-in">
-        <p className="eyebrow rv">{d.eyebrow}</p>
-        <h2 className="rv">{d.title}</h2>
-        <div className="ab-trio">
-          {d.groups.map((g, n) => (
-            <div className="rv" style={delay(n)} key={g.id}>
-              <div className="ab-award ab-tilt" onMouseMove={tilt} onMouseLeave={untilt}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3" /></svg>
-                <h3>{g.title}</h3>
-                <ul>{g.items.map((it, i) => <li key={i}>{it}</li>)}</ul>
-              </div>
-            </div>
-          ))}
-        </div>
-        <Link className="link rv" style={{ "--d": ".5s" }} href={to(d.cta.href)}>{d.cta.label}</Link>
-      </div>
-    ),
-
-    cta: (d = c.cta) => (
-      <div className="ab-in">
-        <h2 className="rv">{d.title}</h2>
-        <div className="ab-trio">
-          {d.items.map((it, n) => (
-            <Link href={to(it.href)} className="ab-go rv" style={delay(n)} key={it.id}>
-              <h3>{it.title}</h3><p>{it.text}</p><span aria-hidden="true">→</span>
-            </Link>
-          ))}
-        </div>
-        <footer className="ab-foot rv" style={{ "--d": ".4s" }}>{d.footer}</footer>
-      </div>
-    ),
-  };
+  const heroSrc = h.file ? (/^(https?:|\/)/.test(h.file) ? h.file : base + h.file) : "";
 
   return (
-    <main className="ab" ref={root} onMouseMove={glow}>
-      <div className="ab-cursor" aria-hidden="true" />
-      <div className="ab-bar" ref={bar} aria-hidden="true" />
-      <div className="ab-sweep" key={active} aria-hidden="true" />
+    <div className="ab" ref={rootRef} onMouseMove={onMove} onMouseOut={onOut}>
 
-      <ol className="ab-dots" aria-label="Page sections">
-        {list.map((s) => (
-          <li key={s.id}><button className={s.id === active ? "act" : ""} onClick={() => scrollTo(s.id)} aria-label={s.label} aria-current={s.id === active}><span>{s.label}</span></button></li>
-        ))}
-      </ol>
+      {/* ===================== HERO ===================== */}
+      <section className="ab-hero" id="top">
+        {heroSrc && !heroFail && (
+          <div className="ab-hero-media" aria-hidden="true"><img src={heroSrc} alt="" loading="eager" decoding="async" onError={() => setHeroFail(true)} /></div>
+        )}
+        <div className="ab-grid-bg" aria-hidden="true" />
 
-      {list.map((s, i) => RENDER[s.id] && (
-        <div key={s.id} className="ab-wrap">
-          <section id={"about-" + s.id} data-id={s.id} className={`ab-sec ab-sec-${s.id} ${i % 2 ? "alt" : ""} ${seen[s.id] ? "on" : ""}`}>
-            <span className="ab-chap" aria-hidden="true">{String(i + 1).padStart(2, "0")}</span>
-            <span className="ab-edge" aria-hidden="true" />
-            {RENDER[s.id]()}
-          </section>
-          {c.bands[s.id] && (
-            <div className="ab-band" aria-hidden="true">
-              <div className="ab-bt">{[0, 1, 2, 3].map((k) => <span key={k}>{c.bands[s.id]}</span>)}</div>
-            </div>
-          )}
+        <div className="ab-wrap ab-hero-copy">
+          {h.eyebrow && <p className="ab-eyebrow"><i />{h.eyebrow}</p>}
+          <h1 className="ab-title" aria-label={heroLines.join(" ")}>
+            {heroLines.map((l, i) => (
+              <span className="ab-ln" key={`${l}-${i}`}><span className={l === h.highlight ? "ab-hl" : ""} style={{ "--i": i }}>{l}</span></span>
+            ))}
+          </h1>
+          {h.lede && <p className="ab-hero-lede">{h.lede}</p>}
+          <div className="ab-hero-cta">
+            {h.primary && <button className="ab-btn ab-mag" onClick={() => goTo(h.primary.target || (sections[0] && sections[0].id))}>{h.primary.label}<Arrow /></button>}
+            {h.secondary && <A className="ab-btn ab-btn--ghost ab-mag" href={h.secondary.href}>{h.secondary.label}<Arrow /></A>}
+          </div>
         </div>
-      ))}
-    </main>
+
+        {stats.length > 0 && (
+          <div className="ab-wrap ab-glance">
+            <div className="ab-glance-bar">
+              <span>At a glance</span>
+              {h.caption && <span><b>{h.caption.place}</b> &middot; {h.caption.note}</span>}
+            </div>
+            <div className="ab-glance-grid">
+              {stats.map((s, i) => (
+                <div className="ab-gl" key={keyOf(s, i)}>
+                  <strong><Num s={s} delay={900 + i * 100} /></strong>
+                  <span className="ab-gl-label">{s.label}</span>
+                  {s.note && <p className="ab-gl-note">{s.note}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ===================== STICKY MENU ===================== */}
+      {menu.length > 0 && (
+        <nav className="ab-subnav" aria-label="About sections">
+          <div className="ab-wrap ab-subnav-scroll">
+            <ul>
+              {menu.map((s) => (
+                <li key={s.id}>
+                  <a
+                    href={`#${s.id}`}
+                    className={active === s.id ? "is-active" : ""}
+                    aria-current={active === s.id ? "true" : undefined}
+                    onClick={(e) => { e.preventDefault(); goTo(s.id); }}
+                  >{s.nav}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="ab-progress" aria-hidden="true"><span /></div>
+        </nav>
+      )}
+
+      {/* ===================== TICKER ===================== */}
+      {ticker.length > 0 && (
+        <div className="ab-ticker" aria-hidden="true">
+          <div className="ab-ticker-track">
+            {[0, 1].map((k) => <ul key={k}>{ticker.map((t, i) => <li key={`${t}-${i}-${k}`}>{t}</li>)}</ul>)}
+          </div>
+        </div>
+      )}
+
+      {/* ===================== SECTIONS ===================== */}
+      {sections.map((s, i) => <Section s={s} n={i} key={s.id} base={base} hints={hints} />)}
+
+      {c.footer && <footer className="ab-foot">{c.footer}</footer>}
+    </div>
   );
 }

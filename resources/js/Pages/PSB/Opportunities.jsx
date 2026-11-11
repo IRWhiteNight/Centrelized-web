@@ -21,6 +21,20 @@ const images = {
     'corridor-langkawi': corridorLangkawi,
 };
 
+/* Hero photo caption */
+const HERO_CAPTION = {
+    place: 'Sungai Batu Pahat, Perlis',
+    note: 'About 30 hectares beside the UniMAP runway',
+};
+
+/* one line of context per hero stat (same order as heroStats) */
+const STAT_NOTES = [
+    'Government, industry and research',
+    'First responder, air mobility, cargo and systems',
+    'From first contact to flight',
+    `Phase 1 opens first: ${programmes.phases[0].when}`,
+];
+
 /* ==========================================================================
    Small helpers
 ========================================================================== */
@@ -87,7 +101,7 @@ function Head({ n, label, title, lede }) {
 
 const Arrow = () => (
     <svg className="ox-arrow" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-        <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
@@ -115,81 +129,6 @@ const arrowNav = (e, cur, len, set) => {
 };
 
 /* ==========================================================================
-   Hero graphic: three ways in (round nodes) and four testing areas (squares)
-   around the sandbox
-========================================================================== */
-
-const WHO = [
-    { id: 'gov', label: 'Government', x: 150, y: 190, route: 'M300 300C260 262 205 222 150 190', tx: -10, ty: -16, anchor: 'start' },
-    { id: 'ind', label: 'Industry', x: 470, y: 196, route: 'M300 300C365 272 425 232 470 196', tx: 14, ty: -10, anchor: 'start' },
-    { id: 'res', label: 'Research', x: 440, y: 424, route: 'M300 300C345 350 395 392 440 424', tx: 14, ty: 5, anchor: 'start' },
-];
-const AREA_NODES = [
-    { id: 'fr', label: 'First responder', x: 64, y: 336 },
-    { id: 'aam', label: 'Advanced air mobility', x: 330, y: 62 },
-    { id: 'cargo', label: 'Cargo logistics', x: 566, y: 322 },
-    { id: 'tech', label: 'System integration', x: 190, y: 500 },
-];
-
-function OrbitMap() {
-    return (
-        <svg className="ox-map" viewBox="0 0 640 560" role="img" aria-label={hero.mapLabel}>
-            <defs>
-                <radialGradient id="oxGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0" stopColor="#ffd60a" stopOpacity=".30" />
-                    <stop offset="1" stopColor="#ffd60a" stopOpacity="0" />
-                </radialGradient>
-            </defs>
-
-            <circle cx="300" cy="300" r="190" fill="url(#oxGlow)" />
-            <g className="ox-zones">
-                <circle cx="300" cy="300" r="52" />
-                <circle cx="300" cy="300" r="112" />
-                <circle cx="300" cy="300" r="172" />
-            </g>
-
-            {AREA_NODES.map((a) => (
-                <line key={a.id} className="ox-link-line" x1="300" y1="300" x2={a.x} y2={a.y} />
-            ))}
-
-            {WHO.map((w, i) => (
-                <path key={w.id} id={`ox-r-${w.id}`} className="ox-route" pathLength="1" d={w.route} style={{ animationDelay: `${2 + i * 0.3}s` }} />
-            ))}
-
-            {WHO.slice(0, 2).map((w, i) => (
-                <g className="ox-drone" key={`d-${w.id}`}>
-                    <circle r="5" /><circle r="12" className="halo" />
-                    <animateMotion dur={`${7 + i * 3}s`} begin={`${3 + i * 0.6}s`} repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;.5;1" calcMode="linear">
-                        <mpath href={`#ox-r-${w.id}`} />
-                    </animateMotion>
-                </g>
-            ))}
-
-            {AREA_NODES.map((a, i) => (
-                <g key={a.id} className="ox-node ox-node-area" transform={`translate(${a.x} ${a.y})`} style={{ animationDelay: `${2.2 + i * 0.2}s` }}>
-                    <rect x="-6" y="-6" width="12" height="12" />
-                    <text y="26" textAnchor="middle">{a.label}</text>
-                </g>
-            ))}
-
-            {WHO.map((w, i) => (
-                <g key={w.id} className="ox-node" transform={`translate(${w.x} ${w.y})`} style={{ animationDelay: `${1.9 + i * 0.3}s` }}>
-                    <circle r="7" />
-                    <text x={w.tx} y={w.ty} textAnchor={w.anchor}>{w.label}</text>
-                </g>
-            ))}
-
-            <g className="ox-node ox-node-core" transform="translate(300 300)">
-                <circle className="ox-ping" r="10" />
-                <circle className="ox-ping ox-ping2" r="10" />
-                <rect x="-8" y="-8" width="16" height="16" transform="rotate(45)" />
-                <text x="18" y="34">Perlis Airspace Sandbox</text>
-            </g>
-        </svg>
-    );
-}
-
-/* ==========================================================================
    PAGE
 ========================================================================== */
 
@@ -197,9 +136,8 @@ export default function Opportunities() {
     const rootRef = useRef(null);
     const [activeSection, setActiveSection] = useState(sections[0].id);
     const [areaIdx, setAreaIdx] = useState(0);
-    const [phaseFilter, setPhaseFilter] = useState('all');
     const [areaFilter, setAreaFilter] = useState('all');
-    const [openCall, setOpenCall] = useState(null);
+    const [openOnly, setOpenOnly] = useState(false);
     const [step, setStep] = useState(0);
     const [ready, setReady] = useState(() => new Set());
     const [showFab, setShowFab] = useState(false);
@@ -246,7 +184,7 @@ export default function Opportunities() {
 
     const goTo = useCallback((id) => {
         const el = document.getElementById(id);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (el) el.scrollIntoView({ behavior: reduced() ? 'auto' : 'smooth', block: 'start' });
     }, []);
 
     /* pointer effects: card spotlight + tilt, magnetic buttons, hero glow */
@@ -289,12 +227,19 @@ export default function Opportunities() {
         }
     }, []);
 
-    /* programmes: filter */
-    const calls = programmes.items.filter((p) =>
-        (phaseFilter === 'all' || p.phase === phaseFilter) && (areaFilter === 'all' || p.areas.includes(areaFilter)));
-    const phaseInfo = programmes.phases.find((p) => p.n === phaseFilter);
-    const filtered = phaseFilter !== 'all' || areaFilter !== 'all';
-    const clearFilters = () => { setPhaseFilter('all'); setAreaFilter('all'); };
+    /* programmes: filter, then group by phase */
+    const visible = programmes.items.filter((p) =>
+        (areaFilter === 'all' || p.areas.includes(areaFilter)) && (!openOnly || p.status.key === 'open'));
+    const groups = programmes.phases
+        .map((ph) => ({
+            ...ph,
+            items: visible.filter((c) => c.phase === ph.n),
+            live: programmes.items.some((c) => c.phase === ph.n && c.status.key === 'open'),
+        }))
+        .filter((g) => g.items.length > 0);
+    const openCount = visible.filter((c) => c.status.key === 'open').length;
+    const filtered = areaFilter !== 'all' || openOnly;
+    const clearFilters = () => { setAreaFilter('all'); setOpenOnly(false); };
 
     const toggleReady = (i) => setReady((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; });
 
@@ -304,42 +249,39 @@ export default function Opportunities() {
     return (
         <div className="ox" ref={rootRef} onMouseMove={onMove} onMouseOut={onOut}>
 
-            {/* ===================== HERO ===================== */}
+            {/* ===================== HERO (text only) ===================== */}
             <section className="ox-hero" id="top">
-                <div className="ox-curtain" aria-hidden="true"><span>Opportunities</span></div>
-                <div className="ox-aurora" aria-hidden="true"><i /><i /><i /></div>
+                <div className="ox-hero-media" aria-hidden="true"><img src={siteAerial} alt="" loading="eager" decoding="async" /></div>
                 <div className="ox-grid" aria-hidden="true" />
                 <div className="ox-glow" aria-hidden="true" />
 
-                <div className="ox-wrap ox-hero-in">
-                    <div className="ox-hero-copy">
-                        <p className="ox-eyebrow"><i />{hero.eyebrow}</p>
-                        <h1 className="ox-title">
-                            {hero.titleLines.map((l, i) => (
-                                <span className="ox-ln" key={l}>
-                                    <span className={l === hero.highlight ? 'ox-hl' : ''} style={{ '--i': i }}>{l}</span>
-                                </span>
-                            ))}
-                        </h1>
-                        <p className="ox-hero-lede">{hero.lede}</p>
-                        <div className="ox-hero-cta">
-                            <a className="ox-btn ox-mag" href={links.apply}>{hero.primaryButton}<Arrow /></a>
-                            <button className="ox-btn ox-btn--ghost ox-mag" onClick={() => goTo('ways')}>{hero.secondaryButton}</button>
-                        </div>
+                <div className="ox-wrap ox-hero-copy">
+                    <p className="ox-eyebrow">{hero.eyebrow}</p>
+                    <h1 className="ox-title">
+                        {hero.titleLines.map((l, i) => (
+                            <span className="ox-ln" key={l}>
+                                <span className={l === hero.highlight ? 'ox-hl' : ''} style={{ '--i': i }}>{l}</span>
+                            </span>
+                        ))}
+                    </h1>
+                    <p className="ox-hero-lede">{hero.lede}</p>
+                    <div className="ox-hero-cta">
+                        <a className="ox-btn ox-mag" href={links.apply}>{hero.primaryButton}<Arrow /></a>
+                        <button className="ox-btn ox-btn--ghost ox-mag" onClick={() => goTo('ways')}>{hero.secondaryButton}</button>
                     </div>
-
-                    <figure className="ox-hero-map">
-                        <OrbitMap />
-                        <figcaption className="ox-map-note">{hero.mapLabel}</figcaption>
-                    </figure>
                 </div>
 
-                <div className="ox-wrap">
-                    <div className="ox-stats">
+                <div className="ox-wrap ox-glance">
+                    <div className="ox-glance-bar">
+                        <span>At a glance</span>
+                        <span><b>{HERO_CAPTION.place}</b> &middot; {HERO_CAPTION.note}</span>
+                    </div>
+                    <div className="ox-glance-grid">
                         {heroStats.map((s, i) => (
-                            <div className="ox-stat" key={s.label} style={{ '--i': i }}>
-                                <strong><Counter value={s.value} prefix={s.prefix} suffix={s.suffix} decimals={s.decimals} delay={1700 + i * 120} /></strong>
-                                <span>{s.label}</span>
+                            <div className="ox-gl" key={s.label} style={{ '--i': i }}>
+                                <strong><Counter value={s.value} prefix={s.prefix} suffix={s.suffix} decimals={s.decimals} delay={900 + i * 100} /></strong>
+                                <span className="ox-gl-label">{s.label}</span>
+                                {STAT_NOTES[i] && <p className="ox-gl-note">{STAT_NOTES[i]}</p>}
                             </div>
                         ))}
                     </div>
@@ -441,90 +383,96 @@ export default function Opportunities() {
                 </div>
             </section>
 
-            {/* ===================== 03 OPEN PROGRAMMES AND CALLS ===================== */}
+            {/* ===================== 03 OPEN PROGRAMMES AND CALLS =====================
+                Roadmap layout: one block per phase. The phase sits on the left
+                (dates, name, state), its windows are stacked cards on the right
+                with everything visible, nothing hidden behind a click. */}
             <section className="ox-sec ox-light" id="programmes">
                 <div className="ox-wrap">
                     <Head n={2} label="Open programmes and calls" title={programmes.heading} lede={programmes.lede} />
 
-                    <div className="ox-phases ox-rv" role="group" aria-label="Filter by phase">
-                        {programmes.phases.map((p) => {
-                            const n = programmes.items.filter((c) => c.phase === p.n).length;
-                            const on = phaseFilter === p.n;
-                            return (
-                                <button key={p.n} className={`ox-phase ${on ? 'is-on' : ''}`} aria-pressed={on} onClick={() => setPhaseFilter(on ? 'all' : p.n)}>
-                                    <span className="ox-phase-top"><b>Phase {p.n}</b><em>{n} {n === 1 ? 'window' : 'windows'}</em></span>
-                                    <strong>{p.when}</strong>
-                                    <span className="ox-phase-name">{p.name}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    <div className="ox-filters ox-rv" role="group" aria-label="Filter by testing area" style={D(1)}>
-                        <span className="ox-filters-label">Area</span>
+                    <div className="ox-filters ox-rv" role="group" aria-label="Filter windows">
+                        <span className="ox-filters-label">Testing area</span>
                         <button className={`ox-fchip ${areaFilter === 'all' ? 'is-on' : ''}`} onClick={() => setAreaFilter('all')} aria-pressed={areaFilter === 'all'}>All</button>
                         {areas.items.map((a) => (
                             <button key={a.id} className={`ox-fchip ${areaFilter === a.id ? 'is-on' : ''}`} onClick={() => setAreaFilter(a.id)} aria-pressed={areaFilter === a.id}>{a.title}</button>
                         ))}
+                        <button className={`ox-switch ${openOnly ? 'is-on' : ''}`} role="switch" aria-checked={openOnly} onClick={() => setOpenOnly(!openOnly)}>
+                            <i aria-hidden="true" />Open now only
+                        </button>
                     </div>
 
                     <p className="ox-count" aria-live="polite">
                         <span>
-                            Showing {calls.length} of {programmes.items.length} windows
-                            {phaseInfo && <> &middot; {phaseInfo.when}: {phaseInfo.name}</>}
+                            <b>{visible.length}</b> of {programmes.items.length} windows
+                            {openCount > 0 && <> &middot; <b className="ox-count-live">{openCount} open now</b></>}
                         </span>
                         {filtered && <button className="ox-link" onClick={clearFilters}>Clear filters</button>}
                     </p>
 
-                    {calls.length === 0 ? (
+                    {groups.length === 0 ? (
                         <div className="ox-empty ox-pop">
                             <p>No window matches these filters.</p>
                             <button className="ox-link" onClick={clearFilters}>Clear filters</button>
                         </div>
                     ) : (
-                        <ul className="ox-calls">
-                            {calls.map((p, i) => {
-                                const on = openCall === p.id;
-                                return (
-                                    <li className={`ox-call ox-pop ${on ? 'is-open' : ''}`} style={DS(i)} key={p.id}>
-                                        <button className="ox-call-row" onClick={() => setOpenCall(on ? null : p.id)} aria-expanded={on}>
-                                            <span className="ox-call-phase">Phase {p.phase}</span>
-                                            <span className="ox-call-main"><strong>{p.title}</strong><span>{p.summary}</span></span>
-                                            <span className="ox-call-when">{p.window}</span>
-                                            <span className={`ox-call-status ox-st-${p.status.key}`}>{p.status.label}</span>
-                                            <i className="ox-call-plus" aria-hidden="true" />
-                                        </button>
-                                        <div className="ox-call-body">
-                                            <div className="ox-call-inner">
-                                                <div>
-                                                    <h4 className="ox-sub">{programmes.labels.scope}</h4>
-                                                    <ul className="ox-ticks">{p.scope.map((s) => <li key={s}>{s}</li>)}</ul>
-                                                </div>
-                                                <div>
-                                                    <h4 className="ox-sub">{programmes.labels.provided}</h4>
-                                                    <ul className="ox-ticks">{p.provided.map((s) => <li key={s}>{s}</li>)}</ul>
-                                                </div>
-                                                <div>
-                                                    <h4 className="ox-sub">{programmes.labels.who}</h4>
-                                                    <p className="ox-call-who">{p.who}</p>
-                                                    <div className="ox-call-cta">
-                                                        <a className="ox-btn ox-btn--sm" href={links.apply}>Register interest<Arrow /></a>
-                                                        <a className="ox-btn ox-btn--ghost ox-btn--sm" href={links.contact}>Request the brief</a>
+                        <div className="ox-roadmap">
+                            {groups.map((g) => (
+                                <section className={`ox-ph ox-pop ${g.live ? 'is-live' : ''}`} key={g.n} aria-labelledby={`ox-ph-${g.n}`}>
+                                    <header className="ox-ph-head">
+                                        <span className="ox-ph-tag">Phase {g.n}</span>
+                                        <h3 id={`ox-ph-${g.n}`}>{g.when}</h3>
+                                        <p className="ox-ph-name">{g.name}</p>
+                                        <span className={`ox-ph-state ${g.live ? 'is-live' : ''}`}>{g.live ? 'Open now' : 'Planned'}</span>
+                                    </header>
+
+                                    <ul className="ox-pcs">
+                                        {g.items.map((p, i) => {
+                                            const isOpen = p.status.key === 'open';
+                                            return (
+                                                <li className={`ox-pc ox-pop ${isOpen ? 'is-live' : ''}`} style={DS(i)} key={p.id}>
+                                                    <div className="ox-pc-top">
+                                                        <div>
+                                                            <p className="ox-pc-window">{p.window}</p>
+                                                            <h4>{p.title}</h4>
+                                                        </div>
+                                                        <span className={`ox-pill ox-st-${p.status.key}`}>{p.status.label}</span>
                                                     </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
+                                                    <p className="ox-pc-sum">{p.summary}</p>
+
+                                                    <dl className="ox-pc-facts">
+                                                        <div>
+                                                            <dt>{programmes.labels.scope}</dt>
+                                                            <dd><ul className="ox-dash">{p.scope.map((s) => <li key={s}>{s}</li>)}</ul></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt>{programmes.labels.provided}</dt>
+                                                            <dd><ul className="ox-dash">{p.provided.map((s) => <li key={s}>{s}</li>)}</ul></dd>
+                                                        </div>
+                                                        <div>
+                                                            <dt>{programmes.labels.who}</dt>
+                                                            <dd>{p.who}</dd>
+                                                        </div>
+                                                    </dl>
+
+                                                    <div className="ox-pc-foot">
+                                                        <a className={`ox-btn ox-btn--sm ${isOpen ? '' : 'ox-btn--ink'}`} href={links.apply}>Register interest<Arrow /></a>
+                                                        <a className="ox-link" href={links.contact}>Request the brief</a>
+                                                    </div>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                </section>
+                            ))}
+                        </div>
                     )}
                     <p className="ox-source ox-rv">{programmes.note}</p>
                 </div>
             </section>
 
             {/* ===================== 04 HOW TO PARTICIPATE ===================== */}
-            <section className="ox-sec ox-dark" id="how">
+            <section className="ox-sec ox-dark ox-graphite" id="how">
                 <div className="ox-wrap">
                     <Head n={3} label="How to participate" title={how.heading} lede={how.lede} />
 
